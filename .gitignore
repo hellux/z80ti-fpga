@@ -1,0 +1,12 @@
+# latex build files
+*.aux
+*.log
+*.out
+*.toc
+*.pdf_tex
+
+# gedit backup files
+*~
+
+# vim swap files
+*.swp
