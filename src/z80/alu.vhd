@@ -59,43 +59,52 @@ use ieee.numeric_std.all;
 --  test bit            asic
 
 entity alu is port(
-    clk, rst in std_logic;
-    op1, op1 in std_logic_vector(7 downto 0);
-    insr in std_logic_vector(1 downto 0);
-    sa, sr in std_logic;
-    shift in std_logic_vector(1 downto 0);
-    res, flags out std_logic(7 downto 0));
-    -- need input to decide instruction
+    clk, rst : in std_logic;
+    op1, op2 : in std_logic_vector(7 downto 0);
+    instr : in std_logic_vector(1 downto 0);
+    shiftneg : in std_logic_vector(1 downto 0);
+    shift : in std_logic_vector(1 downto 0);
+    res, flags : out std_logic_vector(7 downto 0));
 end alu;
 
 architecture arch of alu is
-    signal res_sum, res_xor, res_and, res_or : unsigned(7 downto 0);
-    signal op2sn : unsigned(7 downto 0);
-    signal calc_res unsigned(7 downto 0;
+    signal op1_int, op2_int : signed(7 downto 0);
+
+    signal first, last : std_logic;
+    signal op2sn : signed(7 downto 0);
+
     signal bs : std_logic_vector(2 downto 0);
+
+    signal res_sum, res_xor, res_and, res_or : signed(7 downto 0);
+
+    signal calc_res : signed(7 downto 0);
 begin
     bs <= op1(2 downto 0);
+    op1_int <= signed(op1);
+    op2_int <= signed(op2);
 
     -- shift/neg
-    first <= op2(0) and rotate;
-    last <= op2(7) and rotate;
+    first <= op2(0) and '0'; -- TODO subst 0 with rotate signal 
+    last <= op2(7) and '0';
     with (shiftneg) select
-        op2sn <= op2                        when "00",
-                 -op2                       when "01",
-                 op2(6 downto 0) & first    when "10",
-                 last & op2(7 downto 1)     when "11";
-                 others <= '-'              when others;
+        op2sn <= op2_int                            when "00", -- no shift
+                 -op2_int                           when "01", -- negative
+                 last & op2_int(5 downto 0) & first when "10", -- lshift 
+                 last & op2_int(7 downto 1)         when "11", -- rshift
+                 (others => '-')                when others; 
+    -- right last can be op2(0), op2(7), carry, 0
 
     -- calculation
     process(clk) begin
-        res_sum <= op1 +    op2sn;
-        res_xor <= op1 xor  op2sn;
-        res_and <= op1 and  op2sn;
-        res_or  <= op1 or   op2sn;
-    end;
+        res_sum <= op1_int +    op2sn;
+        res_xor <= op1_int xor  op2sn;
+        res_and <= op1_int and  op2sn;
+        res_or  <= op1_int or   op2sn;
+    end process;
     with instr select
-        calc_res <= res_and when "00",
-                    res_xor when "01",
-                    res_sum when "10",
-                    res_or  when "11";
+        calc_res <= res_and         when "00",
+                    res_xor         when "01",
+                    res_sum         when "10",
+                    res_or          when "11",
+                    (others => '-') when others;
 end arch;
