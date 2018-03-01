@@ -51,11 +51,11 @@ begin
     --wr_int <= to_integer(unsigned(rd_adr));
     
 
-    rd_map <= (to_integer(unsigned(rd_adr))   => rd,
-               others                         => '0');
+    rd_map <= (to_unsigned(rd_adr))   => rd,
+               others                 => '0');
     
-    wr_map <= (to_integer(unsigned(rd_adr))   => wr,
-               others                         => '0');                                    
+    wr_map <= (to_unsigned(rd_adr))   => wr,
+               others                 => '0');                                    
                                         
     --A 111 
     A : reg_8 port map(

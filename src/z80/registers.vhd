@@ -1,6 +1,6 @@
 --Register by Jakob & Yousef
 
--- library declaration
+-- library declaration for 8
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
@@ -8,7 +8,7 @@ use IEEE.NUMERIC_STD.ALL;
 -- Register 8 bits
 entity reg_8 is
     port( clk : in std_logic;
-          rst : in std_logic
+          rst : in std_logic;
         
           rd, wr : in std_logic;
           di : in std_logic_vector(7 downto 0);
@@ -16,10 +16,15 @@ entity reg_8 is
     
 end reg_8;
 
+-- library declaration for 16
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
 -- Register 16 bits
 entity reg_16 is
     port( clk : in std_logic;
-          rst : in std_logic
+          rst : in std_logic;
         
           rd, wr : in std_logic;
           di : in std_logic_vector(15 downto 0);
@@ -29,7 +34,7 @@ end reg_16;
 
 -- Behavior of reg 8 bits
 architecture Behavioral of reg_8 is
-    signal bits : unsigned(7 downto 0);
+    signal bits : std_logic_vector(7 downto 0);
 
 begin  
     process(clk) begin
@@ -41,7 +46,7 @@ begin
             elsif (wr = '1') then
                 do <= bits;
             else 
-                do <= (others => 'z');
+                do <= (others => 'Z');
             end if;
         end if;
     end process;
@@ -50,7 +55,7 @@ end Behavioral;
 
 -- Behavior of reg 16 bits
 architecture Behavioral of reg_16 is
-    signal bits : unsigned(15 downto 0);
+    signal bits : std_logic_vector(15 downto 0);
 
 begin
     process(clk) begin
@@ -62,7 +67,7 @@ begin
             elsif (wr = '1') then
                 do <= bits;
             else 
-                do <= (others => 'z');
+                do <= (others => 'Z');
             end if;
         end if;
     end process;
