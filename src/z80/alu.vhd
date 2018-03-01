@@ -9,27 +9,33 @@ use ieee.numeric_std.all;
 --  010 and
 --  111 or
 
+-- INSTRUCTION SIGNALS (for instr decoder)
+-- signal               options                     bits
+-- sr                   ^reset/set                  6
+-- shiftneg             none,neg,lshift,rshift      ??
+-- instr                and,xor,sum,or              43
+
 -- OPERATION SIGNALING
---  OP                  RSV 
+--  OP                  rsv sr shift op1
 -- ARITH
---  add                 000
---  sub                 000
---  increment           000
---  decrement           000
---  compare             000
+--  add                 000    0-    op1
+--  sub                 000    0-    op1
+--  increment           000    0-    op1
+--  decrement           000    0-    op1
+--  compare             000    0-    op1
 -- LOGIC
---  and                 010
---  or                  111
---  xor                 100
+--  and                 010    0-    op1
+--  or                  111    0-    op1
+--  xor                 100    0-    op1
 -- SHIFTS
---  lshift logic        000
---  rshift logic        000
---  lshift arith        000
---  rshift arith        000
+--  lshift logic        000    10    -
+--  rshift logic        000    11    -
+--  lshift arith        000    10    -
+--  rshift arith        000    11    -
 -- BIT
---  set bit             000
---  reset bit           000
---  test bit            000
+--  set bit             000 1  0-    bs
+--  reset bit           000 0  0-    bs
+--  test bit            000    0-    bs
 
 -- OPERATION IMPLEMENTATIONS
 -- ARITH
@@ -43,44 +49,53 @@ use ieee.numeric_std.all;
 --  or                  or
 --  xor                 xor
 -- SHIFTS
---  lshift logic        op1<=op1<<1, op2<=0, sum
---  rshift logic        op1<=op1>>1, op2<=0, sum
---  lshift arith        op1<=op1<<1, op2<=0, sum
---  rshift arith        op1<=op1>>1, op2<=0, sum
+--  lshift logic        op2<=op2<<1, op1<=0, sum
+--  rshift logic        op2<=op2>>1, op1<=0, sum
+--  lshift arith        op2<=op2<<1, op1<=0, sum
+--  rshift arith        op2<=op2>>1, op1<=0, sum
 -- BIT
 --  set bit             asic
 --  reset bit           asic
 --  test bit            asic
 
--- how does sub work if only sum exists, negate before?
--- if alu handles, how does alu know it should sub?
--- clock cycles are 4 for both add, sub
-
--- in general how does alu know which result to output
-
 entity alu is port(
     clk, rst in std_logic;
     op1, op1 in std_logic_vector(7 downto 0);
-    r, s, v in std_logic; -- control signals, select instr
-    sub in std_logic;
-    bs in std_logic(2 downto 0); -- bit select (bits 5-3 in bit instr)
+    insr in std_logic_vector(1 downto 0);
+    sa, sr in std_logic;
+    shift in std_logic_vector(1 downto 0);
     res, flags out std_logic(7 downto 0));
     -- need input to decide instruction
 end alu;
 
 architecture arch of alu is
-    signal res_sum, res_xor, res_and, res_or : std_logic_vector(7 downto 0);
+    signal res_sum, res_xor, res_and, res_or : unsigned(7 downto 0);
+    signal op2sn : unsigned(7 downto 0);
+    signal calc_res unsigned(7 downto 0;
+    signal bs : std_logic_vector(2 downto 0);
 begin
-    process(clk) begin
-        res_sum <= op1 + op2;
-        res_xor <= op1 xor op2;
-        res_and <= op1 and op2;
-        res_or  <= op1 or op2;
-    end;
-    with (r & s & v) select 
-        res <= res_sum when "000",
-               res_xor when "100",
-               res_and when "010",
-               res_or  when "111";
+    bs <= op1(2 downto 0);
 
+    -- shift/neg
+    first <= op2(0) and rotate;
+    last <= op2(7) and rotate;
+    with (shiftneg) select
+        op2sn <= op2                        when "00",
+                 -op2                       when "01",
+                 op2(6 downto 0) & first    when "10",
+                 last & op2(7 downto 1)     when "11";
+                 others <= '-'              when others;
+
+    -- calculation
+    process(clk) begin
+        res_sum <= op1 +    op2sn;
+        res_xor <= op1 xor  op2sn;
+        res_and <= op1 and  op2sn;
+        res_or  <= op1 or   op2sn;
+    end;
+    with instr select
+        calc_res <= res_and when "00",
+                    res_xor when "01",
+                    res_sum when "10",
+                    res_or  when "11";
 end arch;
