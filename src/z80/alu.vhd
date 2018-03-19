@@ -139,51 +139,58 @@ use ieee.numeric_std.all;
 entity alu is port(
     clk, rst : in std_logic;
     op1, op2 : in std_logic_vector(7 downto 0);
-    instr : in std_logic_vector(1 downto 0);
-    carry_prev : in std_logic;
-    shiftneg : in std_logic_vector(1 downto 0);
-    shift : in std_logic_vector(1 downto 0);
-    shift_op : in std_logic_vector(1 downto 0);
+    c_in : in std_logic;
     instr : in std_logic_vector(7 downto 0);
-    set : in std_logic_vector(2 downto 0);
+    instr_set : in std_logic_vector(2 downto 0);
     res, flags : out std_logic_vector(7 downto 0));
 end alu;
 
 architecture arch of alu is
-    signal op1_uint, op2_uint : unsigned(7 downto 0);
+    signal op1_uint, op2_uint : signed(7 downto 0);
 
-    signal first, last : std_logic;
-    signal op2sn : unsigned(7 downto 0);
-
+    --aliases
     signal bs : std_logic_vector(2 downto 0);
 
-    signal res_sum, res_xor, res_and, res_or : unsigned(8 downto 0);
-    signal calc_res : unsigned(8 downto 0);
+    -- shift/neg
+    signal bit_instr : std_logic;
+    signal edge : std_logic; -- lsb or msb when shifting
+    signal shift : std_logic; -- whether to shift
+    signal pm_dir : std_logic; -- subtract/^add or right/^left
+    signal shiftneg : std_logic_vector(1 downto 0); -- shift & pm_dir
+    signal op2sn : signed(7 downto 0); -- shift/neg result
 
-    signal carry, overflow : std_logic;
-    signal edge : std_logic;
+    -- calculation
+    signal msb : std_logic; -- for sum with carry
+    signal res_sum, res_xor, res_and, res_or : signed(8 downto 0);
+    signal calc_res : signed(8 downto 0);
+
+    signal res_buf : signed(7 downto 0);
+
+    signal c_out, overflow, parity_overflow : std_logic;
 begin
     bs <= op1(2 downto 0);
-    op1_uint <= unsigned(op1);
-    op2_uint <= unsigned(op2);
+    op1_uint <= signed(op1);
+    op2_uint <= signed(op2);
 
     -- shift/neg
+    bit_instr <= instr_set(2);
     with instr(5 downto 3) select
         edge <= op2(7) when "000", -- rlc
-                c_prev when "010", -- rl
-                0      when "100", -- sla
-                0      when "110", -- sll
+                c_in   when "010", -- rl
+                '0'    when "100", -- sla
+                '0'    when "110", -- sll
                 op2(0) when "001", -- rrc
-                c_prev when "011", -- rr
+                c_in   when "011", -- rr
                 op2(7) when "101", -- sra
-                0      when "111", -- srl
+                '0'    when "111", -- srl
                 '-'    when others;
-    shift <= bit_instr and
-             (instr(3 downto 0) = "0000" or
-              instr(3 downto 0) = "0001" or
-              instr(3 downto 0) = "0010" or
-              instr(3 downto 0) = "0011");
-    pm_dir <= 
+    shift <= '1' when bit_instr = '1' and
+             (instr(7 downto 4) = "0000" or
+              instr(7 downto 4) = "0001" or
+              instr(7 downto 4) = "0010" or
+              instr(7 downto 4) = "0011") else '0';
+    pm_dir <= instr(3);
+    shiftneg <= shift & pm_dir;
     with (shiftneg) select
         op2sn <= op2_uint                           when "00", -- no shift
                  -op2_uint                          when "01", -- negative
@@ -192,24 +199,43 @@ begin
                  (others => '-')                    when others; 
 
     -- calculation
+    msb <= c_in when instr(3) = '1' else '0';
     process(clk) begin
-        res_sum <= 0 & op1_uint +    0 & op2sn;
-        res_xor <= 0 & op1_uint xor  0 & op2sn;
-        res_and <= 0 & op1_uint and  0 & op2sn;
-        res_or  <= 0 & op1_uint or   0 & op2sn;
+        res_and <= (msb & op1_uint) and ('0' & op2sn);
+        res_xor <= (msb & op1_uint) xor ('0' & op2sn);
+        res_or  <= (msb & op1_uint) or  ('0' & op2sn);
+        res_sum <= (msb & op1_uint) +   ('0' & op2sn);
     end process;
-    with instr select
-        calc_res <= res_and         when "00",
-                    res_xor         when "01",
-                    res_sum         when "10",
-                    res_or          when "11",
-                    (others => '-') when others;
+    with instr(5 downto 3) select
+        calc_res <= res_and         when "100",
+                    res_xor         when "101",
+                    res_or          when "110",
+                    res_sum         when others;
 
-    carry <= calc_res(8);
+    with (shiftneg) select
+        c_out <= calc_res(8) when "00",
+                 calc_res(8) when "01",
+                 op2(7)      when "10",
+                 op2(0)      when "11",
+                 '-'         when others;
+
+    -- result
+    res_buf <= calc_res(7 downto 0);
+    res <= std_logic_vector(res_buf);
+
+    -- flags
     overflow <= ((calc_res(7) xor op1_uint(7)) or
                  (calc_res(7) xor op2_uint(7)))
-                 and not carry;
+                 and not c_out;
+    parity_overflow <= overflow;
 
-    flags(0) <= carry;
+    flags(0) <= c_out;
     flags(1) <= '1' when shiftneg = "01" else '0';
+    flags(2) <= parity_overflow;
+    flags(3) <= res_buf(3);
+    flags(4) <= '0';
+    flags(5) <= res_buf(5);
+    flags(6) <= '1' when res_buf = 0 else '0';
+    flags(7) <= res_buf(7);
+
 end arch;
