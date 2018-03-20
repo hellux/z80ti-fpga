@@ -201,10 +201,12 @@ begin
     -- calculation
     msb <= c_in when instr(3) = '1' else '0';
     process(clk) begin
-        res_and <= (msb & op1_uint) and ('0' & op2sn);
-        res_xor <= (msb & op1_uint) xor ('0' & op2sn);
-        res_or  <= (msb & op1_uint) or  ('0' & op2sn);
-        res_sum <= (msb & op1_uint) +   ('0' & op2sn);
+        if rising_edge(clk) then
+            res_and <= (msb & op1_uint) and ('0' & op2sn);
+            res_xor <= (msb & op1_uint) xor ('0' & op2sn);
+            res_or  <= (msb & op1_uint) or  ('0' & op2sn);
+            res_sum <= (msb & op1_uint) +   ('0' & op2sn);
+        end if;
     end process;
     with instr(5 downto 3) select
         calc_res <= res_and         when "100",
@@ -212,21 +214,19 @@ begin
                     res_or          when "110",
                     res_sum         when others;
 
-    with (shiftneg) select
-        c_out <= calc_res(8) when "00",
-                 calc_res(8) when "01",
-                 op2(7)      when "10",
-                 op2(0)      when "11",
-                 '-'         when others;
 
     -- result
     res_buf <= calc_res(7 downto 0);
     res <= std_logic_vector(res_buf);
 
     -- flags
-    overflow <= ((calc_res(7) xor op1_uint(7)) or
-                 (calc_res(7) xor op2_uint(7)))
-                 and not c_out;
+    with (shiftneg) select
+        c_out <= calc_res(8) when "00",
+                 calc_res(8) when "01",
+                 op2(7)      when "10",
+                 op2(0)      when "11",
+                 '-'         when others;
+    overflow <= (calc_res(6) xor calc_res(7)) and ((op1(7) xnor op2(7)));
     parity_overflow <= overflow;
 
     flags(0) <= c_out;
