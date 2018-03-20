@@ -43,11 +43,10 @@ architecture arch of alu_tb is
         op2 <= operand2;
         instr <= instruction;
         instr_set <= set;
-        wait for 15 ns;
+        wait for 10 ns;
         assert flags(0) = carry report "carry fail";
         assert flags(2) = overflow report "overflow fail";
         assert res = result report "value fail";
-        wait for 5 ns;
     end procedure;
 
 begin
@@ -65,16 +64,22 @@ begin
 
     process begin
         while true loop
+            carry <= '0';
             clk <= '1';
             wait for 5 ns;
             clk <= '0';
             wait for 5 ns;
-            carry <= flags(0);
-            carry <= '0';
+            -- carry <= flags(0);
         end loop;
     end process;
 
     process begin
+        op1 <= x"00";
+        op2 <= x"00";
+        instr <= x"00";
+        instr_set <= "000";
+        wait for 1 ns;
+
     --             op1    op2    instr  set    c     o   res
         test_value(op1, op2, instr, instr_set, flags, res,
                    x"01", x"01", x"80", "000", '0', '0', x"02");
