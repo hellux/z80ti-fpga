@@ -146,21 +146,23 @@ entity alu is port(
 end alu;
 
 architecture arch of alu is
+    -- preserve input signals
     signal op1_pres, op2_pres : std_logic_vector(7 downto 0);
-    --aliases
+
+    -- aliases
     signal bs : std_logic_vector(2 downto 0);
 
     -- shift/neg
     signal op1_uint, op2_uint : signed(7 downto 0);
     signal bit_instr : std_logic;
-    signal edge : std_logic; -- lsb or msb when shifting
     signal shift : std_logic; -- whether to shift
+    signal edge : std_logic; -- lsb or msb when shifting
     signal pm_dir : std_logic; -- subtract/^add or right/^left
     signal shiftneg : std_logic_vector(1 downto 0); -- shift & pm_dir
     signal op2sn : signed(7 downto 0); -- shift/neg result
 
     -- calculation
-    signal msb : std_logic; -- for sum with carry
+    signal with_carry : signed(8 downto 0); -- for sum with carry
     signal res_sum, res_xor, res_and, res_or : signed(8 downto 0);
     signal calc_res : signed(8 downto 0);
 
@@ -197,7 +199,7 @@ begin
               instr(7 downto 4) = "0001" or
               instr(7 downto 4) = "0010" or
               instr(7 downto 4) = "0011") else '0';
-    pm_dir <= instr(3);
+    pm_dir <= instr(4);
     shiftneg <= shift & pm_dir;
     with (shiftneg) select
         op2sn <= op2_uint                           when "00", -- no shift
@@ -207,13 +209,14 @@ begin
                  (others => '-')                    when others; 
 
     -- calculation
-    msb <= c_in when instr(3) = '1' else '0';
+    with_carry <= "000000001" when c_in = '1' and instr(3) = '1'
+                  else "000000000";
     process(clk) begin
         if rising_edge(clk) then
-            res_and <= (msb & op1_uint) and ('0' & op2sn);
-            res_xor <= (msb & op1_uint) xor ('0' & op2sn);
-            res_or  <= (msb & op1_uint) or  ('0' & op2sn);
-            res_sum <= (msb & op1_uint) +   ('0' & op2sn);
+            res_and <= ('0' & op1_uint) and ('0' & op2sn);
+            res_xor <= ('0' & op1_uint) xor ('0' & op2sn);
+            res_or  <= ('0' & op1_uint) or  ('0' & op2sn);
+            res_sum <= ('0' & op1_uint) +   ('0' & op2sn) + with_carry;
         end if;
     end process;
     with instr(5 downto 3) select
@@ -238,6 +241,7 @@ begin
                 (op1_pres(7) xnor op2_pres(7));     -- equal sign
     parity_overflow <= overflow;
 
+    -- TODO make sure no output depends on input directly
     flags(0) <= c_out;
     flags(1) <= '1' when shiftneg = "01" else '0';
     flags(2) <= parity_overflow;
