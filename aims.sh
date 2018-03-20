@@ -8,13 +8,16 @@ src=$alu_src
 entity=$1
 simtime=$2
 
-ghdl -a $src `#analyze designs` \
-    && ghdl -i $src `#import designs` \
-    && ghdl -m $entity `#make executable` \
-    && ./$entity \
-        --wave=wave.ghw \
-        --stop-time=$simtime `#generate wave file`\
-    && gtkwave wave.ghw `#show wave file`
+# compile
+ghdl -a $src        # analyze designs
+ghdl -i $src        # import designs
+ghdl -m $entity     # make executable
 
-# clean up files
+# simulate
+./$entity --wave=wave.ghw  --stop-time=$simtime
+
+# show wave file
+gtkwave wave.ghw
+
+# clean up
 rm -f wave.ghw *.o $1
