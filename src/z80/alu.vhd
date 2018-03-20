@@ -146,12 +146,12 @@ entity alu is port(
 end alu;
 
 architecture arch of alu is
-    signal op1_uint, op2_uint : signed(7 downto 0);
-
+    signal op1_pres, op2_pres : std_logic_vector(7 downto 0);
     --aliases
     signal bs : std_logic_vector(2 downto 0);
 
     -- shift/neg
+    signal op1_uint, op2_uint : signed(7 downto 0);
     signal bit_instr : std_logic;
     signal edge : std_logic; -- lsb or msb when shifting
     signal shift : std_logic; -- whether to shift
@@ -171,6 +171,14 @@ begin
     bs <= op1(2 downto 0);
     op1_uint <= signed(op1);
     op2_uint <= signed(op2);
+
+    -- preserve operands 1 cp
+    process(clk) begin
+        if rising_edge(clk) then
+            op1_pres <= op1;
+            op2_pres <= op2;
+        end if;
+    end process;
 
     -- shift/neg
     bit_instr <= instr_set(2);
@@ -201,10 +209,12 @@ begin
     -- calculation
     msb <= c_in when instr(3) = '1' else '0';
     process(clk) begin
-        res_and <= (msb & op1_uint) and ('0' & op2sn);
-        res_xor <= (msb & op1_uint) xor ('0' & op2sn);
-        res_or  <= (msb & op1_uint) or  ('0' & op2sn);
-        res_sum <= (msb & op1_uint) +   ('0' & op2sn);
+        if rising_edge(clk) then
+            res_and <= (msb & op1_uint) and ('0' & op2sn);
+            res_xor <= (msb & op1_uint) xor ('0' & op2sn);
+            res_or  <= (msb & op1_uint) or  ('0' & op2sn);
+            res_sum <= (msb & op1_uint) +   ('0' & op2sn);
+        end if;
     end process;
     with instr(5 downto 3) select
         calc_res <= res_and         when "100",
@@ -212,21 +222,20 @@ begin
                     res_or          when "110",
                     res_sum         when others;
 
-    with (shiftneg) select
-        c_out <= calc_res(8) when "00",
-                 calc_res(8) when "01",
-                 op2(7)      when "10",
-                 op2(0)      when "11",
-                 '-'         when others;
 
     -- result
     res_buf <= calc_res(7 downto 0);
     res <= std_logic_vector(res_buf);
 
     -- flags
-    overflow <= ((calc_res(7) xor op1_uint(7)) or
-                 (calc_res(7) xor op2_uint(7)))
-                 and not c_out;
+    with (shiftneg) select
+        c_out <= calc_res(8) when "00", -- addition / no shift
+                 calc_res(8) when "01", -- subtraction
+                 op2(7)      when "10", -- lshift
+                 op2(0)      when "11", -- rshift
+                 '-'         when others;
+    overflow <= (op1_pres(7) xor calc_res(7)) and   -- carry 6 into 7
+                (op1_pres(7) xnor op2_pres(7));     -- equal sign
     parity_overflow <= overflow;
 
     flags(0) <= c_out;
