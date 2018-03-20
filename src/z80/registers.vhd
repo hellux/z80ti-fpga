@@ -41,12 +41,15 @@ begin
         if rising_edge(clk) then
             if (rst = '1') then
                 bits <= (others => '0');
-            elsif (rd = '1') then
-                bits <= di;
-            elsif (wr = '1') then
-                do <= bits;
-            else 
-                do <= (others => 'Z');
+            else
+                if (rd = '1') then
+                    bits <= di;
+                end if;
+                if (wr = '1') then
+                    do <= bits;
+                else 
+                    do <= (others => 'Z');
+                end if;
             end if;
         end if;
     end process;
@@ -62,12 +65,15 @@ begin
         if rising_edge(clk) then
             if (rst = '1') then
                 bits <= (others => '0');
-            elsif (rd = '1') then
-                bits <= di;
-            elsif (wr = '1') then
-                do <= bits;
-            else 
-                do <= (others => 'Z');
+            else
+                if (rd = '1') then
+                    bits <= di;
+                end if;
+                if (wr = '1') then
+                    do <= bits;
+                else 
+                    do <= (others => 'Z');
+                end if;
             end if;
         end if;
     end process;
