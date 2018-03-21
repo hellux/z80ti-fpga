@@ -47,9 +47,15 @@ architecture arch of alu_tb is
         instr_set <= set;
         c_in <= carry_in;
         wait for 15 ns;
-        assert flags(0) = carry report "carry fail";
-        assert flags(2) = overflow report "overflow fail";
-        assert res = result report "value fail";
+        assert flags(0)=carry and flags(2)=overflow and res=result report lf &
+            "ops: " & integer'image(to_integer(unsigned(operand1))) &
+            " " & integer'image(to_integer(unsigned(operand2))) & lf &
+            "res: " & integer'image(to_integer(unsigned(res))) &
+            " " & integer'image(to_integer(unsigned(result))) & lf &
+            "carry: " & std_logic'image(flags(0)) &
+            " " & std_logic'image(carry_in) & lf &
+            "overflow: " & std_logic'image(flags(2)) &
+            " " & std_logic'image(overflow);
         wait for 5 ns;
     end procedure;
 
@@ -125,6 +131,40 @@ begin
                    x"80", x"80", x"88", "000", '1', '1', '1', x"01");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"7f", x"81", x"88", "000", '1', '1', '0', x"01");
+
+        --sub
+    --             op1    op2    instr  set    c_in  c_o  ov  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"90", "000", '0', '0', '0', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"90", "000", '0', '1', '0', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"7f", x"7f", x"90", "000", '0', '0', '0', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"01", x"90", "000", '0', '0', '1', x"7f");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"ff", x"ff", x"90", "000", '0', '0', '0', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"7f", x"81", x"90", "000", '0', '1', '1', x"fe");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"ff", x"7f", x"90", "000", '0', '0', '0', x"80");
+
+        --sub with carry
+    --             op1    op2    instr  set    c_in  c_o  ov  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"98", "000", '0', '0', '0', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"90", "000", '0', '1', '0', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"7f", x"7f", x"90", "000", '0', '0', '0', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"01", x"90", "000", '0', '0', '1', x"7f");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"ff", x"ff", x"90", "000", '0', '0', '0', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"7f", x"81", x"90", "000", '0', '1', '1', x"fe");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"ff", x"7f", x"90", "000", '0', '0', '0', x"80");
     end process;
 
     rst <= '0';

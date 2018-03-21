@@ -17,7 +17,7 @@ ghdl -m $entity     # make executable
 ./$entity --wave=wave.ghw  --stop-time=$simtime
 
 # show wave file
-gtkwave wave.ghw
+#gtkwave wave.ghw
 
 # clean up
 rm -f wave.ghw *.o $1

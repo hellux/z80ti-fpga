@@ -148,6 +148,7 @@ end alu;
 architecture arch of alu is
     -- preserve input signals
     signal op1_pres, op2_pres : std_logic_vector(7 downto 0);
+    signal op2sn_pres : std_logic_vector(7 downto 0);
 
     -- aliases
     signal bs : std_logic_vector(2 downto 0);
@@ -162,14 +163,19 @@ architecture arch of alu is
     signal op2sn : signed(7 downto 0); -- shift/neg result
 
     -- calculation
+    signal use_carry : std_logic;
+    signal use_carry_mux : std_logic_vector(1 downto 0);
     signal with_carry : signed(8 downto 0); -- for sum with carry
     signal res_sum, res_xor, res_and, res_or : signed(8 downto 0);
     signal calc_res : signed(8 downto 0);
 
     signal res_buf : signed(7 downto 0);
 
-    signal c_out, overflow, parity_overflow : std_logic;
+    -- flags
+    signal carry_sub, c_out, overflow, parity_overflow : std_logic;
+
 begin
+
     bs <= op1(2 downto 0);
     op1_uint <= signed(op1);
     op2_uint <= signed(op2);
@@ -179,6 +185,7 @@ begin
         if rising_edge(clk) then
             op1_pres <= op1;
             op2_pres <= op2;
+            op2sn_pres <= std_logic_vector(op2sn);
         end if;
     end process;
 
@@ -209,8 +216,14 @@ begin
                  (others => '-')                    when others; 
 
     -- calculation
-    with_carry <= "000000001" when c_in = '1' and instr(3) = '1'
-                  else "000000000";
+    use_carry <= instr(3);
+    use_carry_mux <= use_carry & pm_dir;
+    with (use_carry_mux) select
+        with_carry <= "000000001" when "10";
+                      "0ffffffff" when "11";
+                      "000000000" when others;
+    --with_carry <= "000000001" when c_in = '1' and use_carry = '1'
+    --              else "000000000";
     process(clk) begin
         if rising_edge(clk) then
             res_and <= ('0' & op1_uint) and ('0' & op2sn);
@@ -231,14 +244,15 @@ begin
     res <= std_logic_vector(res_buf);
 
     -- flags
+    carry_sub <= '1' when op2_pres > op1_pres else '0';
     with (shiftneg) select
         c_out <= calc_res(8) when "00", -- addition / no shift
-                 calc_res(8) when "01", -- subtraction
+                 carry_sub   when "01", -- sub
                  op2(7)      when "10", -- lshift
                  op2(0)      when "11", -- rshift
                  '-'         when others;
     overflow <= (op1_pres(7) xor calc_res(7)) and   -- carry 6 into 7
-                (op1_pres(7) xnor op2_pres(7));     -- equal sign
+                (op1_pres(7) xnor op2sn_pres(7));  -- equal sign
     parity_overflow <= overflow;
 
     -- TODO make sure no output depends on input directly
