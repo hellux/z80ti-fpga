@@ -48,6 +48,7 @@ architecture arch of alu_tb is
         c_in <= carry_in;
         wait for 15 ns;
         assert flags(0)=carry and flags(2)=overflow and res=result report lf &
+            "instr: " & integer'image(to_integer(unsigned(instruction))) & lf &
             "ops: " & integer'image(to_integer(unsigned(operand1))) &
             " " & integer'image(to_integer(unsigned(operand2))) & lf &
             "res: " & integer'image(to_integer(unsigned(res))) &

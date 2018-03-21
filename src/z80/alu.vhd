@@ -216,11 +216,11 @@ begin
                  (others => '-')                    when others; 
 
     -- calculation
-    use_carry <= instr(3);
+    use_carry <= c_in and instr(3);
     use_carry_mux <= use_carry & pm_dir;
     with (use_carry_mux) select
-        with_carry <= "000000001" when "10";
-                      "0ffffffff" when "11";
+        with_carry <= "000000001" when "10",
+                      "011111111" when "11",
                       "000000000" when others;
     --with_carry <= "000000001" when c_in = '1' and use_carry = '1'
     --              else "000000000";
