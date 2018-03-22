@@ -106,24 +106,27 @@ begin
     --IN
     di_b <= di when rd_map(0) = '1' else "ZZZZZZZZ";
     di_c <= di when rd_map(1) = '1' else "ZZZZZZZZ";
-    di_d <= di when rd_map(2) = '1' else "ZZZZZZZZ";
-    di_e <= di when rd_map(3) = '1' else "ZZZZZZZZ";
-    di_h <= di when rd_map(4) = '1' else "ZZZZZZZZ";
-    di_l <= di when rd_map(5) = '1' else "ZZZZZZZZ";
+    di_d <= di when rd_map(2) = '1' else 
+            do_h when swp_dehl = '1' else "ZZZZZZZZ";
+    di_e <= di when rd_map(3) = '1' else 
+            do_l when swp_dehl = '1' else "ZZZZZZZZ";
+    di_h <= di when rd_map(4) = '1' else 
+            do_d when swp_dehl = '1' else "ZZZZZZZZ";
+    di_l <= di when rd_map(5) = '1' else 
+            do_e when swp_dehl = '1' else "ZZZZZZZZ";
     di_a <= di when rd_map(7) = '1' else "ZZZZZZZZ";
     
     di_f <= di when rd_f = '1' else "ZZZZZZZZ";
     
     --OUT
-    do <= do_b when wr_map(0) = '1' else "ZZZZZZZZ";
-    do <= do_c when wr_map(1) = '1' else "ZZZZZZZZ";
-    do <= do_d when wr_map(2) = '1' else "ZZZZZZZZ";
-    do <= do_e when wr_map(3) = '1' else "ZZZZZZZZ";
-    do <= do_h when wr_map(4) = '1' else "ZZZZZZZZ";
-    do <= do_l when wr_map(5) = '1' else "ZZZZZZZZ";
-    do <= do_a when wr_map(7) = '1' else "ZZZZZZZZ";
-    
-    do <= do_f when wr_f = '1' else "ZZZZZZZZ";
+    do <=   do_b when wr_map(0) = '1' else
+            do_c when wr_map(1) = '1' else
+            do_d when wr_map(2) = '1' else
+            do_e when wr_map(3) = '1' else 
+            do_h when wr_map(4) = '1' else 
+            do_l when wr_map(5) = '1' else 
+            do_a when wr_map(7) = '1' else 
+            do_f when wr_f = '1' else "ZZZZZZZZ";
     
     --B 000,
     --C 001
@@ -159,8 +162,8 @@ begin
     D : reg_pair port map(
         clk => clk,
         rst => rst,
-        rd => rd_map(2),
-        wr => wr_map(2),
+        rd => rd_map(2) or swp_dehl,
+        wr => wr_map(2) or swp_dehl,
         swp => swp_all,
         di => di_d,
         do => do_d);
@@ -169,8 +172,8 @@ begin
     E : reg_pair port map(
         clk => clk,
         rst => rst,
-        rd => rd_map(3),
-        wr => wr_map(3),
+        rd => rd_map(3) or swp_dehl,
+        wr => wr_map(3) or swp_dehl,
         swp => swp_all,
         di => di_e,
         do => do_e);
@@ -179,8 +182,8 @@ begin
     H : reg_pair port map(
         clk => clk,
         rst => rst,
-        rd => rd_map(4),
-        wr => wr_map(4),
+        rd => rd_map(4) or swp_dehl,
+        wr => wr_map(4) or swp_dehl,
         swp => swp_all,
         di => di_h,
         do => do_h);
@@ -189,8 +192,8 @@ begin
     L : reg_pair port map(
         clk => clk,
         rst => rst,
-        rd => rd_map(5),
-        wr => wr_map(5),
+        rd => rd_map(5) or swp_dehl,
+        wr => wr_map(5) or swp_dehl,
         swp => swp_all,
         di => di_l,
         do => do_l);
