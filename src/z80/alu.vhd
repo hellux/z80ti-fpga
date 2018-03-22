@@ -145,11 +145,13 @@ entity alu is port(
 end alu;
 
 architecture arch of alu is
+    -- alias
+    signal instr_high : std_logic_vector(3 downto 0);
     -- preserve input signals
     signal op1_pres, op2_pres : std_logic_vector(7 downto 0);
     signal op2sn_pres : std_logic_vector(7 downto 0);
 
-    -- aliases
+    -- bit select
     signal bs : std_logic_vector(2 downto 0);
 
     -- shift/neg
@@ -176,6 +178,7 @@ architecture arch of alu is
     signal c_out, pv: std_logic;
 
 begin
+    instr_high <= instr(7 downto 4);
 
     bs <= op1(2 downto 0);
     op1_uint <= signed(op1) when shift = '0' else "00000000";
@@ -192,7 +195,14 @@ begin
 
     -- shift/neg
     bit_instr <= instr_set(2);
+    sub_add <= instr(4);
+    right_left <= instr(3);
     shift_op <= instr(5 downto 3);
+    shift <= '1' when bit_instr = '1' and
+             (instr_high = "0000" or
+              instr_high = "0001" or
+              instr_high = "0010" or
+              instr_high = "0011") else '0';
     with shift_op select
         edge <= op2(7) when "000", -- rlc
                 c_in   when "010", -- rl
@@ -203,22 +213,12 @@ begin
                 op2(7) when "101", -- sra
                 '0'    when "111", -- srl
                 '-'    when others;
-    shift <= '1' when bit_instr = '1' and
-             (instr(7 downto 4) = "0000" or
-              instr(7 downto 4) = "0001" or
-              instr(7 downto 4) = "0010" or
-              instr(7 downto 4) = "0011") else '0';
-    sub_add <= instr(4);
-    right_left <= instr(3);
-    op2sn <= op2_uint
-                when shift = '0' and sub_add = '0' else
-             -op2_uint
-                when shift = '0' and sub_add = '1' else
-             op2_uint(6 downto 0) & edge
-                when shift = '1' and right_left = '0' else
-             edge & op2_uint(6 downto 1)
-                when shift = '1' and right_left = '1' else
-             (others => '-');
+    op2sn <=
+        op2_uint                    when shift = '0' and sub_add = '0' else
+        -op2_uint                   when shift = '0' and sub_add = '1' else
+        op2_uint(6 downto 0) & edge when shift = '1' and right_left = '0' else
+        edge & op2_uint(7 downto 1) when shift = '1' and right_left = '1' else
+        (others => '-');
 
     -- calculation
     logic_op <= instr(5 downto 3);
@@ -272,7 +272,7 @@ begin
     pv <= parity when shift = '1' or op_is_logic = '1' else
           overflow; 
 
-    -- TODO make sure no output depends on input directly
+    -- TODO make sure no output depends on input directly (is this bad?)
     flags(0) <= c_out;
     flags(1) <= '1' when shift = '0' and sub_add = '1' else '0';
     flags(2) <= pv;
