@@ -16,9 +16,7 @@ entity reg_file is
     
     --Read & write for non writeable
     rd_f, wr_f      : in std_logic;
-    rd_w, wr_w      : in std_logic;
-    rd_z, wr_z      : in std_logic;
-    
+  
     --Swp 0 => ingen swap
     --Swp 1 => alla
     --Swp 2 => af / a'f'
@@ -28,7 +26,6 @@ entity reg_file is
     do              : out std_logic_vector(7 downto 0));
     
 end reg_file;
-
 
 
 -- Behavior of reg file
@@ -89,12 +86,6 @@ architecture Behavioral of reg_file is
     signal di_f : std_logic_vector(7 downto 0);
     signal do_f : std_logic_vector(7 downto 0);
     
-    signal di_w : std_logic_vector(7 downto 0);
-    signal do_w : std_logic_vector(7 downto 0);
-    
-    signal di_z : std_logic_vector(7 downto 0);
-    signal do_z : std_logic_vector(7 downto 0);
-    
     signal swp_all  : std_logic;
     signal swp_af   : std_logic;
     signal swp_dehl : std_logic;
@@ -122,8 +113,6 @@ begin
     di_a <= di when rd_map(7) = '1' else "ZZZZZZZZ";
     
     di_f <= di when rd_f = '1' else "ZZZZZZZZ";
-    di_w <= di when rd_w = '1' else "ZZZZZZZZ";
-    di_z <= di when rd_z = '1' else "ZZZZZZZZ";
     
     --OUT
     do <= do_b when wr_map(0) = '1' else "ZZZZZZZZ";
@@ -135,36 +124,17 @@ begin
     do <= do_a when wr_map(7) = '1' else "ZZZZZZZZ";
     
     do <= do_f when wr_f = '1' else "ZZZZZZZZ";
-    do <= do_w when wr_w = '1' else "ZZZZZZZZ";
-    do <= do_z when wr_z = '1' else "ZZZZZZZZ";
     
-    
-    --rd_map(000)
-    --wr_map(000)
-    
-    --B 0 000,
-    --C 0 001
-    --D 0 010
-    --E 0 011
-    --H 0 100
-    --L 0 101
+    --B 000,
+    --C 001
+    --D 010
+    --E 011
+    --H 100
+    --L 101
     --  ---
-    --A 0 111
-    
-    --F 1 
-    --W 1
-    --Z 1
-    
     --A 111
-    A : reg_pair port map(
-        clk => clk,
-        rst => rst,
-        rd => rd_map(7),
-        wr => wr_map(7),
-        swp => swp_af,
-        di => di_a,
-        do => do_a);
-        
+    --F 
+    
     --B 000  
     B : reg_pair port map(
         clk => clk,
@@ -175,8 +145,67 @@ begin
         di => di_b,
         do => do_b);
         
+    --C 001        
+    C : reg_pair port map(
+        clk => clk,
+        rst => rst,
+        rd => rd_map(1),
+        wr => wr_map(1),
+        swp => swp_all,
+        di => di_c,
+        do => do_c);
+         
+    --D 010        
+    D : reg_pair port map(
+        clk => clk,
+        rst => rst,
+        rd => rd_map(2),
+        wr => wr_map(2),
+        swp => swp_all,
+        di => di_d,
+        do => do_d);
         
-    --Can't write 
+    --E 011        
+    E : reg_pair port map(
+        clk => clk,
+        rst => rst,
+        rd => rd_map(3),
+        wr => wr_map(3),
+        swp => swp_all,
+        di => di_e,
+        do => do_e);
+        
+    --H 100        
+    H : reg_pair port map(
+        clk => clk,
+        rst => rst,
+        rd => rd_map(4),
+        wr => wr_map(4),
+        swp => swp_all,
+        di => di_h,
+        do => do_h);
+        
+    --L 101        
+    L : reg_pair port map(
+        clk => clk,
+        rst => rst,
+        rd => rd_map(5),
+        wr => wr_map(5),
+        swp => swp_all,
+        di => di_l,
+        do => do_l);
+        
+    --A 111
+    A : reg_pair port map(
+        clk => clk,
+        rst => rst,
+        rd => rd_map(7),
+        wr => wr_map(7),
+        swp => swp_af,
+        di => di_a,
+        do => do_a);
+        
+     --Can't write 
     F : reg_pair port map(
         clk => clk,
         rst => rst,
@@ -185,67 +214,6 @@ begin
         swp => swp_af,
         di => di_f,
         do => do_f);
-        
-        
-        
-        
-        
-        
-    --Can't write 
-    Z : reg_8 port map(
-        clk => clk,
-        rst => rst,
-        rd => z_rd,
-        wr => z_wr,
-        di => di,
-        do => do);    
-                                     
-        
-    --C 001        
-    C : reg_8 port map(
-        clk => clk,
-        rst => rst,
-        rd => rd_map(1),
-        wr => wr_map(1),
-        di => di,
-        do => do);
-        
-    --D 010        
-    D : reg_8 port map(
-        clk => clk,
-        rst => rst,
-        rd => rd_map(2),
-        wr => wr_map(2),
-        di => di,
-        do => do);
-        
-    --E 011        
-    E : reg_8 port map(
-        clk => clk,
-        rst => rst,
-        rd => rd_map(3),
-        wr => wr_map(3),
-        di => di,
-        do => do);
-        
-    --H 100        
-    H : reg_8 port map(
-        clk => clk,
-        rst => rst,
-        rd => rd_map(4),
-        wr => wr_map(4),
-        di => di,
-        do => do);
-        
-    --L 101        
-    L : reg_8 port map(
-        clk => clk,
-        rst => rst,
-        rd => rd_map(5),
-        wr => wr_map(5),
-        di => di,
-        do => do);
-            
         
         
 end Behavioral;
