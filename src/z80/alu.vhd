@@ -178,7 +178,7 @@ architecture arch of alu is
 begin
 
     bs <= op1(2 downto 0);
-    op1_uint <= signed(op1);
+    op1_uint <= signed(op1) when shift = '0' else "00000000";
     op2_uint <= signed(op2);
 
     -- preserve operands 1 cp
@@ -209,7 +209,7 @@ begin
               instr(7 downto 4) = "0010" or
               instr(7 downto 4) = "0011") else '0';
     sub_add <= instr(4);
-    right_left <= instr(4);
+    right_left <= instr(3);
     op2sn <= op2_uint
                 when shift = '0' and sub_add = '0' else
              -op2_uint
@@ -269,7 +269,7 @@ begin
     overflow <= (op1_pres(7) xor calc_res(7)) and   -- carry 6 into 7
                 (op1_pres(7) xnor op2sn_pres(7));  -- equal sign
 
-    pv <= parity    when shift = '1' or op_is_logic = '1' else
+    pv <= parity when shift = '1' or op_is_logic = '1' else
           overflow; 
 
     -- TODO make sure no output depends on input directly

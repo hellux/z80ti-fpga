@@ -88,6 +88,7 @@ begin
         instr <= x"00";
         instr_set <= "000";
 
+        report "add";
         --add without carry
     --             op1    op2    instr  set    c_in  c_out o   res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
@@ -117,6 +118,7 @@ begin
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"ff", x"7f", x"80", "000", '0', '1', '0', x"7e");
         
+        report "adc";
         --add with carry
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"00", x"88", "000", '0', '0', '0', x"00");
@@ -135,6 +137,7 @@ begin
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"7f", x"81", x"88", "000", '1', '1', '0', x"01");
 
+        report "sub";
         --sub
     --             op1    op2    instr  set    c_in  c_o  ov  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
@@ -156,6 +159,7 @@ begin
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"ff", x"7f", x"95", "000", '0', '0', '0', x"80");
 
+        report "sbc";
         --sub with carry
     --             op1    op2    instr  set    c_in  c_o  ov  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
@@ -167,6 +171,7 @@ begin
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"7f", x"9f", "000", '1', '1', '0', x"80");
 
+        report "and";
         -- and
     --             op1    op2    instr  set    c_in  c_o  p  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
@@ -182,6 +187,7 @@ begin
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"0f", x"01", x"a3", "000", '0', '0', '0', x"01");
 
+        report "xor";
         -- xor
     --             op1    op2    instr  set    c_in  c_o  ov  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
@@ -193,6 +199,7 @@ begin
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"02", x"ff", x"aa", "000", '0', '0', '0', x"fd");
 
+        report "or";
         -- or
     --             op1    op2    instr  set    c_in  c_o  p  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
@@ -205,6 +212,39 @@ begin
                    x"01", x"ff", x"b3", "000", '0', '0', '1', x"ff");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"51", x"2e", x"b2", "000", '0', '0', '0', x"7f");
+
+        report "rlc";
+        -- rlc
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"02", "100", '0', '0', '0', x"02");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"07", "100", '0', '1', '0', x"01");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"01", "100", '0', '0', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"03", "100", '0', '1', '1', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"00", "100", '0', '0', '1', x"1e");
+
+        report "rrc";
+        -- rrc
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"08", "100", '0', '1', '0', x"80");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"0f", "100", '0', '0', '0', x"40");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"09", "100", '0', '0', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"0a", "100", '0', '1', '1', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"0c", "100", '0', '1', '1', x"87");
+
+
+
+        report "ALL TESTS COMPLETED";
+        assert false severity failure;
     end process;
 
     rst <= '0';
