@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 USAGE="Usage: ./aims [OPTIONS]...
 
 Options:
@@ -43,9 +45,9 @@ if [ "$quit" = true ]; then
 fi
 
 if [ "$make" = true ]; then
-    ghdl -a $src        # analyze designs
-    ghdl -i $src        # import designs
-    ghdl -m $entity     # make executable
+    ghdl -a $src    # analyze designs
+    ghdl -i $src    # import designs
+    ghdl -m $entity # make executable
 fi
 
 if [ "$sim" = true ]; then

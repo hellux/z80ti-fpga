@@ -54,8 +54,8 @@ architecture arch of alu_tb is
             "res: " & integer'image(to_integer(unsigned(res))) &
             " " & integer'image(to_integer(unsigned(result))) & lf &
             "carry: " & std_logic'image(flags(0)) &
-            " " & std_logic'image(carry_in) & lf &
-            "overflow: " & std_logic'image(flags(2)) &
+            " " & std_logic'image(carry) & lf &
+            "p/v: " & std_logic'image(flags(2)) &
             " " & std_logic'image(overflow);
         wait for 5 ns;
     end procedure;
@@ -90,6 +90,8 @@ begin
 
         --add without carry
     --             op1    op2    instr  set    c_in  c_out o   res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"01", x"01", x"80", "000", '1', '0', '0', x"02");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"01", x"01", x"80", "000", '0', '0', '0', x"02");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
@@ -136,36 +138,73 @@ begin
         --sub
     --             op1    op2    instr  set    c_in  c_o  ov  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"00", x"00", x"90", "000", '0', '0', '0', x"00");
+                   x"00", x"00", x"90", "000", '1', '0', '0', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"95", "000", '0', '0', '0', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"7f", x"9a", "000", '0', '1', '0', x"81");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"01", x"90", "000", '0', '1', '0', x"ff");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"7f", x"7f", x"90", "000", '0', '0', '0', x"00");
+                   x"7f", x"7f", x"9e", "000", '0', '0', '0', x"00");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"80", x"01", x"90", "000", '0', '0', '1', x"7f");
+                   x"80", x"01", x"91", "000", '0', '0', '1', x"7f");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"ff", x"ff", x"90", "000", '0', '0', '0', x"00");
+                   x"ff", x"ff", x"96", "000", '0', '0', '0', x"00");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"7f", x"81", x"90", "000", '0', '1', '1', x"fe");
+                   x"7f", x"81", x"97", "000", '0', '1', '1', x"fe");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"ff", x"7f", x"90", "000", '0', '0', '0', x"80");
+                   x"ff", x"7f", x"95", "000", '0', '0', '0', x"80");
 
         --sub with carry
     --             op1    op2    instr  set    c_in  c_o  ov  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"00", x"98", "000", '0', '0', '0', x"00");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"00", x"01", x"90", "000", '0', '1', '0', x"ff");
+                   x"00", x"01", x"9c", "000", '1', '1', '0', x"fe");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"7f", x"7f", x"90", "000", '0', '0', '0', x"00");
+                   x"00", x"ff", x"9e", "000", '1', '1', '0', x"00");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"80", x"01", x"90", "000", '0', '0', '1', x"7f");
+                   x"00", x"7f", x"9f", "000", '1', '1', '0', x"80");
+
+        -- and
+    --             op1    op2    instr  set    c_in  c_o  p  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"ff", x"ff", x"90", "000", '0', '0', '0', x"00");
+                   x"00", x"00", x"a0", "000", '0', '0', '1', x"00");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"7f", x"81", x"90", "000", '0', '1', '1', x"fe");
+                   x"00", x"00", x"a2", "000", '1', '0', '1', x"00");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"ff", x"7f", x"90", "000", '0', '0', '0', x"80");
+                   x"ff", x"00", x"a5", "000", '1', '0', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"ff", x"ff", x"a7", "000", '0', '0', '1', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"0f", x"ff", x"a3", "000", '0', '0', '1', x"0f");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"0f", x"01", x"a3", "000", '0', '0', '0', x"01");
+
+        -- xor
+    --             op1    op2    instr  set    c_in  c_o  ov  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"ac", "000", '0', '0', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"f0", x"f0", x"a9", "000", '1', '0', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"f0", x"0f", x"a8", "000", '0', '0', '1', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"02", x"ff", x"aa", "000", '0', '0', '0', x"fd");
+
+        -- or
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"b0", "000", '0', '0', '1', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"01", x"ff", x"b1", "000", '1', '0', '1', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"01", x"00", x"b7", "000", '1', '0', '0', x"01");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"01", x"ff", x"b3", "000", '0', '0', '1', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"51", x"2e", x"b2", "000", '0', '0', '0', x"7f");
     end process;
 
     rst <= '0';
