@@ -37,10 +37,6 @@ while getopts hm:f:st:awcC OPT; do
     esac
 done
 
-echo src: $src
-echo args: $args
-echo entity: $entity
-
 if [ "$quit" = true ]; then
     echo "$USAGE"
     exit 1
@@ -61,4 +57,4 @@ if [ "$clean" = true ]; then
     rm -f wave.ghw
 fi
 
-rm -f *.o
+rm -f *.o *.cf
