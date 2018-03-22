@@ -89,6 +89,16 @@ architecture Behavioral of reg_file is
     signal swp_all  : std_logic;
     signal swp_af   : std_logic;
     signal swp_dehl : std_logic;
+    
+    signal rd_d     : std_logic;
+    signal rd_e     : std_logic;
+    signal rd_h     : std_logic;
+    signal rd_l     : std_logic;
+    
+    signal wr_d     : std_logic;
+    signal wr_e     : std_logic;
+    signal wr_h     : std_logic;
+    signal wr_l     : std_logic;
 
 begin
 
@@ -127,6 +137,16 @@ begin
             do_l when wr_map(5) = '1' else 
             do_a when wr_map(7) = '1' else 
             do_f when wr_f = '1' else "ZZZZZZZZ";
+            
+    rd_d <= rd_map(2) or swp_dehl;
+    rd_e <= rd_map(3) or swp_dehl;
+    rd_h <= rd_map(4) or swp_dehl;
+    rd_l <= rd_map(5) or swp_dehl;
+    
+    wr_d <= wr_map(2) or swp_dehl;
+    wr_e <= wr_map(3) or swp_dehl;
+    wr_h <= wr_map(4) or swp_dehl;
+    wr_l <= wr_map(5) or swp_dehl;
     
     --B 000,
     --C 001
@@ -162,8 +182,8 @@ begin
     D : reg_pair port map(
         clk => clk,
         rst => rst,
-        rd => rd_map(2) or swp_dehl,
-        wr => wr_map(2) or swp_dehl,
+        rd => rd_d,
+        wr => wr_d,
         swp => swp_all,
         di => di_d,
         do => do_d);
@@ -172,8 +192,8 @@ begin
     E : reg_pair port map(
         clk => clk,
         rst => rst,
-        rd => rd_map(3) or swp_dehl,
-        wr => wr_map(3) or swp_dehl,
+        rd => rd_e,
+        wr => wr_e,
         swp => swp_all,
         di => di_e,
         do => do_e);
@@ -182,8 +202,8 @@ begin
     H : reg_pair port map(
         clk => clk,
         rst => rst,
-        rd => rd_map(4) or swp_dehl,
-        wr => wr_map(4) or swp_dehl,
+        rd => rd_h,
+        wr => wr_h,
         swp => swp_all,
         di => di_h,
         do => do_h);
@@ -192,8 +212,8 @@ begin
     L : reg_pair port map(
         clk => clk,
         rst => rst,
-        rd => rd_map(5) or swp_dehl,
-        wr => wr_map(5) or swp_dehl,
+        rd => rd_l,
+        wr => wr_l,
         swp => swp_all,
         di => di_l,
         do => do_l);
