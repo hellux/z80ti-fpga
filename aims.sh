@@ -1,40 +1,41 @@
 #!/bin/sh
 
-set -e
-
 USAGE="Usage: ./aims [OPTIONS]...
 
 Options:
     -h                      show this help
+    -A                      analyze src files
+    -M ENTITY               analyze, make ENTITY
+    -S ENTITY               analyze, make, simulate ENTITY
+    -C                      clean up build files and executable
     -f SRC_FILES_FILE       src files in build/srclists/SRC_FILE_FILE, all 
-    -m ENTITY               make executable from src files
                             .vhd files in below tree will be used if -s 
                             not specified
-    -s                      run simulation with created executable
+    -a                      abort simulation on assertion error
     -t TIME                 simulation time
-    -a                      stop simulation on assertion error
-    -c                      clean up build files and executable
 "
 
 # actions
 quit=false          # quit immediately
+analyze=false       # analyze src files
 make=false          # make executable
 sim=false           # run simulation
-clean=false    # remove executable
+clean=false         # remove executable
 
 src=$(find . -name '*.vhd')
-entity=
-args=
+entity=""
+args=""
 
-while getopts hm:f:st:awcC OPT; do
+while getopts hAM:S:f:at:c OPT; do
     case $OPT in
         h) quit=true ;;
+        A) analyze=true ;;
+        M) analyze=true; make=true;          entity=$OPTARG ;;
+        S) analyze=true; make=true; sim=true entity=$OPTARG ;;
+        C) clean=true ;;
         f) src=$(cat build/srclists/$OPTARG) ;;
-        m) entity=$OPTARG; make=true ;;
-        s) sim=true ;;
-        t) args="$args --stop-time=$OPTARG" ;;
         a) args="$args --assert-level=error" ;;
-        c) clean=true ;;
+        t) args="$args --stop-time=$OPTARG" ;;
         [?]) quit=true ;;
     esac
 done
@@ -44,19 +45,20 @@ if [ "$quit" = true ]; then
     exit 1
 fi
 
-if [ "$make" = true ]; then
-    ghdl -a $src    # analyze designs
-    ghdl -i $src    # import designs
-    ghdl -m $entity # make executable
-fi
+if [ "$analyze = true" ]; then
+    ghdl -a $src        # analyze designs
+    if [ "$make" = true -a $? = '0' ]; then
+        ghdl -i $src    # import designs
+        ghdl -m $entity # make executable
 
-if [ "$sim" = true ]; then
-    ./$entity $args --wave=wave.ghw
+        if [ "$sim" = true ]; then
+            ./$entity $args --wave=wave.ghw
+        fi
+    fi
 fi
 
 if [ "$clean" = true ]; then
     rm -f $entity 
-    rm -f wave.ghw
 fi
 
 rm -f *.o *.cf
