@@ -56,11 +56,13 @@ architecture Behavioral of reg_file is
                di : in std_logic_vector(7 downto 0);
                do : out std_logic_vector(7 downto 0));
     end component;
+    type input_map is array (0 to 7) of std_logic;
 
-    signal rd_int : integer range 0 to 7;
-    signal wr_int : integer range 0 to 7;
-    signal rd_map : std_logic_vector(7 downto 0);
-    signal wr_map : std_logic_vector(7 downto 0);
+    --signal rd_map : std_logic_vector(7 downto 0);
+    --signal wr_map : std_logic_vector(7 downto 0);
+    
+    signal rd_map : input_map;
+    signal wr_map : input_map;
     
     signal di_a : std_logic_vector(7 downto 0);
     signal do_a : std_logic_vector(7 downto 0);
@@ -101,13 +103,22 @@ architecture Behavioral of reg_file is
     signal wr_l     : std_logic;
 
 begin
-
-    rd_int <= to_integer(unsigned(rd_adr));
-    wr_int <= to_integer(unsigned(wr_adr));
-
-    rd_map <= (rd_int => rd, others => '0');
     
-    wr_map <= (wr_int => wr, others => '0');
+    process(rd, rd_adr) begin 
+        rd_map <= (others => '0');
+        rd_map(to_integer(unsigned(rd_adr))) <= rd;
+    end process;
+    
+    process(wr, wr_adr) begin 
+        wr_map <= (others => '0');
+        wr_map(to_integer(unsigned(wr_adr))) <= wr;
+    end process;
+   -- rd_int <= to_integer(unsigned(rd_adr));
+   -- wr_int <= to_integer(unsigned(wr_adr));
+
+    --rd_map <= (rd_int => rd, others => '0');
+    --wr_map <= (wr_int => wr, others => '0');
+    
              
     swp_all <= '1' when swp = "01" else '0';         
     swp_af <= '1' when swp = "10" else '0';

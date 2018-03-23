@@ -47,7 +47,6 @@ architecture Behavioral of swap_tb is
     
     signal dbus     : std_logic_vector(7 downto 0) := "00000001";
     
-    
 begin
     
     A : reg_pair port map(
@@ -73,52 +72,33 @@ end process;
   stimuli_generator : process
     variable i : integer;
   begin
+    --RESET
     wait for 10 ns;
     rst <= '1';
     wait for 10 ns;
     rst <= '0';
-    dbus <= "00001111";
+    dbus <= "ZZZZZZZZ";
     wait for 20 ns;
     
+    --Read A
+    dbus <= "11110000";
     rd_a <= '1';
     wait for 10 ns;
+    dbus <= "ZZZZZZZZ";
     rd_a <= '0';
     wait for 20 ns;
+    
+    --swp AF
     swp_af <= '1';
     wait for 10 ns;
     swp_af <= '0';
-    
     wait for 20 ns;
+    
+    --swp AF
     swp_af <= '1';
     wait for 10 ns;
     swp_af <= '0';
-    
-  
-    rst <= '1';
-    wait for 250 ns;
-
-    wait until rising_edge(clk);        -- se till att reset släpps synkront
-                                        -- med klockan
-
-    report "Reset released" severity note;
-    wait for 500 ns;
-    dbus <= "00001111";
-    wait for 500 ns;
-    
-    rd_a <= '1';
-    wait for 2 ns;
-    wait until rising_edge(clk); 
-    rd_a <= '0';
-    wait for 200 ns;
-    
-    swp_af <= '1';
-    wait for 2 ns;
-    wait until rising_edge(clk); 
-    swp_af <= '0';
-    wait for 200 ns;
-    
-   
-    wait for 2 us;
+    wait for 20 ns;
 
   end process;
 end Behavioral;
