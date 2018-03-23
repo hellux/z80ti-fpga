@@ -2,39 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- RSV control signals: UNUSED
---  rsv res
---  000 sum
---  100 xor
---  010 and
---  111 or
-
--- INSTRUCTION SIGNALS (for instr decoder)
--- signal               options                     bits
--- sr                   ^reset/set                  6
--- instr                and,xor,sum,or              43
-
--- OPERATION SIGNALING
---  OP                  rsv sr shift op1
--- ARITH
---  add                 000    0-    op1
---  sub                 000    0-    op1
---  increment           000    0-    op1
---  decrement           000    0-    op1
---  compare             000    0-    op1
--- LOGIC
---  and                 010    0-    op1
---  or                  111    0-    op1
---  xor                 100    0-    op1
--- SHIFTS
---  lshift logic        000    10    -
---  rshift logic        000    11    -
---  lshift arith        000    10    -
---  rshift arith        000    11    -
--- BIT
---  set bit             000 1  0-    bs
---  reset bit           000 0  0-    bs
---  test bit            000    0-    bs
+-- TODO
+--  implement long shifts rld, rrd
 
 -- OPERATION IMPLEMENTATIONS
 -- ARITH
@@ -53,40 +22,19 @@ use ieee.numeric_std.all;
 --  lshift arith        op2<=op2<<1, op1<=0, sum
 --  rshift arith        op2<=op2>>1, op1<=0, sum
 -- BIT
---  set bit             asic
---  reset bit           asic
---  test bit            asic
+--  set bit             op2(bs) <= '1'
+--  reset bit           op2(bs) <= '0'
+--  test bit            z <= not op2(bs)
 
 -- FLAGS
 -- 7  6  5  4  3  2  1  0
 -- S  Z  f5 H f3 P/V N  C
 -- f3: copy of bit 3
 -- f5: copy of bit 5
--- S: copy of bit 7
-
--- SHIFTS --------
-
--- LEFT: c <= b7
---                instr
--- rlc: lsb <= b7 0000 0rrr
--- rl:  lsb <= c  0001 0rrr
--- sla: lsb <= 0  0010 0rrr
--- sll: lsb <= 0  0011 0rrr
-
--- RIGHT: c <= b0
---                instr
--- rrc: msb <= b0 0000 1rrr
--- rr:  msb <= c  0001 1rrr
--- sra: msb <= b7 0010 1rrr
--- srl: msb <= 0  0011 1rrr
-
--- LONG: 
--- rld: 
--- rrd:
 
 -- INSTRUCTIONS -------
 
--- MAIN
+-- MAIN 
 --   0-7 8-f
 -- 8 add adc
 -- 9 sub sbc
@@ -151,7 +99,7 @@ architecture arch of alu is
 
     -- shift/neg
     signal bit_select : std_logic_vector(2 downto 0) := "000";
-    signal op2_set, op2_res : std_logic_vector(2 downto 0);
+    signal op2_set, op2_res : std_logic_vector(7 downto 0);
     signal op1_uint, op2_uint : signed(7 downto 0);
     signal mask : std_logic_vector(7 downto 0);
     signal bit_instr : std_logic;
@@ -201,12 +149,11 @@ begin
     bi_res <= '1' when bit_instr = '1' and bit_instr_op = "10" else '0';
     bi_set <= '1' when bit_instr = '1' and bit_instr_op = "11" else '0';
 
-    process
+    process(bit_select) is
        variable m : std_logic_vector(7 downto 0); 
     begin
         for i in 1 to to_integer(unsigned(bit_select)) loop
-            report "fooooor";
-            m := m(7 downto 1) & '0';
+            m := m(6 downto 0) & '0';
         end loop;
         mask <= m;
     end process;
