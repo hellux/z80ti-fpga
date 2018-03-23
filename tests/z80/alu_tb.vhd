@@ -51,6 +51,7 @@ architecture arch of alu_tb is
             "instr: " & integer'image(to_integer(unsigned(instruction))) & lf &
             "ops: " & integer'image(to_integer(unsigned(operand1))) &
             " " & integer'image(to_integer(unsigned(operand2))) & lf &
+            "c_in: " & std_logic'image(carry_in) & lf &
             "res: " & integer'image(to_integer(unsigned(res))) &
             " " & integer'image(to_integer(unsigned(result))) & lf &
             "carry: " & std_logic'image(flags(0)) &
@@ -89,7 +90,6 @@ begin
         instr_set <= "000";
 
         report "add";
-        --add without carry
     --             op1    op2    instr  set    c_in  c_out o   res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"01", x"01", x"80", "000", '1', '0', '0', x"02");
@@ -119,7 +119,6 @@ begin
                    x"ff", x"7f", x"80", "000", '0', '1', '0', x"7e");
         
         report "adc";
-        --add with carry
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"00", x"88", "000", '0', '0', '0', x"00");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
@@ -138,7 +137,6 @@ begin
                    x"7f", x"81", x"88", "000", '1', '1', '0', x"01");
 
         report "sub";
-        --sub
     --             op1    op2    instr  set    c_in  c_o  ov  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"00", x"90", "000", '1', '0', '0', x"00");
@@ -160,7 +158,6 @@ begin
                    x"ff", x"7f", x"95", "000", '0', '0', '0', x"80");
 
         report "sbc";
-        --sub with carry
     --             op1    op2    instr  set    c_in  c_o  ov  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"00", x"98", "000", '0', '0', '0', x"00");
@@ -172,7 +169,6 @@ begin
                    x"00", x"7f", x"9f", "000", '1', '1', '0', x"80");
 
         report "and";
-        -- and
     --             op1    op2    instr  set    c_in  c_o  p  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"00", x"a0", "000", '0', '0', '1', x"00");
@@ -188,7 +184,6 @@ begin
                    x"0f", x"01", x"a3", "000", '0', '0', '0', x"01");
 
         report "xor";
-        -- xor
     --             op1    op2    instr  set    c_in  c_o  ov  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"00", x"ac", "000", '0', '0', '1', x"00");
@@ -200,7 +195,6 @@ begin
                    x"02", x"ff", x"aa", "000", '0', '0', '0', x"fd");
 
         report "or";
-        -- or
     --             op1    op2    instr  set    c_in  c_o  p  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"ff", x"b0", "000", '0', '0', '1', x"ff");
@@ -214,34 +208,164 @@ begin
                    x"51", x"2e", x"b2", "000", '0', '0', '0', x"7f");
 
         report "rlc";
-        -- rlc
     --             op1    op2    instr  set    c_in  c_o  p  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"00", x"01", x"02", "100", '0', '0', '0', x"02");
+                   x"00", x"01", x"02", "100", '1', '0', '0', x"02");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"80", x"80", x"07", "100", '0', '1', '0', x"01");
+                   x"80", x"80", x"07", "100", '1', '1', '0', x"01");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"00", x"00", x"01", "100", '0', '0', '1', x"00");
+                   x"00", x"00", x"01", "100", '1', '0', '1', x"00");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"ff", x"03", "100", '0', '1', '1', x"ff");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"0f", x"00", "100", '0', '0', '1', x"1e");
 
         report "rrc";
-        -- rrc
     --             op1    op2    instr  set    c_in  c_o  p  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"00", x"01", x"08", "100", '0', '1', '0', x"80");
+                   x"00", x"01", x"08", "100", '1', '1', '0', x"80");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"80", x"80", x"0f", "100", '0', '0', '0', x"40");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"00", x"00", x"09", "100", '0', '0', '1', x"00");
+                   x"00", x"00", x"09", "100", '1', '0', '1', x"00");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"00", x"ff", x"0a", "100", '0', '1', '1', x"ff");
+                   x"00", x"ff", x"0a", "100", '1', '1', '1', x"ff");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"0f", x"0c", "100", '0', '1', '1', x"87");
 
 
+        report "rl";
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"12", "100", '0', '0', '0', x"02");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"12", "100", '1', '0', '1', x"03");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"17", "100", '0', '1', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"11", "100", '1', '0', '0', x"01");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"13", "100", '0', '1', '0', x"fe");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"13", "100", '1', '1', '1', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"10", "100", '0', '0', '1', x"1e");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"10", "100", '1', '0', '0', x"1f");
+
+        report "rr";
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"18", "100", '1', '1', '0', x"80");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"1f", "100", '0', '0', '0', x"40");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"1f", "100", '1', '0', '1', x"c0");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"19", "100", '1', '0', '0', x"80");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"1a", "100", '1', '1', '1', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"1a", "100", '0', '1', '0', x"7f");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"1c", "100", '0', '1', '0', x"07");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"1c", "100", '1', '1', '1', x"87");
+
+        report "sla";
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"22", "100", '0', '0', '0', x"02");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"22", "100", '1', '0', '0', x"02");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"27", "100", '0', '1', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"21", "100", '1', '0', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"23", "100", '0', '1', '0', x"fe");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"23", "100", '1', '1', '0', x"fe");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"20", "100", '0', '0', '1', x"1e");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"20", "100", '1', '0', '1', x"1e");
+
+        report "sra";
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"28", "100", '1', '1', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"2f", "100", '0', '0', '1', x"c0");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"2f", "100", '1', '0', '1', x"c0");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"29", "100", '1', '0', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"2a", "100", '1', '1', '1', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"2a", "100", '0', '1', '1', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"2c", "100", '0', '1', '0', x"07");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"2c", "100", '1', '1', '0', x"07");
+
+        report "sll";
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"32", "100", '0', '0', '0', x"02");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"32", "100", '1', '0', '0', x"02");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"37", "100", '0', '1', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"31", "100", '1', '0', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"33", "100", '0', '1', '0', x"fe");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"33", "100", '1', '1', '0', x"fe");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"30", "100", '0', '0', '1', x"1e");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"30", "100", '1', '0', '1', x"1e");
+
+        report "sll";
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"32", "100", '0', '0', '0', x"02");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"32", "100", '1', '0', '0', x"02");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"37", "100", '0', '1', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"31", "100", '1', '0', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"33", "100", '0', '1', '0', x"fe");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"33", "100", '1', '1', '0', x"fe");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"30", "100", '0', '0', '1', x"1e");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"30", "100", '1', '0', '1', x"1e");
+
+        report "srl";
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"38", "100", '1', '1', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"3f", "100", '0', '0', '0', x"40");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"80", x"80", x"3f", "100", '1', '0', '0', x"40");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"00", x"39", "100", '1', '0', '1', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"3a", "100", '1', '1', '0', x"7f");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"3a", "100", '0', '1', '0', x"7f");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"3c", "100", '0', '1', '0', x"07");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"0f", x"3c", "100", '1', '1', '0', x"07");
 
         report "ALL TESTS COMPLETED";
         assert false severity failure;
