@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- RSV control signals:
+-- RSV control signals: UNUSED
 --  rsv res
 --  000 sum
 --  100 xor
@@ -145,22 +145,21 @@ entity alu is port(
 end alu;
 
 architecture arch of alu is
-    -- alias
-    signal instr_high : std_logic_vector(3 downto 0);
     -- preserve input signals
     signal op1_pres, op2_pres : std_logic_vector(7 downto 0);
     signal op2sn_pres : std_logic_vector(7 downto 0);
 
-    -- bit select
-    signal bs : std_logic_vector(2 downto 0);
-
     -- shift/neg
+    signal bit_select : std_logic_vector(2 downto 0) := "000";
+    signal op2_set, op2_res : std_logic_vector(2 downto 0);
     signal op1_uint, op2_uint : signed(7 downto 0);
+    signal mask : std_logic_vector(7 downto 0);
     signal bit_instr : std_logic;
-    signal shift : std_logic; -- whether to shift
+    signal shift, bi_bit, bi_res, bi_set : std_logic; -- whether to shift
     signal edge : std_logic; -- lsb or msb when shifting
     signal sub_add, right_left : std_logic; -- subtract/^add or right/^left
     signal shift_op : std_logic_vector(2 downto 0);
+    signal bit_instr_op : std_logic_vector(1 downto 0);
     signal op2sn : signed(7 downto 0); -- shift/neg result
 
     -- calculation
@@ -178,9 +177,6 @@ architecture arch of alu is
     signal c_out, pv: std_logic;
 
 begin
-    instr_high <= instr(7 downto 4);
-
-    bs <= op1(2 downto 0);
     op1_uint <= signed(op1) when shift = '0' else "00000000";
     op2_uint <= signed(op2);
 
@@ -193,16 +189,28 @@ begin
         end if;
     end process;
 
-    -- shift/neg
+    -- shift / neg / bit instr
     bit_instr <= instr_set(2);
+    bit_instr_op <= instr(7 downto 6);
     sub_add <= instr(4);
     right_left <= instr(3);
     shift_op <= instr(5 downto 3);
-    shift <= '1' when bit_instr = '1' and
-             (instr_high = "0000" or
-              instr_high = "0001" or
-              instr_high = "0010" or
-              instr_high = "0011") else '0';
+    bit_select <= instr(5 downto 3);
+    shift <= '1' when bit_instr = '1' and bit_instr_op = "00" else '0';
+    bi_bit <= '1' when bit_instr = '1' and bit_instr_op = "01" else '0';
+    bi_res <= '1' when bit_instr = '1' and bit_instr_op = "10" else '0';
+    bi_set <= '1' when bit_instr = '1' and bit_instr_op = "11" else '0';
+
+    process
+       variable m : std_logic_vector(7 downto 0); 
+    begin
+        for i in 1 to to_integer(unsigned(bit_select)) loop
+            report "fooooor";
+            m := m(7 downto 1) & '0';
+        end loop;
+        mask <= m;
+    end process;
+
     with shift_op select
         edge <= op2(7) when "000", -- rlc
                 c_in   when "010", -- rl
@@ -213,16 +221,19 @@ begin
                 op2(7) when "101", -- sra
                 '0'    when "111", -- srl
                 '-'    when others;
+    op2_res <= not mask and op2;
+    op2_set <= mask or op2;
     op2sn <=
-        op2_uint                    when shift = '0' and sub_add = '0' else
+        signed(op2_res)             when bi_res = '1' else
+        signed(op2_set)             when bi_set = '1' else
         -op2_uint                   when shift = '0' and sub_add = '1' else
         op2_uint(6 downto 0) & edge when shift = '1' and right_left = '0' else
         edge & op2_uint(7 downto 1) when shift = '1' and right_left = '1' else
-        (others => '-');
+        op2_uint;
 
     -- calculation
-    logic_op <= instr(5 downto 3);
-    use_carry <= c_in and instr(3);
+    logic_op <= instr(5 downto 3) when bit_instr = '0' else "000";
+    use_carry <= c_in and instr(3) and not shift;
     with_carry <= "000000001" when use_carry = '1' and sub_add = '0' else
                   "011111111" when use_carry = '1' and sub_add = '1' else
                   "000000000";

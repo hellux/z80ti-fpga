@@ -47,7 +47,6 @@ architecture Behavioral of swap_tb is
     
     signal dbus     : std_logic_vector(7 downto 0) := "00000001";
     
-    
 begin
     
     A : reg_pair port map(
@@ -63,9 +62,9 @@ begin
 process begin
     while true loop
     
-      clk <= '0';
-      wait for 5 ns;
       clk <= '1';
+      wait for 5 ns;
+      clk <= '0';
       wait for 5 ns;
     end loop;
 end process;
@@ -73,51 +72,33 @@ end process;
   stimuli_generator : process
     variable i : integer;
   begin
-    -- Aktivera reset ett litet tag.
+    --RESET
+    wait for 10 ns;
     rst <= '1';
-    wait for 250 ns;
-
-    wait until rising_edge(clk);        -- se till att reset släpps synkront
-                                        -- med klockan
+    wait for 10 ns;
     rst <= '0';
-    report "Reset released" severity note;
-    wait for 500 ns;
+    dbus <= "ZZZZZZZZ";
+    wait for 20 ns;
     
-    
-    rd_a <= '1';
-    wait for 2 ns;
-    wait until rising_edge(clk); 
-    rd_a <= '0';
-    wait for 200 ns;
-    
-    wait for 200 ns;
+    --Read A
     dbus <= "11110000";
-    
-    swp_af <= '1';
-    wait for 2 ns;
-    wait until rising_edge(clk); 
-    swp_af <= '0';
-    
-    
-    wait for 200 ns;
-    dbus <= "10101010";
-    
-    wait for 200 ns;
     rd_a <= '1';
-    wait for 2 ns;
-    wait until rising_edge(clk); 
+    wait for 10 ns;
+    dbus <= "ZZZZZZZZ";
     rd_a <= '0';
-    wait for 200 ns;
+    wait for 20 ns;
     
+    --swp AF
     swp_af <= '1';
-    wait for 2 ns;
-    wait until rising_edge(clk); 
+    wait for 10 ns;
     swp_af <= '0';
-
-    wait for 250 ns;
-    wait until rising_edge(clk); 
+    wait for 20 ns;
     
-    wait for 2 us;
+    --swp AF
+    swp_af <= '1';
+    wait for 10 ns;
+    swp_af <= '0';
+    wait for 20 ns;
 
   end process;
 end Behavioral;

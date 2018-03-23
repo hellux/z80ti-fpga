@@ -26,7 +26,7 @@ src=$(find . -name '*.vhd')
 entity=""
 args=""
 
-while getopts hAM:S:f:at:c OPT; do
+while getopts hAM:S:Cf:at: OPT; do
     case $OPT in
         h) quit=true ;;
         A) analyze=true ;;
@@ -45,7 +45,7 @@ if [ "$quit" = true ]; then
     exit 1
 fi
 
-if [ "$analyze = true" ]; then
+if [ "$analyze" = true ]; then
     ghdl -a $src        # analyze designs
     if [ "$make" = true -a $? = '0' ]; then
         ghdl -i $src    # import designs

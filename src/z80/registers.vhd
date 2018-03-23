@@ -82,7 +82,6 @@ begin
     end process;
     
     do <= bits when wr = '1' else (others => 'Z');
-    
 end Behavioral;
 
 -- Behavior of reg pair 
@@ -101,28 +100,31 @@ architecture Behavioral of reg_pair is
     signal di_x      : std_logic_vector(7 downto 0);
     signal do_x      : std_logic_vector(7 downto 0);
     signal rd_x      : std_logic;
+    signal wr_x      : std_logic;
 begin  
 
     rd_x <= (rd or swp);
+    wr_x <= (wr or swp);
             
-    di_x <= do_x_prim when swp = '1' else di;
+    di_x <= do_x_prim when swp = '1' else 
+            di when swp = '0';
+            
+    do <= do_x when wr = '1' else "ZZZZZZZZ";
+    di_x_prim <= do_x;
     
     X : reg_8 port map(
         clk => clk,
         rst => rst,
         rd  => rd_x,
-        wr  => '1',
+        wr  => wr_x,
         di  => di_x,
         do  => do_x);
-    
-    do <= do_x when wr = '1' else "ZZZZZZZZ";
-    di_x_prim <= do_x;
     
     X_prim : reg_8 port map(
         clk => clk,
         rst => rst,
         rd  => swp,
-        wr  => '1',
+        wr  => swp,
         di  => di_x_prim,
         do  => do_x_prim);
         
