@@ -367,8 +367,19 @@ begin
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"0f", x"3c", "100", '1', '1', '0', x"07");
 
-        report "ALL TESTS COMPLETED";
-        assert false severity failure;
+        -- TODO report "bit";
+
+        report "res";
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"01", x"80", "100", '0', '0', '0', x"00");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"80", "100", '0', '0', '0', x"fe");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"af", "100", '0', '0', '0', x"df");
+
+
+        assert false report "ALL TESTS COMPLETED" severity failure;
     end process;
 
     rst <= '0';

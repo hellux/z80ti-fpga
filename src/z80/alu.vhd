@@ -3,7 +3,8 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 -- TODO
---  implement long shifts rld, rrd
+--  implement long shifts rld, rrd, maybe outside alu?
+--  ensure flags unaffected on some instructions
 
 -- OPERATION IMPLEMENTATIONS
 -- ARITH
@@ -150,8 +151,9 @@ begin
     bi_set <= '1' when bit_instr = '1' and bit_instr_op = "11" else '0';
 
     process(bit_select) is
-       variable m : std_logic_vector(7 downto 0); 
+       variable m : std_logic_vector(7 downto 0);
     begin
+        m := x"01";
         for i in 1 to to_integer(unsigned(bit_select)) loop
             m := m(6 downto 0) & '0';
         end loop;
