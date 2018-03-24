@@ -36,7 +36,7 @@ entity=""
 args=""
 wave="wave.ghw"
 
-while getopts hAM:S:Cf:e:at:w: OPT; do
+while getopts hAM:S:Cf:u:at:w: OPT; do
     case $OPT in
         h) quit=true ;;
         A) analyze=true ;;
@@ -44,7 +44,12 @@ while getopts hAM:S:Cf:e:at:w: OPT; do
         S) analyze=true; make=true; sim=true entity=$OPTARG ;;
         C) clean=true ;;
         f) src=$OPTARG ;;
-        u) src=$(cat build/srclists/$OPTARG) ;;
+        u) 
+            src=$(cat build/srclists/$OPTARG);
+            if [ -z "$src" ]; then
+                echo "unit '$OPTARG' not found in build/srclists/"
+                exit 1
+            fi ;;
         a) args="$args --assert-level=error" ;;
         t) args="$args --stop-time=$OPTARG" ;;
         w) wave=$OPTARG ;;
