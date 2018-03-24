@@ -9,15 +9,16 @@ architecture arch of alu_tb is
     component alu port(
         clk, rst : in std_logic;
         op1, op2 : in std_logic_vector(7 downto 0);
-        c_in : in std_logic;
+        flags_in : in std_logic_vector(7 downto 0);
         instr : in std_logic_vector(7 downto 0);
         instr_set : in std_logic_vector(2 downto 0);
-        res, flags : out std_logic_vector(7 downto 0));
+        result, flags_out : out std_logic_vector(7 downto 0));
     end component;
 
     signal clk, rst : std_logic;
     signal carry : std_logic;
     signal op1, op2 : std_logic_vector(7 downto 0);
+    signal flags_in : std_logic_vector(7 downto 0);
     signal instr : std_logic_vector(7 downto 0);
     signal instr_set : std_logic_vector(2 downto 0);
     signal res, flags : std_logic_vector(7 downto 0);
@@ -60,19 +61,19 @@ architecture arch of alu_tb is
             " " & std_logic'image(overflow);
         wait for 5 ns;
     end procedure;
-
 begin
-
     alu_comp : alu port map(
         clk => clk,
         rst => rst,
         op1 => op1,
         op2 => op2,
-        c_in => carry,
+        flags_in => flags_in,
         instr => instr,
         instr_set => instr_set,
-        res => res,
-        flags => flags);
+        result => res,
+        flags_out => flags
+    );
+    flags_in <= (0 => carry, others => '0');
 
     process begin
         while true loop
@@ -88,6 +89,9 @@ begin
         op2 <= x"00";
         instr <= x"00";
         instr_set <= "000";
+        carry <= '0';
+
+        wait for 20 ns;
 
         report "add";
     --             op1    op2    instr  set    c_in  c_out o   res
@@ -367,16 +371,46 @@ begin
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"00", x"0f", x"3c", "100", '1', '1', '0', x"07");
 
-        -- TODO report "bit";
+        report "bit";
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"f0", x"01", x"40", "100", '0', '0', '0', x"01");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"ff", x"50", "110", '0', '0', '0', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"cd", x"ff", x"6f", "101", '0', '0', '0', x"ff");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"0f", x"cd", x"73", "101", '0', '0', '0', x"cd");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"20", x"cd", x"4a", "110", '0', '0', '0', x"cd");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"cd", x"6c", "100", '0', '0', '0', x"cd");
 
         report "res";
     --             op1    op2    instr  set    c_in  c_o  p  res
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"00", x"01", x"80", "100", '0', '0', '0', x"00");
+                   x"f0", x"01", x"80", "100", '0', '0', '0', x"00");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"00", x"ff", x"80", "100", '0', '0', '0', x"fe");
+                   x"00", x"ff", x"80", "110", '0', '0', '0', x"fe");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
-                   x"00", x"ff", x"af", "100", '0', '0', '0', x"df");
+                   x"cd", x"ff", x"af", "101", '0', '0', '0', x"df");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"0f", x"cd", x"b3", "101", '0', '0', '0', x"8d");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"20", x"cd", x"ba", "110", '0', '0', '0', x"4d");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"00", x"cd", x"ac", "100", '0', '0', '0', x"cd");
+
+        report "set";
+    --             op1    op2    instr  set    c_in  c_o  p  res
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"10", x"cd", x"dc", "100", '0', '0', '0', x"cd");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"10", x"cd", x"e0", "100", '0', '0', '0', x"dd");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"10", x"00", x"e8", "100", '0', '0', '0', x"20");
+        test_value(op1, op2, instr, instr_set, carry, flags, res,
+                   x"7f", x"7f", x"ff", "100", '0', '0', '0', x"ff");
 
 
         assert false report "ALL TESTS COMPLETED" severity failure;
