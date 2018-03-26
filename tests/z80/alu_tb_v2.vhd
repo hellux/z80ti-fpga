@@ -1,4 +1,5 @@
 library ieee;
+use work.util.all;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
@@ -14,15 +15,6 @@ architecture arch of alu_tb_v2 is
         op_set : in std_logic_vector(2 downto 0);
         result, flags_out : out std_logic_vector(7 downto 0));
     end component;
-
-    function slv_to_str(x : std_logic_vector(1 to 8)) return string is
-        variable res : string(1 to 8);
-    begin
-        for i in x'range loop
-            res(i) := std_logic'image(x(i))(2);
-        end loop;
-        return res;
-    end slv_to_str;
 
     procedure test(
         signal op1_s : out std_logic_vector(7 downto 0);
@@ -59,19 +51,19 @@ architecture arch of alu_tb_v2 is
                (flags_out(7) = '-' or (flags_out_s(7) = flags_out(7)))
             report lf & 
             "index      76543210" & lf &
-            "op         " & slv_to_str(op) & " " & 
+            "op         " & vec_str(op) & " " & 
                 integer'image(to_integer(unsigned(op))) & lf & lf &
-            "op1        " & slv_to_str(op1) & " " & 
+            "op1        " & vec_str(op1) & " " & 
                 integer'image(to_integer(unsigned(op1))) & lf &
-            "op2        " & slv_to_str(op2) & " " & 
+            "op2        " & vec_str(op2) & " " & 
                 integer'image(to_integer(unsigned(op2))) & lf & lf &
             "flags      SZ-H-PNC" & lf &
-            "flags_in   " & slv_to_str(flags_in) & lf &
-            "flags_actu " & slv_to_str(flags_out_s) & lf &
-            "flags_want " & slv_to_str(flags_out) & lf & lf &
-            "res_actu:  " & slv_to_str(result_s) & " " &
+            "flags_in   " & vec_str(flags_in) & lf &
+            "flags_actu " & vec_str(flags_out_s) & lf &
+            "flags_want " & vec_str(flags_out) & lf & lf &
+            "res_actu:  " & vec_str(result_s) & " " &
                 integer'image(to_integer(unsigned(result_s))) & lf &
-            "res_want:  " & slv_to_str(result) & " " &
+            "res_want:  " & vec_str(result) & " " &
                 integer'image(to_integer(unsigned(result)));
         wait for 5 ns;
     end procedure;
