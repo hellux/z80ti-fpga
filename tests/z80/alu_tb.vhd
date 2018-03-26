@@ -61,6 +61,50 @@ architecture arch of alu_tb is
             " " & std_logic'image(overflow);
         wait for 5 ns;
     end procedure;
+
+    procedure test_flags(
+        signal op1_s : out std_logic_vector(7 downto 0);
+        signal op2_s : out std_logic_vector(7 downto 0);
+        signal instr_s : out std_logic_vector(7 downto 0);
+        signal set_s : out std_logic_vector(2 downto 0);
+        signal flags_in_s : out std_logic_vector(7 downto 0);
+        signal flags_out_s : in std_logic_vector(7 downto 0);
+        signal result_s : in std_logic_vector(7 downto 0);
+        -- input
+        constant op1 : std_logic_vector(7 downto 0);
+        constant op2 : std_logic_vector(7 downto 0);
+        constant instr : std_logic_vector(7 downto 0);
+        constant set : std_logic_vector(2 downto 0);
+        constant flags_in : std_logic_vector(7 downto 0);
+        -- assertions
+        constant flags_out : std_logic_vector(7 downto 0);
+        constant result : std_logic_vector(7 downto 0))
+    is begin
+        op1_s <= op1;
+        op2_s <= op2;
+        instr_s <= instr;
+        set_s <= set;
+        flags_in_s <= flags_in;
+        wait for 15 ns;
+        assert flags_out_s = flags_out and result_s = result report lf &
+            "instr: " & integer'image(to_integer(unsigned(instr))) & lf &
+            "ops: " & integer'image(to_integer(unsigned(op1))) &
+            " " & integer'image(to_integer(unsigned(op2))) & lf &
+            "flags_in   " & integer'image(to_integer(unsigned(flags_in)))
+            & lf &
+            "flags_actu " & integer'image(to_integer(unsigned(flags_out_s)))
+            & lf &
+            "flags_want " & integer'image(to_integer(unsigned(flags_out)))
+            & lf &
+            "carry_in: " & std_logic'image(flags_in(0)) & lf &
+            "res_actu: " & integer'image(to_integer(unsigned(res))) & lf &
+            "res_want: " & integer'image(to_integer(unsigned(result))) & lf &
+            "carry: " & std_logic'image(flags_out_s(0)) &
+            " " & std_logic'image(flags_out(0)) & lf &
+            "p/v: " & std_logic'image(flags_out_s(2)) &
+            " " & std_logic'image(flags_out(2));
+        wait for 5 ns;
+    end procedure;
 begin
     alu_comp : alu port map(
         clk => clk,
@@ -76,12 +120,10 @@ begin
     flags_in <= (0 => carry, others => '0');
 
     process begin
-        while true loop
-            clk <= '1';
-            wait for 5 ns;
-            clk <= '0';
-            wait for 5 ns;
-        end loop;
+        clk <= '1';
+        wait for 5 ns;
+        clk <= '0';
+        wait for 5 ns;
     end process;
 
     process begin
@@ -411,7 +453,6 @@ begin
                    x"10", x"00", x"e8", "100", '0', '0', '0', x"20");
         test_value(op1, op2, instr, instr_set, carry, flags, res,
                    x"7f", x"7f", x"ff", "100", '0', '0', '0', x"ff");
-
 
         assert false report "ALL TESTS COMPLETED" severity failure;
     end process;
