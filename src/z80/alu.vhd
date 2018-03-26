@@ -97,10 +97,6 @@ end alu;
 architecture arch of alu is
     signal c_in : std_logic;
 
-    -- preserve input signals
-    signal op1_pres, op2_pres : std_logic_vector(7 downto 0);
-    signal op2sn_pres : std_logic_vector(7 downto 0);
-
     -- preprocess
     signal bit_select : std_logic_vector(2 downto 0) := "000";
     signal op1_uint, op2_uint : signed(7 downto 0);
@@ -123,6 +119,7 @@ architecture arch of alu is
     signal result_sum, result_xor, result_and, result_or : signed(8 downto 0);
     signal calc_result : signed(8 downto 0);
     signal result_buf : signed(7 downto 0);
+    signal half_result : signed(4 downto 0);
 
     -- flags
     signal upd_c, upd_pv : std_logic;
@@ -148,15 +145,6 @@ begin
     bi_bit <= '1' when bit_instr = '1' and bit_instr_op = "01" else '0';
     bi_res <= '1' when bit_instr = '1' and bit_instr_op = "10" else '0';
     bi_set <= '1' when bit_instr = '1' and bit_instr_op = "11" else '0';
-
-    -- preserve operands 1 cp
-    process(clk) begin
-        if rising_edge(clk) then
-            op1_pres <= op1;
-            op2_pres <= op2;
-            op2sn_pres <= std_logic_vector(op2sn);
-        end if;
-    end process;
 
     -- op2 preprocess (shift / neg / bit instr)
     bit_select <= instr(5 downto 3);
@@ -196,14 +184,12 @@ begin
     with_carry <= "000000001" when use_carry = '1' and sub_add = '0' else
                   "011111111" when use_carry = '1' and sub_add = '1' else
                   "000000000";
-    process(clk) begin
-        if rising_edge(clk) then
-            result_and <= ('0' & op1_uint) and ('0' & op2_uint);
-            result_xor <= ('0' & op1_uint) xor ('0' & op2_uint);
-            result_or  <= ('0' & op1_uint) or  ('0' & op2_uint);
-            result_sum <= ('0' & op1_uint) +   ('0' & op2sn) + with_carry;
-        end if;
-    end process;
+    result_and <= ('0' & op1_uint) and ('0' & op2_uint);
+    result_xor <= ('0' & op1_uint) xor ('0' & op2_uint);
+    result_or  <= ('0' & op1_uint) or  ('0' & op2_uint);
+    result_sum <= ('0' & op1_uint) +   ('0' & op2sn) + with_carry;
+    half_result <= ('0' & op1_uint(3 downto 0)) + 
+                   ('0' & op2sn(3 downto 0)) + with_carry(4 downto 0);
     with logic_op select
         calc_result <= result_and         when "100",
                        result_xor         when "101",
@@ -222,16 +208,16 @@ begin
         end loop;
         parity <= not p;
     end process;
-    overflow <= (op1_pres(7) xor calc_result(7)) and   -- carry 6 into 7
-                (op1_pres(7) xnor op2sn_pres(7));  -- equal signs
-    carry_sub <= '1' when op2_pres > op1_pres else '0';
+    overflow <= (op1(7) xor calc_result(7)) and   -- carry 6 into 7
+                (op1(7) xnor op2sn(7));  -- equal signs
+    carry_sub <= '1' when op2 > op1 else '0';
 
     S <= result_buf(7);
     Z <= '1' when result_buf = 0 or
          (bi_bit = '1' and result_buf(to_integer(unsigned(bit_select))) = '0')
          else '0';
     f5 <= result_buf(5);
-    H <= '1'; -- TODO half carry
+    H <= half_result(4) when arith_instr = '1' else '1';
     f3 <= result_buf(3);
     N <= arith_instr and sub_add;
     PV <= parity when shift = '1' or logic_instr = '1' else
@@ -246,9 +232,9 @@ begin
     upd_c <= logic_instr or shift or arith_instr;
     upd_pv <= upd_c;
 
-    flags_out(0) <= upd_c and C;
+    flags_out(0) <= C when upd_c = '1' else flags_in(0);
     flags_out(1) <= N;
-    flags_out(2) <= upd_pv and PV;
+    flags_out(2) <= PV when upd_pv = '1' else flags_in(2);
     flags_out(3) <= f3;
     flags_out(4) <= H;
     flags_out(5) <= f5;
