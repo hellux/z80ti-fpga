@@ -1,4 +1,4 @@
---Register by Jakob & Yousef
+--Regfile by Jakob & Yousef
 
 -- library declaration
 library IEEE;
