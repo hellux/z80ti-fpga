@@ -68,7 +68,7 @@ if [ "$analyze" = true ]; then
         ghdl -i $src    # import designs
         ghdl -m $entity # make executable
 
-        if [ "$sim" = true ]; then
+        if [ "$sim" = true -a $? = '0' ]; then
             ./$entity $args --wave=$wave
         fi
     fi
