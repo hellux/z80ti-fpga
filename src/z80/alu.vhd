@@ -121,7 +121,6 @@ architecture arch of alu is
     signal edge : std_logic; -- lsb or msb when shift_instring
     signal right_left : std_logic; -- subtract/^add or right/^left
     signal op2sn : signed(7 downto 0); -- shift_instr/neg result
-    signal op2snc : signed(8 downto 0);
 
     -- calculation
     signal arith_instr : std_logic; -- instr is arithmetic
@@ -131,7 +130,6 @@ architecture arch of alu is
     signal result_xor, result_and, result_or : signed(7 downto 0);
     signal calc_result : signed(8 downto 0);
     signal result_buf : signed(7 downto 0);
-    signal result_half : signed(4 downto 0);
 
     -- flags
     signal upd_c, upd_pv : std_logic;
@@ -145,8 +143,8 @@ begin
 
     -- sets
     bit_set <= op_set(2);
-    mai_set <= '1' when op_set = "000";
-    ext_set <= '1' when op_set = "011";
+    mai_set <= '1' when op_set = "000" else '0';
+    ext_set <= '1' when op_set = "011" else '0';
     -- groups
     arith_instr <= add_op or sub_op or inc_op or dec_op;
     logic_instr <= and_op or xor_op or or_op;
@@ -161,7 +159,8 @@ begin
     adc_op <= '1' when
         (bit_set = '0' and high = x"8" and low(3) = '1') -- adc s
      or (ext_set = '1' and low = x"a" and high(3) = '0') -- adc rr,rr
-     or (mai_set = '1' and op = x"ee");
+     or (mai_set = '1' and op = x"ee")
+        else '0';
     sub_op <= '1' when cp_op = '1' or sbc_op = '1'
      or (bit_set = '0' and high = x"9")                  --sub s
      or (mai_set = '1' and op = x"d6")                   --sub n
@@ -278,12 +277,10 @@ begin
     with_carry <= "000000001" when c_in = '1' and adc_op = '1' else
                   "011111111" when c_in = '1' and sbc_op = '1' else
                   "000000000";
-    op2snc <= '0' & op2sn + with_carry;
-    result_and <= op1_uint and op2_uint;
-    result_xor <= op1_uint xor op2_uint;
-    result_or  <= op1_uint or  op2_uint;
-    result_sum <= ('0' & op1_uint) + (op2snc);
-    result_half <= ('0' & op1_uint(3 downto 0)) + ('0' & op2snc(3 downto 0));
+    result_and <= op1_uint         and op2_uint;
+    result_xor <= op1_uint         xor op2_uint;
+    result_or  <= op1_uint         or  op2_uint;
+    result_sum <= ('0' & op1_uint) + ('0' & op2sn) + with_carry;
     calc_result <= result_sum       when logic_instr = '0' else
                    '0' & result_and when and_op = '1' else
                    '0' & result_xor when xor_op = '1' else
@@ -303,16 +300,15 @@ begin
     end process;
     overflow <= (op1_uint(7) xor calc_result(7)) and   -- carry 6 into 7
                 (op1_uint(7) xnor op2sn(7));  -- equal signs
-    carry_sub <= '1' when 
-        ('0' & op2_uint) > (('0' & op1_uint) + with_carry)
-        else '0';
+    carry_sub <= '1' when op2 > op1 else '0';
 
     S <= result_buf(7);
     Z <= '1' when result_buf = 0 or
          (bit_op = '1' and result_buf(to_integer(unsigned(bit_select))) = '0')
          else '0';
     f5 <= result_buf(5);
-    H <= result_half(4) when arith_instr = '1' else '1';
+    H <= result_buf(4) and op1_uint(4) and op2_uint(4)
+         when arith_instr = '1' else '1';
     f3 <= result_buf(3);
     N <= sub_op;
     PV <= parity when shift_instr = '1' or logic_instr = '1' else
