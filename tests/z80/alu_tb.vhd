@@ -213,6 +213,8 @@ begin
                    x"00", x"ff", x"9e", "000", '1', '1', '0', x"00");
         test_value(op1, op2, op, op_set, carry, flags, res,
                    x"00", x"7f", x"9f", "000", '1', '1', '0', x"80");
+        test_value(op1, op2, op, op_set, carry, flags, res,
+                   x"ff", x"ff", x"9f", "000", '1', '1', '0', x"ff");
 
         report "and";
     --             op1    op2    op  set    c_in  c_o  p  res

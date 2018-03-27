@@ -57,14 +57,14 @@ architecture arch of alu_tb_v2 is
                 integer'image(to_integer(unsigned(op1))) & lf &
             "op2        " & vec_str(op2) & " " & 
                 integer'image(to_integer(unsigned(op2))) & lf & lf &
-            "flags      SZ-H-PNC" & lf &
-            "flags_in   " & vec_str(flags_in) & lf &
-            "flags_actu " & vec_str(flags_out_s) & lf &
-            "flags_want " & vec_str(flags_out) & lf & lf &
             "res_actu:  " & vec_str(result_s) & " " &
                 integer'image(to_integer(unsigned(result_s))) & lf &
             "res_want:  " & vec_str(result) & " " &
-                integer'image(to_integer(unsigned(result)));
+                integer'image(to_integer(unsigned(result))) & lf & lf &
+            "flags      SZ-H-PNC" & lf &
+            "flags_in   " & vec_str(flags_in) & lf &
+            "flags_actu " & vec_str(flags_out_s) & lf &
+            "flags_want " & vec_str(flags_out) & lf;
         wait for 5 ns;
     end procedure;
 
@@ -101,6 +101,9 @@ begin
         op <= x"00";
         op_set <= "000";
 
+        wait for 20 ns;
+        report "TB BEGIN";
+
         report "inc";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
              x"ff", x"01", x"04", "000", "00000000", "00-0-000", x"02");
@@ -123,7 +126,6 @@ begin
         test(op1, op2, op, op_set, flags_in, flags_out, result,
              x"82", x"82", x"1d", "000", "11111111", "10-1-001", x"81");
 
-
         report "add";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
              x"01", x"01", x"80", "000", "00000001", "00-0-000", x"02");
@@ -140,23 +142,23 @@ begin
 
         report "sub";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"29", x"11", x"d6", "000", "00000001", "00-1-010", x"18");
+             x"29", x"11", x"d6", "000", "00000001", "00-0-010", x"18");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"ff", x"97", "000", "11111111", "01-1-010", x"00");
+             x"ff", x"ff", x"97", "000", "11111111", "01-0-010", x"00");
 
         report "sbc";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"ff", x"62", "011", "11111111", "10-1-111", x"ff");
+             x"ff", x"ff", x"62", "011", "11111111", "10-1-011", x"ff");
 
         report "cp";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"ff", x"b8", "000", "11111111", "01-1-010", x"ff");
+             x"ff", x"ff", x"b8", "000", "11111111", "01-0-010", x"ff");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
              x"00", x"00", x"fe", "000", "00000000", "01-0-010", x"00");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"3c", x"c2", x"a1", "011", "00000000", "00-1-011", x"3c");
+             x"3c", x"c2", x"a1", "011", "00000000", "00-0-011", x"3c");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"10", x"0d", x"b9", "011", "00000000", "00-0-010", x"10");
+             x"10", x"0d", x"b9", "011", "00000000", "00-1-010", x"10");
 
         report "bit";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
