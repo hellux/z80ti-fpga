@@ -1,3 +1,4 @@
 src/z80/alu.vhd
+tests/util.vhd
 tests/z80/alu_tb.vhd
 tests/z80/alu_tb_v2.vhd
