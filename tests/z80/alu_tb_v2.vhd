@@ -146,7 +146,7 @@ begin
 
         report "sbc";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"ff", x"62", "000", "11111111", "10-1-111", x"ff");
+             x"ff", x"ff", x"62", "011", "11111111", "10-1-111", x"ff");
 
         report "cp";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
