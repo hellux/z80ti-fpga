@@ -3,10 +3,8 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 -- TODO
---  implement inc, dec
---  implement long shift_instrs rld, rrd, maybe outside alu?
 --  ensure flags unaffected on some instructions
---  only require 1 cp for inputs (preserve signals 1 cp) 
+--  make sure all op codes are covered
 
 -- OPERATION IMPLEMENTATIONS
 -- ARITH
@@ -171,9 +169,10 @@ begin
      or (mai_set = '1' and op = x"de")
         else '0';
     cp_op <= '1' when 
-        (bit_set = '0' and high = x"b" and low(3) = '1') -- cp r
+        (bit_set = '0' and
+         ext_set = '0' and high = x"b" and low(3) = '1') -- cp r
      or (ext_set = '1' and (low = x"1" or low = x"9"))   -- cpi,cpir,cpd,cpdr
-     or op = x"fe"                                       -- cp n
+     or (mai_set = '1' and op = x"fe")                   -- cp n
         else '0';
     inc_op <= '1' when 
         bit_set = '0' 
@@ -186,11 +185,13 @@ begin
          and (low = x"5" or low = x"b" or low = x"d")
         else '0';
     and_op <= '1' when
-        (bit_set = '0' and high = x"a" and low(3) = '0') -- and s
+        (bit_set = '0' and 
+         ext_set = '0' and high = x"a" and low(3) = '0') -- and s
      or (mai_set = '1' and op = x"e6")                   -- and n
         else '0';
     xor_op <= '1' when 
-        (bit_set = '0' and high = x"a" and low(3) = '1') -- xor s
+        (bit_set = '0' and 
+         ext_set = '0' and high = x"a" and low(3) = '1') -- xor s
      or (mai_set = '1' and op = x"ee")                   -- xor n
         else '0';
     or_op <= '1' when
@@ -307,7 +308,7 @@ begin
          (bit_op = '1' and result_buf(to_integer(unsigned(bit_select))) = '0')
          else '0';
     f5 <= result_buf(5);
-    H <= result_buf(4) and op1_uint(4) and op2_uint(4)
+    H <= result_buf(4) xor op1_uint(4) xor op2_uint(4)
          when arith_instr = '1' else '1';
     f3 <= result_buf(3);
     N <= sub_op;
