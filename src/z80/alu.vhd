@@ -301,7 +301,9 @@ begin
     end process;
     overflow <= (op1_uint(7) xor calc_result(7)) and   -- carry 6 into 7
                 (op1_uint(7) xnor op2sn(7));  -- equal signs
-    carry_sub <= '1' when op2 > op1 else '0';
+    carry_sub <= '1' when unsigned('0' & op2_uint) > unsigned(('0'&op1_uint) +
+                 with_carry)
+            else '0';
 
     S <= result_buf(7);
     Z <= '1' when result_buf = 0 or
