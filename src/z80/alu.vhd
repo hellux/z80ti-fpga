@@ -113,25 +113,25 @@ architecture arch of alu is
 
     -- preprocess
     signal bit_select : std_logic_vector(2 downto 0) := "000";
-    signal op1_uint, op2_uint : signed(7 downto 0);
     signal shift_instr : std_logic; -- instr is shift
     signal mask : std_logic_vector(7 downto 0); -- mask for bit set/reset
     signal edge : std_logic; -- lsb or msb when shift_instring
     signal right_left : std_logic; -- subtract/^add or right/^left
-    signal op2sn : signed(7 downto 0); -- shift_instr/neg result
+    signal op1_uint, op2_uint : signed(8 downto 0);
+    signal op2sn : signed(8 downto 0); -- shift_instr/neg result
 
     -- calculation
     signal arith_instr : std_logic; -- instr is arithmetic
     signal logic_instr : std_logic; -- instr is logic instr
     signal with_carry : signed(8 downto 0); -- for add/sub with carry
     signal result_sum : signed(8 downto 0);
-    signal result_xor, result_and, result_or : signed(7 downto 0);
+    signal result_xor, result_and, result_or : signed(8 downto 0);
     signal calc_result : signed(8 downto 0);
     signal result_buf : signed(7 downto 0);
 
     -- flags
     signal upd_c, upd_pv : std_logic;
-    signal carry_sub, overflow, parity : std_logic;
+    signal overflow, parity : std_logic;
     signal S, Z, f5, H, f3, PV, N, C : std_logic;
 
 begin
@@ -258,6 +258,11 @@ begin
             '0'    when srl_op = '1' else
             '-';
     right_left <= op(3);
+    op1_uint <= "000000001"  when inc_op = '1' else
+                "111111111"  when dec_op = '1' else
+                signed('0' & op1) when bit_set = '0' else 
+                "000000000";
+    op2_uint <= signed('0' & op2);
     op2sn <=
         signed(not mask and op2)    when res_op = '1' else
         signed(mask or op2)         when set_op = '1' else
@@ -270,22 +275,17 @@ begin
         op2_uint;
 
     -- calculation
-    op1_uint <= "00000001"  when inc_op = '1' else
-                "11111111"  when dec_op = '1' else
-                signed(op1) when bit_set = '0' else 
-                "00000000";
-    op2_uint <= signed(op2);
     with_carry <= "000000001" when c_in = '1' and adc_op = '1' else
-                  "011111111" when c_in = '1' and sbc_op = '1' else
+                  "111111111" when c_in = '1' and sbc_op = '1' else
                   "000000000";
-    result_and <= op1_uint         and op2_uint;
-    result_xor <= op1_uint         xor op2_uint;
-    result_or  <= op1_uint         or  op2_uint;
-    result_sum <= ('0' & op1_uint) + ('0' & op2sn) + with_carry;
+    result_and <= op1_uint and op2_uint;
+    result_xor <= op1_uint xor op2_uint;
+    result_or  <= op1_uint or  op2_uint;
+    result_sum <= op1_uint + op2sn + with_carry;
     calc_result <= result_sum       when logic_instr = '0' else
-                   '0' & result_and when and_op = '1' else
-                   '0' & result_xor when xor_op = '1' else
-                   '0' & result_or  when or_op  = '1';
+                   result_and when and_op = '1' else
+                   result_xor when xor_op = '1' else
+                   result_or  when or_op  = '1';
     result_buf <= calc_result(7 downto 0);
     result <= std_logic_vector(result_buf) when cp_op = '0' else op1;
 
@@ -301,9 +301,6 @@ begin
     end process;
     overflow <= (op1_uint(7) xor calc_result(7)) and   -- carry 6 into 7
                 (op1_uint(7) xnor op2sn(7));  -- equal signs
-    carry_sub <= '1' when unsigned('0' & op2_uint) > unsigned(('0'&op1_uint) +
-                 with_carry)
-            else '0';
 
     S <= result_buf(7);
     Z <= '1' when result_buf = 0 or
@@ -317,8 +314,7 @@ begin
     PV <= parity when shift_instr = '1' or logic_instr = '1' else
           overflow; 
     C <= '0'            when logic_instr = '1' else
-         calc_result(8) when add_op = '1' else
-         carry_sub      when sub_op = '1' else
+         calc_result(8) when arith_instr = '1' else
          op2(7)         when shift_instr = '1' and right_left = '0' else
          op2(0)         when shift_instr = '1' and right_left = '1' else
          '-';
