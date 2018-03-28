@@ -109,28 +109,6 @@ begin
 
         report "TB BEGIN";
 
-        report "inc";
-        test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"01", x"04", "000", "00000000", "00-0-000", x"02");
-        test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"ff", x"3c", "000", "00000000", "01-1-000", x"00");
-        test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"ff", x"2c", "000", "00000001", "01-1-001", x"00");
-        test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"00", x"00", x"13", "000", "00000001", "00-0-001", x"01");
-        test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"00", x"93", x"24", "000", "11100110", "10-0-000", x"94");
-
-        report "dec";
-        test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"01", x"05", "000", "00000000", "01-1-000", x"00");
-        test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"00", x"3d", "000", "00000000", "10-0-000", x"ff");
-        test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"00", x"2b", "000", "11111111", "10-0-001", x"ff");
-        test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"82", x"82", x"1d", "000", "11111111", "10-1-001", x"81");
-
         report "add";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
              x"01", x"01", x"80", "000", "00000001", "00-0-000", x"02");
@@ -164,6 +142,39 @@ begin
              x"3c", x"c2", x"a1", "011", "00000000", "00-0-011", x"3c");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
              x"10", x"0d", x"b9", "011", "00000000", "00-1-010", x"10");
+
+        report "inc";
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"ff", x"01", x"04", "000", "00000000", "00-0-000", x"02");
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"ff", x"ff", x"3c", "000", "00000000", "01-1-000", x"00");
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"ff", x"ff", x"2c", "000", "00000001", "01-1-001", x"00");
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"00", x"00", x"13", "000", "00000001", "00-0-001", x"01");
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"00", x"93", x"24", "000", "11100110", "10-0-000", x"94");
+
+        report "dec";
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"ff", x"01", x"05", "000", "00000000", "01-1-000", x"00");
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"ff", x"00", x"3d", "000", "00000000", "10-0-000", x"ff");
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"ff", x"00", x"2b", "000", "11111111", "10-0-001", x"ff");
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"82", x"82", x"1d", "000", "11111111", "10-1-001", x"81");
+
+        report "neg";
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"98", x"ff", x"64", "011", "00000000", "00-1-011", x"01");
+        -- manual ex
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"00", x"98", x"64", "011", "00000000", "00-1-011", x"68");
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"00", x"00", x"44", "011", "00000000", "01-0-010", x"00");
+        test(op1, op2, op, op_set, flags_in, flags_out, result,
+             x"00", x"80", x"7c", "011", "00000000", "10-0-111", x"80");
 
         report "bit";
         test(op1, op2, op, op_set, flags_in, flags_out, result,

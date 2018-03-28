@@ -107,10 +107,12 @@ architecture arch of alu is
     signal sub_op, sbc_op : std_logic;
     signal cp_op : std_logic;
     signal inc_op, dec_op : std_logic;
+    signal neg_op : std_logic;
     signal and_op, or_op, xor_op : std_logic;
     signal bit_op, res_op, set_op : std_logic;
     signal rlc_op, rl_op, sla_op, sll_op : std_logic;
     signal rrc_op, rr_op, sra_op, srl_op : std_logic;
+    signal daa_op : std_logic;
 
     -- preprocess
     signal bit_select : std_logic_vector(2 downto 0) := "000";
@@ -133,11 +135,11 @@ architecture arch of alu is
 
     -- flags
     signal upd_c, upd_pv : std_logic;
-    signal overflow, parity : std_logic;
+    signal overflow, overflow_neg, parity : std_logic;
     signal S, Z, f5, H, f3, PV, N, C : std_logic;
 
     -- debug
-    signal current : std_logic_vector(1 to 20);
+    signal current : std_logic_vector(1 to 22);
 begin
     c_in <= flags_in(0);
     low <= op(3 downto 0);
@@ -150,7 +152,7 @@ begin
     -- groups
     arith_instr <= add_instr or sub_instr or inc_op or dec_op;
     add_instr <= add_op or adc_op;
-    sub_instr <= sub_op or sbc_op or cp_op;
+    sub_instr <= sub_op or sbc_op or cp_op or neg_op;
     logic_instr <= and_op or xor_op or or_op;
     shift_instr <= '1' when bit_set = '1' and op(7 downto 6) = "00" else '0';
 
@@ -189,6 +191,9 @@ begin
         bit_set = '0'
          and op(7 downto 6) = "00"
          and (low = x"5" or low = x"b" or low = x"d")
+        else '0';
+    neg_op <= '1' when
+        ext_set = '1' and (low = x"4" or low = x"c")
         else '0';
     and_op <= '1' when
         (bit_set = '0' and 
@@ -241,6 +246,9 @@ begin
     set_op <= '1' when
         bit_set = '1' and op(7 downto 6) = "11"
         else '0';
+    daa_op <= '1' when
+        bit_set = '0' and op = x"27"
+        else '0';
 
     -- op2 preprocess (shift_instr / neg / bit instr)
     bit_select <= op(5 downto 3);
@@ -266,6 +274,7 @@ begin
     right_left <= op(3);
     op1_ext <= "000000001"  when inc_op = '1' else
                 "111111111"  when dec_op = '1' else
+                "000000000" when neg_op = '1' else
                 signed('0' & op1) when bit_set = '0' else 
                 "000000000";
     op2_ext <= signed('0' & op2);
@@ -307,6 +316,7 @@ begin
     end process;
     overflow <= (op1_ext(7) xor calc_result(7)) and   -- carry 6 into 7
                 (op1_ext(7) xnor op2sn(7));  -- equal signs
+    overflow_neg <= '1' when op2 = x"80" else '0';
 
     S <= result_buf(7);
     Z <= '1' when result_buf = 0 or
@@ -317,7 +327,8 @@ begin
          when arith_instr = '1' else '1';
     f3 <= result_buf(3);
     N <= sub_instr;
-    PV <= parity when shift_instr = '1' or logic_instr = '1' else
+    PV <= overflow_neg  when neg_op = '1' else
+          parity        when shift_instr = '1' or logic_instr = '1' else
           overflow; 
     C <= '0'            when logic_instr = '1' else
          calc_result(8) when arith_instr = '1' else
@@ -341,7 +352,8 @@ begin
     current <= add_op & adc_op & sub_op & sbc_op & cp_op & inc_op & dec_op &
                and_op & or_op & xor_op & bit_op  & res_op &
                rlc_op & rl_op & sla_op & sll_op & 
-               rrc_op & rrc_op & sra_op & srl_op;
+               rrc_op & rrc_op & sra_op & srl_op &
+               neg_op & daa_op;
     process(clk)
         variable count : integer;
     begin
@@ -352,7 +364,7 @@ begin
                     count := count + 1;
                 end if;
             end loop;
-            assert count = 1 report "DUPLICATE op code: " & vec_str(current) &
+            assert count = 1 report "op code error: " & vec_str(current);
         end if;
     end process;
 end arch;
