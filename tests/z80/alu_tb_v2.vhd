@@ -100,8 +100,13 @@ begin
         op2 <= x"00";
         op <= x"00";
         op_set <= "000";
+        flags_in <= x"00";
+        rst <= '1';
+        wait for 10 ns;
+        rst <= '0';
 
         wait for 20 ns;
+
         report "TB BEGIN";
 
         report "inc";
