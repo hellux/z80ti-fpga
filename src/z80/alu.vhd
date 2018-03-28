@@ -1,12 +1,11 @@
 library ieee;
+use work.util.all;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 -- TODO
---  implement inc, dec
---  implement long shift_instrs rld, rrd, maybe outside alu?
 --  ensure flags unaffected on some instructions
---  only require 1 cp for inputs (preserve signals 1 cp) 
+--  make sure all op codes are covered
 
 -- OPERATION IMPLEMENTATIONS
 -- ARITH
@@ -108,36 +107,39 @@ architecture arch of alu is
     signal sub_op, sbc_op : std_logic;
     signal cp_op : std_logic;
     signal inc_op, dec_op : std_logic;
+    signal neg_op : std_logic;
     signal and_op, or_op, xor_op : std_logic;
     signal bit_op, res_op, set_op : std_logic;
     signal rlc_op, rl_op, sla_op, sll_op : std_logic;
     signal rrc_op, rr_op, sra_op, srl_op : std_logic;
+    signal daa_op : std_logic;
 
     -- preprocess
     signal bit_select : std_logic_vector(2 downto 0) := "000";
-    signal op1_uint, op2_uint : signed(7 downto 0);
     signal shift_instr : std_logic; -- instr is shift
     signal mask : std_logic_vector(7 downto 0); -- mask for bit set/reset
     signal edge : std_logic; -- lsb or msb when shift_instring
     signal right_left : std_logic; -- subtract/^add or right/^left
-    signal op2sn : signed(7 downto 0); -- shift_instr/neg result
-    signal op2snc : signed(8 downto 0);
+    signal op1_ext, op2_ext : signed(8 downto 0);
+    signal op2sn : signed(8 downto 0); -- shift_instr/neg result
 
     -- calculation
     signal arith_instr : std_logic; -- instr is arithmetic
+    signal add_instr, sub_instr : std_logic;
     signal logic_instr : std_logic; -- instr is logic instr
     signal with_carry : signed(8 downto 0); -- for add/sub with carry
     signal result_sum : signed(8 downto 0);
-    signal result_xor, result_and, result_or : signed(7 downto 0);
+    signal result_xor, result_and, result_or : signed(8 downto 0);
     signal calc_result : signed(8 downto 0);
     signal result_buf : signed(7 downto 0);
-    signal result_half : signed(4 downto 0);
 
     -- flags
     signal upd_c, upd_pv : std_logic;
-    signal carry_sub, overflow, parity : std_logic;
+    signal overflow, overflow_neg, parity : std_logic;
     signal S, Z, f5, H, f3, PV, N, C : std_logic;
 
+    -- debug
+    signal current : std_logic_vector(1 to 22);
 begin
     c_in <= flags_in(0);
     low <= op(3 downto 0);
@@ -145,25 +147,28 @@ begin
 
     -- sets
     bit_set <= op_set(2);
-    mai_set <= '1' when op_set = "000";
-    ext_set <= '1' when op_set = "011";
+    mai_set <= '1' when op_set = "000" else '0';
+    ext_set <= '1' when op_set = "011" else '0';
     -- groups
-    arith_instr <= add_op or sub_op or inc_op or dec_op;
+    arith_instr <= add_instr or sub_instr or inc_op or dec_op;
+    add_instr <= add_op or adc_op;
+    sub_instr <= sub_op or sbc_op or cp_op or neg_op;
     logic_instr <= and_op or xor_op or or_op;
     shift_instr <= '1' when bit_set = '1' and op(7 downto 6) = "00" else '0';
 
     -- determine op
-    add_op <= '1' when adc_op = '1'
-     or (bit_set = '0' and high = x"8")                     --add r
+    add_op <= '1' when
+        (bit_set = '0' and high = x"8" and low(3) = '0')    --add r
      or (bit_set = '0' and low = x"9" and high(3) = '0')    --add rr,rr
      or (mai_set = '1' and op = x"c6")                      --add n
         else '0';
     adc_op <= '1' when
         (bit_set = '0' and high = x"8" and low(3) = '1') -- adc s
      or (ext_set = '1' and low = x"a" and high(3) = '0') -- adc rr,rr
-     or (mai_set = '1' and op = x"ee");
-    sub_op <= '1' when cp_op = '1' or sbc_op = '1'
-     or (bit_set = '0' and high = x"9")                  --sub s
+     or (mai_set = '1' and op = x"ee")
+        else '0';
+    sub_op <= '1' when
+        (bit_set = '0' and high = x"9" and low(3) = '0') --sub s
      or (mai_set = '1' and op = x"d6")                   --sub n
         else '0';
     sbc_op <= '1' when 
@@ -172,9 +177,10 @@ begin
      or (mai_set = '1' and op = x"de")
         else '0';
     cp_op <= '1' when 
-        (bit_set = '0' and high = x"b" and low(3) = '1') -- cp r
+        (bit_set = '0' and
+         ext_set = '0' and high = x"b" and low(3) = '1') -- cp r
      or (ext_set = '1' and (low = x"1" or low = x"9"))   -- cpi,cpir,cpd,cpdr
-     or op = x"fe"                                       -- cp n
+     or (mai_set = '1' and op = x"fe")                   -- cp n
         else '0';
     inc_op <= '1' when 
         bit_set = '0' 
@@ -186,12 +192,17 @@ begin
          and op(7 downto 6) = "00"
          and (low = x"5" or low = x"b" or low = x"d")
         else '0';
+    neg_op <= '1' when
+        ext_set = '1' and (low = x"4" or low = x"c")
+        else '0';
     and_op <= '1' when
-        (bit_set = '0' and high = x"a" and low(3) = '0') -- and s
+        (bit_set = '0' and 
+         ext_set = '0' and high = x"a" and low(3) = '0') -- and s
      or (mai_set = '1' and op = x"e6")                   -- and n
         else '0';
     xor_op <= '1' when 
-        (bit_set = '0' and high = x"a" and low(3) = '1') -- xor s
+        (bit_set = '0' and 
+         ext_set = '0' and high = x"a" and low(3) = '1') -- xor s
      or (mai_set = '1' and op = x"ee")                   -- xor n
         else '0';
     or_op <= '1' when
@@ -235,6 +246,9 @@ begin
     set_op <= '1' when
         bit_set = '1' and op(7 downto 6) = "11"
         else '0';
+    daa_op <= '1' when
+        bit_set = '0' and op = x"27"
+        else '0';
 
     -- op2 preprocess (shift_instr / neg / bit instr)
     bit_select <= op(5 downto 3);
@@ -258,36 +272,35 @@ begin
             '0'    when srl_op = '1' else
             '-';
     right_left <= op(3);
+    op1_ext <= "000000001"  when inc_op = '1' else
+                "111111111"  when dec_op = '1' else
+                "000000000" when neg_op = '1' else
+                signed('0' & op1) when bit_set = '0' else 
+                "000000000";
+    op2_ext <= signed('0' & op2);
     op2sn <=
         signed(not mask and op2)    when res_op = '1' else
         signed(mask or op2)         when set_op = '1' else
-        op2_uint                    when bit_op = '1' else
-        -op2_uint                   when sub_op = '1' else
-        op2_uint(6 downto 0) & edge when shift_instr = '1' 
+        op2_ext                    when bit_op = '1' else
+        -op2_ext                   when sub_instr = '1' else
+        op2_ext(6 downto 0) & edge when shift_instr = '1' 
                                      and right_left = '0' else
-        edge & op2_uint(7 downto 1) when shift_instr = '1'
+        edge & op2_ext(7 downto 1) when shift_instr = '1'
                                      and right_left = '1' else
-        op2_uint;
+        op2_ext;
 
     -- calculation
-    op1_uint <= "00000001"  when inc_op = '1' else
-                "11111111"  when dec_op = '1' else
-                signed(op1) when bit_set = '0' else 
-                "00000000";
-    op2_uint <= signed(op2);
     with_carry <= "000000001" when c_in = '1' and adc_op = '1' else
-                  "011111111" when c_in = '1' and sbc_op = '1' else
+                  "111111111" when c_in = '1' and sbc_op = '1' else
                   "000000000";
-    op2snc <= '0' & op2sn + with_carry;
-    result_and <= op1_uint and op2_uint;
-    result_xor <= op1_uint xor op2_uint;
-    result_or  <= op1_uint or  op2_uint;
-    result_sum <= ('0' & op1_uint) + (op2snc);
-    result_half <= ('0' & op1_uint(3 downto 0)) + ('0' & op2snc(3 downto 0));
+    result_and <= op1_ext and op2_ext;
+    result_xor <= op1_ext xor op2_ext;
+    result_or  <= op1_ext or  op2_ext;
+    result_sum <= op1_ext + op2sn + with_carry;
     calc_result <= result_sum       when logic_instr = '0' else
-                   '0' & result_and when and_op = '1' else
-                   '0' & result_xor when xor_op = '1' else
-                   '0' & result_or  when or_op  = '1';
+                   result_and when and_op = '1' else
+                   result_xor when xor_op = '1' else
+                   result_or  when or_op  = '1';
     result_buf <= calc_result(7 downto 0);
     result <= std_logic_vector(result_buf) when cp_op = '0' else op1;
 
@@ -301,30 +314,29 @@ begin
         end loop;
         parity <= not p;
     end process;
-    overflow <= (op1_uint(7) xor calc_result(7)) and   -- carry 6 into 7
-                (op1_uint(7) xnor op2sn(7));  -- equal signs
-    carry_sub <= '1' when 
-        ('0' & op2_uint) > (('0' & op1_uint) + with_carry)
-        else '0';
+    overflow <= (op1_ext(7) xor calc_result(7)) and   -- carry 6 into 7
+                (op1_ext(7) xnor op2sn(7));  -- equal signs
+    overflow_neg <= '1' when op2 = x"80" else '0';
 
     S <= result_buf(7);
     Z <= '1' when result_buf = 0 or
          (bit_op = '1' and result_buf(to_integer(unsigned(bit_select))) = '0')
          else '0';
     f5 <= result_buf(5);
-    H <= result_half(4) when arith_instr = '1' else '1';
+    H <= result_buf(4) xor op1_ext(4) xor op2_ext(4)
+         when arith_instr = '1' else '1';
     f3 <= result_buf(3);
-    N <= sub_op;
-    PV <= parity when shift_instr = '1' or logic_instr = '1' else
+    N <= sub_instr;
+    PV <= overflow_neg  when neg_op = '1' else
+          parity        when shift_instr = '1' or logic_instr = '1' else
           overflow; 
     C <= '0'            when logic_instr = '1' else
-         calc_result(8) when add_op = '1' else
-         carry_sub      when sub_op = '1' else
+         calc_result(8) when arith_instr = '1' else
          op2(7)         when shift_instr = '1' and right_left = '0' else
          op2(0)         when shift_instr = '1' and right_left = '1' else
          '-';
 
-    upd_c <= logic_instr or shift_instr or add_op or sub_op;
+    upd_c <= logic_instr or shift_instr or add_instr or sub_instr;
     upd_pv <= logic_instr or shift_instr or arith_instr;
 
     flags_out(0) <= C when upd_c = '1' else flags_in(0);
@@ -336,4 +348,23 @@ begin
     flags_out(6) <= Z;
     flags_out(7) <= S;
 
+    -- debug
+    current <= add_op & adc_op & sub_op & sbc_op & cp_op & inc_op & dec_op &
+               and_op & or_op & xor_op & bit_op  & res_op &
+               rlc_op & rl_op & sla_op & sll_op & 
+               rrc_op & rrc_op & sra_op & srl_op &
+               neg_op & daa_op;
+    process(clk)
+        variable count : integer;
+    begin
+        if rising_edge(clk) then
+            count := 0;
+            for i in current'range loop
+                if (current(i) = '1') then
+                    count := count + 1;
+                end if;
+            end loop;
+            assert count = 1 report "op code error: " & vec_str(current);
+        end if;
+    end process;
 end arch;
