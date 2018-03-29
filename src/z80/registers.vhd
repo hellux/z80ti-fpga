@@ -46,21 +46,19 @@ end reg_pair;
 
 -- Behavior of reg 8 bits
 architecture Behavioral of reg_8 is
-    signal bits : std_logic_vector(7 downto 0);
-
+    signal bits, bits_next : std_logic_vector(7 downto 0);
 begin  
     process(clk) begin
         if rising_edge(clk) then
             if (rst = '1') then
                 bits <= (others => '0');
-            else
-                if (rd = '1') then
-                    bits <= di;
-                end if;
+            else 
+                bits <= bits_next;
             end if;
         end if;
     end process;
     
+    bits_next <= di when rd = '1' else bits;
     do <= bits when wr = '1' else (others => 'Z');
 end Behavioral;
 
