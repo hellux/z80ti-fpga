@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 entity z80 is port(
-    clk : buffer std_logic;
+    clk : buffer std_logic; --(buffer only for testing)
     -- system control
     m1, mreq, iorq, rd, wr, rfsh: out std_logic;
     -- cpu control
@@ -22,6 +22,20 @@ architecture arch of z80 is
         rd, wr : in std_logic;
         di : in std_logic_vector(7 downto 0);
         do : out std_logic_vector(7 downto 0));
+    end component;
+
+    component buf8 port(
+        clk, rst : in std_logic;
+        rd, wr : in std_logic;
+        di : in std_logic_vector(7 downto 0);
+        do : out std_logic_vector(7 downto 0));
+    end component;
+
+    component buf16 port(
+        clk, rst : in std_logic;
+        rd, wr : in std_logic;
+        di : in std_logic_vector(15 downto 0);
+        do : out std_logic_vector(15 downto 0));
     end component;
 
     component reg_pair port(
@@ -58,23 +72,23 @@ architecture arch of z80 is
     signal op1, op2 : std_logic_vector(7 downto 0);
     signal flags_in, flags_out : std_logic_vector(7 downto 0);
     signal tmp_rd : std_logic := '0';
-    signal acc_rd : std_logic := '0';
+    signal act_rd : std_logic := '0';
     signal f_swp : std_logic;
-
-    -- help signals
-    signal load_acc : std_logic;
-    signal load_tmp : std_logic;
 
     signal rf_rd, rf_wr : std_logic;
     signal rf_swp : std_logic_vector(1 downto 0);
     signal rf_addr : std_logic_vector(2 downto 0);
 
+    signal rd_data, wr_data : std_logic;
     signal dbus : std_logic_vector(7 downto 0) := "ZZZZZZZZ";
+    signal rd_addr, wr_addr : std_logic;
     signal abus : std_logic_vector(15 downto 0);
 begin
+    -- ALU section
     alu_comp : alu port map(clk, op1, op2, flags_in,
                             alu_op, alu_set, alu_result, flags_out);
-    acc : reg_8 port map(clk, reset, acc_rd, wr=>'1', di=>dbus, do=>op1);
+    -- TODO use f in reg_file, need special bus. a needs parallel bus as well
+    act : reg_8 port map(clk, reset, act_rd, wr=>'1', di=>dbus, do=>op1);
     tmp : reg_8 port map(clk, reset, tmp_rd, wr=>'1', di=>dbus, do=>op2);
     f : reg_pair port map(clk, reset, rd=>alu_calc, wr=>'1', swp=>f_swp,
                           di=>flags_out, do=>flags_in);
@@ -83,14 +97,15 @@ begin
     rf : reg_file port map(clk, reset, rf_rd, rf_wr, rf_addr, rf_addr,
                            '0', '0', rf_swp, di=>dbus, do=>dbus);
 
-    -- help signals
-    rf_wr <= '1' when load_tmp = '1' else 'Z';
-    tmp_rd <= '1' when load_tmp = '1' else 'Z';
+    -- data bus, buffer when outgoing
+    dbus_buf : buf8 port map(clk, reset, rd_data, wr_data, dbus, data);
+    dbus <= data;
 
-    rf_wr <= '1' when load_acc = '1' else 'Z';
-    acc_rd <= '1' when load_acc = '1' else 'Z';
+    -- addr bus, buffered
+    abus_buf : buf16 port map(clk, reset, rd_addr, wr_addr, abus, addr);
 
-    -- test
+
+    -- TEST PROCESSES
     process begin
         clk <= '1';
         wait for 5 ns;
@@ -124,9 +139,9 @@ begin
         wait for 20 ns;
         rf_addr <= "111";
         rf_wr <= '1';
-        acc_rd <= '1';
+        act_rd <= '1';
         wait for 10 ns;
-        acc_rd <= '0';
+        act_rd <= '0';
         rf_addr <= "000";
         rf_wr <= '1';
         tmp_rd <= '1';
