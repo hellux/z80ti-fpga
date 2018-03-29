@@ -86,7 +86,7 @@ use ieee.numeric_std.all;
 -- iy bit       FDCB        110
 
 entity alu is port(
-    clk, rst : in std_logic;
+    clk : in std_logic;
     op1, op2, flags_in : in std_logic_vector(7 downto 0);
     op : in std_logic_vector(7 downto 0);
     op_set : in std_logic_vector(2 downto 0);

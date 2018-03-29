@@ -7,7 +7,7 @@ end alu_tb;
 
 architecture arch of alu_tb is
     component alu port(
-        clk, rst : in std_logic;
+        clk : in std_logic;
         op1, op2 : in std_logic_vector(7 downto 0);
         flags_in : in std_logic_vector(7 downto 0);
         op : in std_logic_vector(7 downto 0);
@@ -15,7 +15,7 @@ architecture arch of alu_tb is
         result, flags_out : out std_logic_vector(7 downto 0));
     end component;
 
-    signal clk, rst : std_logic;
+    signal clk : std_logic;
     signal carry : std_logic;
     signal op1, op2 : std_logic_vector(7 downto 0);
     signal flags_in : std_logic_vector(7 downto 0);
@@ -108,7 +108,6 @@ architecture arch of alu_tb is
 begin
     alu_comp : alu port map(
         clk => clk,
-        rst => rst,
         op1 => op1,
         op2 => op2,
         flags_in => flags_in,
@@ -458,7 +457,5 @@ begin
 
         assert false report "ALL TESTS COMPLETED" severity failure;
     end process;
-
-    rst <= '0';
 
 end arch;

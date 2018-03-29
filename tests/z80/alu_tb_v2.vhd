@@ -8,7 +8,7 @@ end alu_tb_v2;
 
 architecture arch of alu_tb_v2 is
     component alu port(
-        clk, rst : in std_logic;
+        clk : in std_logic;
         op1, op2 : in std_logic_vector(7 downto 0);
         flags_in : in std_logic_vector(7 downto 0);
         op : in std_logic_vector(7 downto 0);
@@ -68,7 +68,7 @@ architecture arch of alu_tb_v2 is
         wait for 5 ns;
     end procedure;
 
-    signal clk, rst : std_logic;
+    signal clk : std_logic;
     signal op1, op2 : std_logic_vector(7 downto 0);
     signal flags_in : std_logic_vector(7 downto 0);
     signal op : std_logic_vector(7 downto 0);
@@ -77,7 +77,6 @@ architecture arch of alu_tb_v2 is
 begin
     alu_comp : alu port map(
         clk => clk,
-        rst => rst,
         op1 => op1,
         op2 => op2,
         flags_in => flags_in,
@@ -86,7 +85,6 @@ begin
         result => result,
         flags_out => flags_out
     );
-    rst <= '0';
 
     process begin
         clk <= '1';
@@ -101,9 +99,6 @@ begin
         op <= x"00";
         op_set <= "000";
         flags_in <= x"00";
-        rst <= '1';
-        wait for 10 ns;
-        rst <= '0';
 
         wait for 20 ns;
 
