@@ -1,0 +1,2 @@
+src/z80/common.vhd
+src/z80/op_decoder.vhd

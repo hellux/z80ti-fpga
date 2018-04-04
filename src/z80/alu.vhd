@@ -1,7 +1,7 @@
 library ieee;
-use work.util.all;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.z80comm.all;
 
 -- TODO
 --  ensure flags unaffected on some instructions
@@ -89,7 +89,7 @@ entity alu is port(
     clk : in std_logic;
     op1, op2, flags_in : in std_logic_vector(7 downto 0);
     op : in std_logic_vector(7 downto 0);
-    op_set : in std_logic_vector(2 downto 0);
+    op_set : in instr_set_t;
     result, flags_out : out std_logic_vector(7 downto 0));
 end alu;
 
@@ -138,17 +138,15 @@ architecture arch of alu is
     signal overflow, overflow_neg, parity : std_logic;
     signal S, Z, f5, H, f3, PV, N, C : std_logic;
 
-    -- debug
-    signal current : std_logic_vector(1 to 22);
 begin
     c_in <= flags_in(0);
     low <= op(3 downto 0);
     high <= op(7 downto 4);
 
     -- sets
-    bit_set <= op_set(2);
-    mai_set <= '1' when op_set = "000" else '0';
-    ext_set <= '1' when op_set = "011" else '0';
+    bit_set <= '1' when op_set = cb or op_set = ddcb or op_set = fdcb;
+    mai_set <= '1' when op_set = main else '0';
+    ext_set <= '1' when op_set = ed else '0';
     -- groups
     arith_instr <= add_instr or sub_instr or inc_op or dec_op;
     add_instr <= add_op or adc_op;
@@ -347,24 +345,4 @@ begin
     flags_out(5) <= f5;
     flags_out(6) <= Z;
     flags_out(7) <= S;
-
-    -- debug
-    current <= add_op & adc_op & sub_op & sbc_op & cp_op & inc_op & dec_op &
-               and_op & or_op & xor_op & bit_op  & res_op &
-               rlc_op & rl_op & sla_op & sll_op & 
-               rrc_op & rrc_op & sra_op & srl_op &
-               neg_op & daa_op;
-    process(clk)
-        variable count : integer;
-    begin
-        if rising_edge(clk) then
-            count := 0;
-            for i in current'range loop
-                if (current(i) = '1') then
-                    count := count + 1;
-                end if;
-            end loop;
-            assert count = 1 report "op code error: " & vec_str(current);
-        end if;
-    end process;
 end arch;

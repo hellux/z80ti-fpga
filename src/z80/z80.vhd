@@ -1,8 +1,11 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.z80comm.all;
 
 entity z80 is port(
     clk : buffer std_logic; --(buffer only for testing)
+    -- use vector for control bus?
     -- system control
     m1, mreq, iorq, rd, wr, rfsh: out std_logic;
     -- cpu control
@@ -18,6 +21,13 @@ end z80;
 
 architecture arch of z80 is
     component reg_8 port(
+        clk, rst : in std_logic;
+        rd, wr : in std_logic;
+        di : in std_logic_vector(7 downto 0);
+        do : out std_logic_vector(7 downto 0));
+    end component;
+
+    component reg_16 port(
         clk, rst : in std_logic;
         rd, wr : in std_logic;
         di : in std_logic_vector(7 downto 0);
@@ -50,7 +60,7 @@ architecture arch of z80 is
         op1, op2 : in std_logic_vector(7 downto 0);
         flags_in : in std_logic_vector(7 downto 0);
         op : in std_logic_vector(7 downto 0);
-        op_set : in std_logic_vector(2 downto 0);
+        op_set : in instr_set_t;
         result, flags_out : out std_logic_vector(7 downto 0));
     end component;
 
@@ -65,37 +75,50 @@ architecture arch of z80 is
         do : out std_logic_vector(7 downto 0));
     end component;
 
-    signal alu_calc : std_logic;
+    component op_decoder port(
+        clk, rst : in std_logic;
+        instr : in std_logic_vector(7 downto 0);
+        cw : out ctrlword);
+    end component;
+
     signal alu_result : std_logic_vector(7 downto 0);
-    signal alu_op : std_logic_vector(7 downto 0);
-    signal alu_set : std_logic_vector(2 downto 0);
     signal op1, op2 : std_logic_vector(7 downto 0);
     signal flags_in, flags_out : std_logic_vector(7 downto 0);
-    signal tmp_rd : std_logic := '0';
-    signal act_rd : std_logic := '0';
-    signal f_swp : std_logic;
 
-    signal rf_rd, rf_wr : std_logic;
-    signal rf_swp : std_logic_vector(1 downto 0);
-    signal rf_addr : std_logic_vector(2 downto 0);
+    signal instr : std_logic_vector(7 downto 0);
+    signal addr_incr : std_logic_vector(15 downto 0);
+    signal cw : ctrlword;
 
     signal rd_data, wr_data : std_logic;
-    signal dbus : std_logic_vector(7 downto 0) := "ZZZZZZZZ";
     signal rd_addr, wr_addr : std_logic;
+    signal dbus : std_logic_vector(7 downto 0) := "ZZZZZZZZ";
     signal abus : std_logic_vector(15 downto 0);
 begin
-    -- ALU section
+    -- -- ALU section -- --
     alu_comp : alu port map(clk, op1, op2, flags_in,
-                            alu_op, alu_set, alu_result, flags_out);
+                            cw.alu_op, main, alu_result, flags_out);
     -- TODO use f in reg_file, need special bus. a needs parallel bus as well
-    act : reg_8 port map(clk, reset, act_rd, wr=>'1', di=>dbus, do=>op1);
-    tmp : reg_8 port map(clk, reset, tmp_rd, wr=>'1', di=>dbus, do=>op2);
-    f : reg_pair port map(clk, reset, rd=>alu_calc, wr=>'1', swp=>f_swp,
+    act : reg_8 port map(clk, reset, cw.act_rd, wr=>'1', di=>dbus, do=>op1);
+    tmp : reg_8 port map(clk, reset, cw.tmp_rd, wr=>'1', di=>dbus, do=>op2);
+    f : reg_pair port map(clk, reset, rd=>cw.f_rd, wr=>'1', swp=>'0',
                           di=>flags_out, do=>flags_in);
-    dbus <= alu_result when alu_calc = '1' else (others => 'Z');
+    dbus <= alu_result when cw.alu_wr = '1' else (others => 'Z');
 
-    rf : reg_file port map(clk, reset, rf_rd, rf_wr, rf_addr, rf_addr,
-                           '0', '0', rf_swp, di=>dbus, do=>dbus);
+
+    -- -- REGISTER SECTION -- --
+    -- TODO create larger address, bus for abus, flags, act
+    --rf : reg_file port map(clk, reset,
+    --                     cw.rf_rdd, cw.rf_wrd, cw.rf_addr, cw.rf_addr,
+    --                     '0', '0', cw.rf_swp, dbus, dbus);
+
+
+    -- -- CONTROL SECTION -- --
+    ir : reg_8 port map(clk, reset, cw.ir_rd, '1', dbus, instr);
+    id : op_decoder port map(clk, reset, instr, cw);
+    --pc : reg_16 port map(clk, reset, cw.pc_rd, cw.pc_wr, addr_incr, abus);
+    addr_incr <= std_logic_vector(unsigned(abus) + 1);
+
+    -- -- BUSES -- --
 
     -- data bus, buffer when outgoing
     dbus_buf : buf8 port map(clk, reset, rd_data, wr_data, dbus, data);
@@ -105,7 +128,7 @@ begin
     abus_buf : buf16 port map(clk, reset, rd_addr, wr_addr, abus, addr);
 
 
-    -- TEST PROCESSES
+    -- -- TESTING -- --
     process begin
         clk <= '1';
         wait for 5 ns;
@@ -114,8 +137,8 @@ begin
     end process;
 
     process begin
+        dbus <= x"80";
         reset <= '0';
-        alu_op <= x"00";
         wait for 10 ns;
         reset <= '1';
         wait for 10 ns;
@@ -123,46 +146,7 @@ begin
         wait for 20 ns;
 
         report "tb start";
-        -- write to a, b
-        rf_addr <= "111";
-        dbus <= x"aa";
-        rf_rd <= '1';
-        wait for 10 ns;
-        rf_addr <= "000";
-        dbus <= x"bb";
-        rf_rd <= '1';
-        wait for 10 ns;
-        rf_rd <= '0';
-        dbus <= (others => 'Z');
-
-        -- add a,b to a
-        wait for 20 ns;
-        rf_addr <= "111";
-        rf_wr <= '1';
-        act_rd <= '1';
-        wait for 10 ns;
-        act_rd <= '0';
-        rf_addr <= "000";
-        rf_wr <= '1';
-        tmp_rd <= '1';
-        wait for 10 ns;
-        rf_wr <= '0';
-        tmp_rd <= '0';
-        alu_op <= x"80";
-        alu_set <= "000";
-        alu_calc <= '1';
-        rf_addr <= "111";
-        rf_rd <= '1';
-        wait for 10 ns;
-        alu_calc <= '0';
-        rf_rd <= '0';
-        wait for 30 ns;
-        rf_addr <= "111";
-        rf_wr <= '1';
-        wait for 10 ns;
-        rf_wr <= '0';
-
-        wait for 20 ns;
+        wait for 200 ns;
         assert false report "tb end" severity failure;
     end process;
 end arch;
