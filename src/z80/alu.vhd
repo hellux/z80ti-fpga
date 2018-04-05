@@ -144,7 +144,7 @@ begin
     high <= op(7 downto 4);
 
     -- sets
-    bit_set <= '1' when op_set = cb or op_set = ddcb or op_set = fdcb;
+    bit_set <= '1' when op_set = cb or op_set = ddcb or op_set = fdcb else '0';
     mai_set <= '1' when op_set = main else '0';
     ext_set <= '1' when op_set = ed else '0';
     -- groups
@@ -277,14 +277,14 @@ begin
                 "000000000";
     op2_ext <= signed('0' & op2);
     op2sn <=
-        signed(not mask and op2)    when res_op = '1' else
-        signed(mask or op2)         when set_op = '1' else
-        op2_ext                    when bit_op = '1' else
-        -op2_ext                   when sub_instr = '1' else
-        op2_ext(6 downto 0) & edge when shift_instr = '1' 
-                                     and right_left = '0' else
-        edge & op2_ext(7 downto 1) when shift_instr = '1'
-                                     and right_left = '1' else
+        signed('0' & (not mask and op2))    when res_op = '1' else
+        signed('0' & (mask or op2))         when set_op = '1' else
+        op2_ext                             when bit_op = '1' else
+        -op2_ext                            when sub_instr = '1' else
+        op2_ext(6 downto 0) & edge          when shift_instr = '1' 
+                                             and right_left = '0' else
+        edge & op2_ext(7 downto 1)          when shift_instr = '1'
+                                             and right_left = '1' else
         op2_ext;
 
     -- calculation
