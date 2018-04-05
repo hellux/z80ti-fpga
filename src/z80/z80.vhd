@@ -22,8 +22,8 @@ architecture arch of z80 is
     component reg_16 port(
         clk, rst : in std_logic;
         rd, wr : in std_logic;
-        di : in std_logic_vector(7 downto 0);
-        do : out std_logic_vector(7 downto 0));
+        di : in std_logic_vector(15 downto 0);
+        do : out std_logic_vector(15 downto 0));
     end component;
 
     component buf8 port(
@@ -109,8 +109,7 @@ begin
     -- -- CONTROL SECTION -- --
     ir : reg_8 port map(clk, cbi.reset, cw.ir_rd, '1', dbus, instr);
     id : op_decoder port map(clk, cbi, cbo, instr, cw);
-    -- FIXME "constraints don't match", why?
-    --pc : reg_16 port map(clk, cbi.reset, cw.pc_rd, cw.pc_wr, addr_incr, abus);
+    pc : reg_16 port map(clk, cbi.reset, cw.pc_rd, cw.pc_wr, addr_incr, abus);
     addr_incr <= std_logic_vector(unsigned(abus) + 1);
 
 
