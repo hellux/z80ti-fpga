@@ -194,6 +194,12 @@ package body z80_instr is
         f.cw.ir_rd := '0';
         f.cw.pc_rd := '0';
         f.cw.pc_wr := '0';
+        f.cw.data_rdi := '0';
+        f.cw.data_wri := '0';
+        f.cw.data_rdo := '0';
+        f.cw.data_wro := '0';
+        f.cw.addr_rd := '0';
+        f.cw.addr_wr := '0';
 
         return f;
     end reset_frame;

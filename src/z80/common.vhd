@@ -31,6 +31,8 @@ package z80_comm is
         act_rd, tmp_rd : std_logic;
         ir_rd : std_logic;
         pc_rd, pc_wr : std_logic;
+        data_rdi, data_wri, data_rdo, data_wro : std_logic;
+        addr_rd, addr_wr : std_logic;
     end record;
 
     constant m1 : integer := 1;

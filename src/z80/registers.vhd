@@ -1,4 +1,3 @@
---Register by Jakob & Yousef
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
@@ -10,7 +9,7 @@ entity reg_8 is port(
 end reg_8;
 
 architecture Behavioral of reg_8 is
-    signal bits, bits_next : std_logic_vector(7 downto 0);
+    signal bits, bits_next : std_logic_vector(7 downto 0) := "00000000";
 begin  
     process(clk) begin
         if rising_edge(clk) then
@@ -23,7 +22,7 @@ begin
     end process;
     bits_next <= di when rd = '1' else bits;
     do <= bits when wr = '1' else (others => 'Z');
-    assert rd = '0' or di /= "ZZZZZZZZ" report "reading Zzzz";
+    assert not (rd = '1' and di = "ZZZZZZZZ") report "reading Zz";
 end Behavioral;
 
 library IEEE;
@@ -37,7 +36,8 @@ entity reg_16 is port(
 end reg_16;
 
 architecture Behavioral of reg_16 is
-    signal bits, bits_next : std_logic_vector(15 downto 0);
+    signal bits, bits_next : std_logic_vector(15 downto 0)
+        := "0000000000000000";
 begin
     process(clk) begin
         if rising_edge(clk) then
@@ -50,6 +50,7 @@ begin
     end process;
     bits_next <= di when rd = '1' else bits;
     do <= bits when wr = '1' else (others => 'Z');
+    assert not (rd = '1' and di = "ZZZZZZZZZZZZZZZZ") report "reading ZzZz";
 end Behavioral;
 
 library IEEE;
@@ -113,7 +114,7 @@ begin
         end if;
     end process;
     bits_next <= di when rd = '1' else bits;
-    do <= bits_next when rd = '1' else (others => 'Z');
+    do <= bits_next when wr = '1' else (others => 'Z');
 end arch;
 
 library IEEE;
@@ -139,5 +140,5 @@ begin
         end if;
     end process;
     bits_next <= di when rd = '1' else bits;
-    do <= bits_next when rd = '1' else (others => 'Z');
+    do <= bits_next when wr = '1' else (others => 'Z');
 end arch;

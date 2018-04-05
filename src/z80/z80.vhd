@@ -4,9 +4,9 @@ use ieee.numeric_std.all;
 use work.z80_comm.all;
 
 entity z80 is port(
-    clk : buffer std_logic; --(buffer only for testing)
-    cbi : buffer ctrlbus_in;
-    cbo : out ctrlbus_out; -- samee
+    clk : in std_logic; --(buffer only for testing)
+    cbi : in ctrlbus_in; -- samee
+    cbo : out ctrlbus_out;
     addr : out std_logic_vector(15 downto 0);
     data : inout std_logic_vector(7 downto 0));
 end z80;
@@ -83,8 +83,6 @@ architecture arch of z80 is
     signal addr_incr : std_logic_vector(15 downto 0);
     signal cw : ctrlword;
 
-    signal rd_data, wr_data : std_logic;
-    signal rd_addr, wr_addr : std_logic;
     signal dbus : std_logic_vector(7 downto 0) := "ZZZZZZZZ";
     signal abus : std_logic_vector(15 downto 0);
 begin
@@ -93,7 +91,7 @@ begin
                             alu_result, flags_out);
     act : reg_8 port map(clk, cbi.reset, cw.act_rd, '1', dbus, op1);
     tmp : reg_8 port map(clk, cbi.reset, cw.tmp_rd, '1', dbus, op2);
-    -- TODO use f in reg_file, need special bus. a needs parallel bus as well
+    -- TODO use f in reg_file
     f : reg_pair port map(clk, cbi.reset, cw.f_rd, '1', swp=>'0',
                           di=>flags_out, do=>flags_in);
     dbus <= alu_result when cw.alu_wr = '1' else (others => 'Z');
@@ -114,50 +112,13 @@ begin
 
 
     -- -- BUSES -- --
-    -- data bus, buffer when outgoing
-    dbus_buf : buf8 port map(clk, cbi.reset, rd_data, wr_data, dbus, data);
-    dbus <= data;
+    -- data bus, buffer both ways
+    dbus_buf_in : buf8 port map(clk, cbi.reset, cw.data_rdi, cw.data_wri,
+                             data, dbus);
+    dbus_buf_out : buf8 port map(clk, cbi.reset, cw.data_rdo, cw.data_wro,
+                             dbus, data);
 
-    -- addr bus, buffered
-    abus_buf : buf16 port map(clk, cbi.reset, rd_addr, wr_addr, abus, addr);
-
-
-    -- -- TESTING -- --
-    process begin
-        clk <= '1';
-        wait for 125 ns;
-        clk <= '0';
-        wait for 125 ns;
-    end process;
-
-    process begin
-        cbi.reset <= '0';
-        wait for 250 ns;
-        cbi.reset <= '1';
-        wait for 250 ns;
-        cbi.reset <= '0';
-        wait for 250 ns;
-
-        dbus <= x"cb"; -- ext
-        wait for 250 ns;
-        dbus <= (others => 'Z');
-        wait for 750 ns;
-        dbus <= x"c7"; -- set 0,a
-        wait for 250 ns;
-        dbus <= (others => 'Z');
-        wait for 500 ns;
-        dbus <= x"00"; -- nop
-        wait for 250 ns;
-        dbus <= (others => 'Z');
-        wait for 750 ns;
-        dbus <= x"87"; -- add a,a
-        wait for 250 ns;
-        dbus <= (others => 'Z');
-        wait for 750 ns;
-        dbus <= x"00";
-
-        report "tb start";
-        wait for 2000 ns;
-        assert false report "tb end" severity failure;
-    end process;
+    -- addr bus, buffer outgoing
+    abus_buf : buf16 port map(clk, cbi.reset, cw.addr_rd, cw.addr_wr,
+                              abus, addr);
 end arch;

@@ -26,19 +26,31 @@ architecture Behavioral of op_decoder is
     begin
         f := reset_frame(state, instr);
 
-        -- fetch , TODO cbus signals
+        if state.m = m1 then
+            f.cb.m1 := '1';
+        end if;
+
         if state.m = m1 or              -- always fetch during m1
-           state.overlap = '1' or        -- fetch while exec
-           state.multi_word = '1'        -- fetch multi-word instr
+           state.overlap = '1' or       -- fetch while exec if overlap
+           state.multi_word = '1'       -- fetch if multi-word instr
         then
             case state.t is
             when t1 =>
-                f.cw.pc_wr := '1';        -- write pc to abus
+                f.cw.pc_wr := '1';      -- write pc to abus
+                f.cw.addr_rd := '1';    -- read from abus to buffer
+                f.cw.addr_wr := '1';    -- write from buffer to outside abus
+                f.cb.mreq := '1';       -- addr is ready on abus
+                f.cb.rd := '1';         -- cpu wants to read
             when t2 =>
-                f.cw.pc_wr := '1';        -- keep pc on abus
-                f.cw.pc_rd := '1';        -- read incremented address to pc
+                f.cw.pc_wr := '1';      -- keep pc on abus
+                f.cw.addr_wr := '1';    -- keep writing addr to mem
+                f.cw.data_rdi := '1';   -- read instr from outer dbus
+                f.cw.pc_rd := '1';      -- read incremented address to pc
+                f.cb.mreq := '1';       -- keep request until byte retrieved
+                f.cb.rd := '1';         -- keep reading
             when t3 =>
-                f.cw.ir_rd := '1';        -- read instr from dbus to ir
+                f.cw.data_wri := '1';   -- write instr to inner dbus
+                f.cw.ir_rd := '1';      -- read instr from dbus to ir
             when others => null; end case;
         end if;
 
@@ -219,7 +231,10 @@ begin
     state.multi_word <= f.ct.multi_word;
     process(clk) begin
         if rising_edge(clk) then
-            state.t <= state.t + 1;
+            if cbi.wt /= '1' then
+                state.t <= state.t + 1;
+            end if;
+
             if ctrl.cycle_end = '1' then
                 state.t <= t1;
                 state.m <= state.m + 1;
