@@ -4,6 +4,16 @@ use ieee.std_logic_1164.all;
 package z80_comm is
     type instr_set_t is (main, ed, cb, dd, ddcb, fd, fdcb);
 
+    type ctrlbus is record
+        m1, mreq, iorq, rd, wr, rfsh : std_logic;
+        -- cpu control
+        halt : std_logic;
+        wt, int, nmi, reset : std_logic;
+        -- cpu bus control
+        busrq : std_logic;
+        busack : std_logic;
+    end record;
+
     type ctrlword is record 
         rf_addr : std_logic_vector(3 downto 0);
         rf_rdd, rf_wrd, rf_rda, rf_wra : std_logic;

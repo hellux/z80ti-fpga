@@ -1,11 +1,13 @@
 library IEEE;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.util.all;
 use work.z80_comm.all;
 use work.z80_instr.all;
 
 entity op_decoder is port(
-    clk, rst : in std_logic;
+    clk : in std_logic;
+    cbus : inout ctrlbus;
     instr : in std_logic_vector(7 downto 0);
     cw : out ctrlword);
 end op_decoder;
@@ -16,7 +18,9 @@ architecture Behavioral of op_decoder is
     signal q : std_logic;
     signal state : id_state_t := (main, m1, t1);
     signal ctrl : id_ctrl_t := ('0', '0', '0', '0', '0');
- begin
+
+    signal hax : std_logic;
+begin
     --     | p | |q|
     -- |1 0|0 0| |0|1 1 1|
     -- | x |   y   |  z  |
@@ -26,21 +30,23 @@ architecture Behavioral of op_decoder is
     p <= instr(5 downto 4);
     q <= instr(3);
 
-    -- determine set
-    process(clk) begin
+    determ_state : process(clk) begin
         if rising_edge(clk) then
             state.t <= state.t + 1;
-            if ctrl.finish_instr = '1' then state.m <= m1; end if;
-            if ctrl.finish_cycle = '1' then
+            if ctrl.cycle_end = '1' then
                 state.t <= t1;
                 state.m <= state.m + 1;
             end if;
+            if ctrl.instr_end = '1' then
+                state.m <= m1;
+                state.set <= main;
+            end if;
 
-            if rst = '1' then
+            if cbus.reset = '1' then
                 state.set <= main;
                 state.m <= m1;
                 state.t <= t1;
-            elsif ctrl.new_instr = '1' then
+            elsif ctrl.set_end = '1' then
                 case state.set is
                 when main =>
                     case instr is
@@ -62,15 +68,21 @@ architecture Behavioral of op_decoder is
         end if;
     end process;
 
-    -- TODO update below process with state, instr change
-    --      (now middle of clock first time even though state changes?)
-    -- determine control word
-    process(clk, state, instr, ctrl) begin
+    process begin --terrible hack to make below process almost combinational
+        hax <= '1';
+        wait for 100 ps;
+        hax <= '0';
+        wait for 100 ps;
+    end process;
+
+    -- TODO update process correctly with state, instr change
+    determ_cword : process(hax, instr, state, ctrl) begin
         -- reset internal ctrl signals
+        ctrl.set_end <= '0';
+        ctrl.cycle_end <= '0';
+        ctrl.instr_end <= '0';
         ctrl.overlap <= '0';
-        ctrl.new_instr <= '0';
-        ctrl.finish_instr <= '0';
-        ctrl.finish_cycle <= '0';
+        ctrl.multi_word <= '0';
 
         -- reset control word
         cw.rf_addr <= "0000";
@@ -83,7 +95,7 @@ architecture Behavioral of op_decoder is
         cw.f_wr <= '0';
         cw.f_swp <= '0';
         cw.alu_wr <= '0';
-        cw.alu_set <= state.set; -- may overwrite this for internal alu use
+        cw.alu_set <= state.set; -- overwrite in exec for internal alu use
         cw.alu_op <= instr; -- same.
         cw.act_rd <= '0';
         cw.tmp_rd <= '0';
@@ -91,7 +103,7 @@ architecture Behavioral of op_decoder is
         cw.pc_rd <= '0';
         cw.pc_wr <= '0';
 
-        -- fetch
+        -- fetch , TODO cbus signals
         if state.m = m1 or              -- always fetch during m1
            ctrl.overlap = '1' or        -- fetch while exec
            ctrl.multi_word = '1'        -- fetch multi-word instr
@@ -104,19 +116,17 @@ architecture Behavioral of op_decoder is
                 cw.pc_rd <= '1';        -- read incremented address to pc
             when t3 =>
                 cw.ir_rd <= '1';        -- read instr from dbus to ir
-            when t4 =>
-                ctrl.new_instr <= '1';  -- signal new instr arrived 
-                ctrl.multi_word <= '0';
             when others => null; end case;
         end if;
 
         -- execute
+        -- TODO replace hex with vectors (hex doesn't work)
         case state.set is
         when main =>
             case x is
             when "00" =>
-                if (z = x"0") then
-                    if (y = x"0") then -- NOP
+                if (z = "000") then
+                    if (y = "000") then nop(state, ctrl); -- NOP
                     elsif (y = x"1") then ex_af(state, ctrl, cw); -- EX AF,AF'
                     elsif (y = x"2") then -- DJNZ d
                     elsif (y = x"3") then -- JR d
@@ -166,8 +176,8 @@ architecture Behavioral of op_decoder is
                 end if;
             when "10" => 
                 case z is
-                when "110" => null; -- TODO alu_hl(state, ctrl, cw);
-                when others => alu_r(state, ctrl, cw, z); -- alu[y] r[z]
+                when "110" => null; -- alu[y] (hl)
+                when others => alu_a_r(state, ctrl, cw, z); -- alu[y] r[z]
                 end case;
             when "11" =>
                 if (z = x"0") then -- RET cc[y]
@@ -183,9 +193,7 @@ architecture Behavioral of op_decoder is
                 elsif (z = x"2") then -- JP cc[y], nn
                 elsif (z = "011") then
                     if (y = x"0") then -- JP nn
-                    elsif (y = "001") then -- (CB)
-                        ctrl.finish_cycle <= '1';
-                        ctrl.multi_word <= '1';
+                    elsif (y = "001") then fetch_multi(state, ctrl); -- (CB)
                     elsif (y = x"2") then -- OUT (n), A
                     elsif (y = x"3") then -- IN A, (n)
                     elsif (y = x"4") then -- EX (SP), HL
@@ -198,9 +206,9 @@ architecture Behavioral of op_decoder is
                     if (q = '0') then -- PUSH rp2[p]
                     elsif (q = '1') then
                         if (p = x"0") then -- CALL nn
-                        elsif (p = x"1") then ctrl.multi_word <= '1'; -- (DD)
-                        elsif (p = x"2") then ctrl.multi_word <= '1'; -- (ED)
-                        elsif (p = x"3") then ctrl.multi_word <= '1'; -- (FD)
+                        elsif (p = x"1") then fetch_multi(state, ctrl); -- (DD)
+                        elsif (p = x"2") then fetch_multi(state, ctrl); -- (ED)
+                        elsif (p = x"3") then fetch_multi(state, ctrl); -- (FD)
                         end if;
                     end if;
                 elsif (z = x"6") then -- alu[y] n
@@ -250,51 +258,20 @@ architecture Behavioral of op_decoder is
                 end if;
             when others => null; end case;
         when cb =>
-            case x is
-            when "00" => null; -- rot[y] r[z]
-            when "01" => null; -- BIT y, r[z]
-                report "bit reached";
-            when "10" => null; -- RES y, r[z]
-            when "11" => null; -- SET y, r[z]
-            when others => null;
-            end case;
+            bit_r(state, ctrl, cw, z);
         when dd =>
             null; -- TODO
         when ddcb =>
-            case x is
-            when "00" => 
-                if (z < x"6" or z = x"7") then -- LD r[z], rot[y] (IX+d)
-                elsif (z = x"6") then -- rot[y] (IX+d)
-                end if;
-            when "01" => null; -- BIT y, (IX+d)
-            when "10" =>
-                if (z < x"6" or z = x"7") then -- LD r[z], RES y, (IX+d)
-                elsif (z = x"6") then -- RES y, (IX+d)
-                end if;
-            when "11" =>
-                if (z < x"6" or z = x"7") then -- LD r[z], SET y, (IX+d)
-                elsif (z = x"6") then -- SET y, (IX+d)
-                end if;
-            when others => null;
+            case z is
+            when "110" => null; -- rot/bit/res/set[y] (IX+d)
+            when others => null; -- LD r[z], rot/res/set[y] (IX+d)
             end case;
         when fd =>
             null; -- TODO
         when fdcb =>
-            case x is
-            when "00" =>
-                if (z < x"6" or z = x"7") then -- LD r[z], rot[y] (IY+d)
-                elsif (z = x"6") then -- rot[y] (IY+d)
-                end if;
-            when "01" => null; -- BIT y, (IY+d)
-            when "10" =>
-                if (z < x"6" or z = x"7") then -- LD r[z], RES y, (IY+d)
-                elsif (z = x"6") then -- RES y, (IY+d)
-                end if;
-            when "11" =>
-                if (z < x"6" or z = x"7") then -- LD r[z], SET y, (IY+d)
-                elsif (z = x"6") then -- SET y, (IY+d)
-                end if;
-            when others => null;
+            case z is
+            when "110" => null; -- rot/bit/res/set[y] (IY+d)
+            when others => null; -- LD r[z], rot/res/set[y] (IY+d)
             end case;
         end case;
     end process;
