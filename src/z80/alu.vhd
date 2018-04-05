@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.z80comm.all;
+use work.z80_comm.all;
 
 -- TODO
 --  ensure flags unaffected on some instructions

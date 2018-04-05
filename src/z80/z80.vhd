@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.z80comm.all;
+use work.z80_comm.all;
 
 entity z80 is port(
     clk : buffer std_logic; --(buffer only for testing)
@@ -144,6 +144,10 @@ begin
         wait for 10 ns;
         reset <= '0';
         wait for 20 ns;
+
+        dbus <= x"cb"; -- ext
+        wait for 40 ns;
+        dbus <= x"44"; -- bit
 
         report "tb start";
         wait for 200 ns;

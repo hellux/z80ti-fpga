@@ -1,7 +1,8 @@
 library IEEE;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.z80comm.all;
+use work.z80_comm.all;
+use work.z80_instr.all;
 
 entity op_decoder is port(
     clk, rst : in std_logic;
@@ -14,57 +15,11 @@ architecture Behavioral of op_decoder is
     signal y, z : std_logic_vector(2 downto 0);
     signal q : std_logic;
     signal state : id_state_t := (main, m1, t1);
-    signal ctrl : id_ctrl_t := ('0', '0', '0', '0');
-
-    procedure ex_af(
-        signal state : in id_state_t;
-        signal ctrl : out id_ctrl_t;
-        signal cw : out ctrlword)
-    is begin
-        case state.m is
-        when m1 =>
-            case state.t is
-            when t4 =>
-                cw.rf_swp <= "01";
-                ctrl.finish_cycle <= '1';
-                ctrl.finish_instr <= '1';
-            when others => null; end case;
-        when others => null; end case;
-    end ex_af;
-
-    procedure alu_r(
-        signal state : in id_state_t;
-        signal ctrl : out id_ctrl_t;
-        signal cw : out ctrlword;
-        signal reg : in std_logic_vector(2 downto 0))
-    is begin
-        report "alu_r reacheeeeed";
-        case state.m is
-        when m1 =>
-            report "m1";
-            case state.t is
-            when 4 =>
-                report "m1t4";
-                cw.act_rd <= '1'; -- read from a to tmp accumulator
-                cw.rf_addr <= '0' & reg; -- select reg
-                cw.rf_wrd <= '1'; -- place reg on dbus
-                cw.tmp_rd <= '1'; -- read from dbus to tmp
-                ctrl.finish_cycle <= '1'; -- signal new cycle
-            when others => report "tstate: " & integer'image(state.t); end case;
-        when m2 =>
-            ctrl.overlap <= '1'; -- fetch next instr simultaneously
-            case state.t is
-            when t2 =>
-                cw.alu_wr <= '1'; -- place result on dbus
-                cw.f_rd <= '1'; -- read flags from alu
-                cw.rf_addr <= "0111"; -- select a reg
-                cw.rf_rdd <= '1'; -- read alu output from dbus
-                ctrl.finish_instr <= '1'; -- signal instr is done
-            when others => null; end case;
-        when others => null; end case;
-    end alu_r;
-
+    signal ctrl : id_ctrl_t := ('0', '0', '0', '0', '0');
  begin
+    --     | p | |q|
+    -- |1 0|0 0| |0|1 1 1|
+    -- | x |   y   |  z  |
     x <= instr(7 downto 6);
     y <= instr(5 downto 3);
     z <= instr(2 downto 0);
@@ -74,7 +29,6 @@ architecture Behavioral of op_decoder is
     -- determine set
     process(clk) begin
         if rising_edge(clk) then
-            assert state.t <= t5 report "no finish instr" severity failure;
             state.t <= state.t + 1;
             if ctrl.finish_instr = '1' then state.m <= m1; end if;
             if ctrl.finish_cycle = '1' then
@@ -108,9 +62,10 @@ architecture Behavioral of op_decoder is
         end if;
     end process;
 
+    -- TODO update below process with state, instr change
+    --      (now middle of clock first time even though state changes?)
     -- determine control word
-    -- TODO update with state, instr change (now middle of clock cp)
-    process(clk, state, instr) begin
+    process(clk, state, instr, ctrl) begin
         -- reset internal ctrl signals
         ctrl.overlap <= '0';
         ctrl.new_instr <= '0';
@@ -137,7 +92,10 @@ architecture Behavioral of op_decoder is
         cw.pc_wr <= '0';
 
         -- fetch
-        if state.m = m1 or ctrl.overlap = '1' then
+        if state.m = m1 or              -- always fetch during m1
+           ctrl.overlap = '1' or        -- fetch while exec
+           ctrl.multi_word = '1'        -- fetch multi-word instr
+        then
             case state.t is
             when t1 =>
                 cw.pc_wr <= '1';        -- write pc to abus
@@ -146,12 +104,15 @@ architecture Behavioral of op_decoder is
                 cw.pc_rd <= '1';        -- read incremented address to pc
             when t3 =>
                 cw.ir_rd <= '1';        -- read instr from dbus to ir
-                ctrl.new_instr <= '1';  -- signal new instr for state change
+            when t4 =>
+                ctrl.new_instr <= '1';  -- signal new instr arrived 
+                ctrl.multi_word <= '0';
             when others => null; end case;
         end if;
 
         -- execute
-        if (state.set = main) then
+        case state.set is
+        when main =>
             case x is
             when "00" =>
                 if (z = x"0") then
@@ -203,7 +164,11 @@ architecture Behavioral of op_decoder is
                     if (y = x"6") then -- HALT
                     end if;
                 end if;
-            when "10" => alu_r(state, ctrl, cw, z); -- alu[y] r[z]
+            when "10" => 
+                case z is
+                when "110" => null; -- TODO alu_hl(state, ctrl, cw);
+                when others => alu_r(state, ctrl, cw, z); -- alu[y] r[z]
+                end case;
             when "11" =>
                 if (z = x"0") then -- RET cc[y]
                 elsif (z = x"1") then
@@ -216,9 +181,11 @@ architecture Behavioral of op_decoder is
                         end if;
                     end if;
                 elsif (z = x"2") then -- JP cc[y], nn
-                elsif (z = x"3") then
+                elsif (z = "011") then
                     if (y = x"0") then -- JP nn
-                    elsif (y = x"1") then -- (CB prefix)
+                    elsif (y = "001") then -- (CB)
+                        ctrl.finish_cycle <= '1';
+                        ctrl.multi_word <= '1';
                     elsif (y = x"2") then -- OUT (n), A
                     elsif (y = x"3") then -- IN A, (n)
                     elsif (y = x"4") then -- EX (SP), HL
@@ -231,18 +198,16 @@ architecture Behavioral of op_decoder is
                     if (q = '0') then -- PUSH rp2[p]
                     elsif (q = '1') then
                         if (p = x"0") then -- CALL nn
-                        elsif (p = x"1") then -- (DD prefix)
-                        elsif (p = x"2") then -- (ED prefix)
-                        elsif (p = x"3") then -- (FD prefix)
+                        elsif (p = x"1") then ctrl.multi_word <= '1'; -- (DD)
+                        elsif (p = x"2") then ctrl.multi_word <= '1'; -- (ED)
+                        elsif (p = x"3") then ctrl.multi_word <= '1'; -- (FD)
                         end if;
                     end if;
                 elsif (z = x"6") then -- alu[y] n
                 elsif (z = x"7") then -- RST y*8
                 end if;
-            when others =>
-                assert false report "no xxxxx";
-            end case;
-        elsif (state.set = ed) then
+            when others => null; end case;
+        when ed =>
             case x is 
             when "00" => -- rot[y] r[z]
                 if (z = x"0") then
@@ -283,18 +248,19 @@ architecture Behavioral of op_decoder is
                     if (y >= x"4") then -- bli[y,z]
                     end if;
                 end if;
-            when others => report "invalid ed x";
-            end case;
-        elsif (state.set = cb) then
+            when others => null; end case;
+        when cb =>
             case x is
             when "00" => null; -- rot[y] r[z]
             when "01" => null; -- BIT y, r[z]
+                report "bit reached";
             when "10" => null; -- RES y, r[z]
             when "11" => null; -- SET y, r[z]
             when others => null;
             end case;
-        elsif (state.set = dd) then
-        elsif (state.set = ddcb) then
+        when dd =>
+            null; -- TODO
+        when ddcb =>
             case x is
             when "00" => 
                 if (z < x"6" or z = x"7") then -- LD r[z], rot[y] (IX+d)
@@ -311,8 +277,9 @@ architecture Behavioral of op_decoder is
                 end if;
             when others => null;
             end case;
-        elsif (state.set = fd) then
-        elsif (state.set = fdcb) then
+        when fd =>
+            null; -- TODO
+        when fdcb =>
             case x is
             when "00" =>
                 if (z < x"6" or z = x"7") then -- LD r[z], rot[y] (IY+d)
@@ -329,6 +296,6 @@ architecture Behavioral of op_decoder is
                 end if;
             when others => null;
             end case;
-        end if;
+        end case;
     end process;
  end Behavioral;

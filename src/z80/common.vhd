@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-package z80comm is
+package z80_comm is
     type instr_set_t is (main, ed, cb, dd, ddcb, fd, fdcb);
 
     type ctrlword is record 
@@ -28,16 +28,4 @@ package z80comm is
     constant t3 : integer := 3;
     constant t4 : integer := 4;
     constant t5 : integer := 5;
-
-    type id_ctrl_t is record
-        new_instr : std_logic;
-        finish_cycle : std_logic;
-        finish_instr : std_logic;
-        overlap : std_logic;
-    end record;
-    type id_state_t is record
-        set : instr_set_t;
-        m : integer;
-        t : integer;
-    end record;
-end z80comm;
+end z80_comm;
