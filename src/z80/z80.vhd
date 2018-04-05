@@ -76,7 +76,7 @@ architecture arch of z80 is
     end component;
 
     signal alu_result : std_logic_vector(7 downto 0);
-    signal op1, op2 : std_logic_vector(7 downto 0);
+    signal op1, tmp_do : std_logic_vector(7 downto 0);
     signal flags_in, flags_out : std_logic_vector(7 downto 0);
 
     signal instr : std_logic_vector(7 downto 0);
@@ -87,13 +87,16 @@ architecture arch of z80 is
     signal abus : std_logic_vector(15 downto 0);
 begin
     -- -- ALU section -- --
-    alu_comp : alu port map(clk, op1, op2, flags_in, cw.alu_op, cw.alu_set,
+    alu_comp : alu port map(clk, op1, tmp_do, flags_in, cw.alu_op, cw.alu_set,
                             alu_result, flags_out);
+    -- use a directly to act, now using dbus (incorrect)
     act : reg_8 port map(clk, cbi.reset, cw.act_rd, '1', dbus, op1);
-    tmp : reg_8 port map(clk, cbi.reset, cw.tmp_rd, '1', dbus, op2);
+    tmp : reg_8 port map(clk, cbi.reset, cw.tmp_rd, '1', dbus, tmp_do);
     -- TODO use f in reg_file
     f : reg_pair port map(clk, cbi.reset, cw.f_rd, '1', swp=>'0',
                           di=>flags_out, do=>flags_in);
+
+    dbus <= tmp_do when cw.tmp_wr = '1' else (others => 'Z');
     dbus <= alu_result when cw.alu_wr = '1' else (others => 'Z');
 
 

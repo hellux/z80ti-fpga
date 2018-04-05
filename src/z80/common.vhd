@@ -28,7 +28,8 @@ package z80_comm is
         alu_wr : std_logic;
         alu_set : instr_set_t;
         alu_op : std_logic_vector(7 downto 0);
-        act_rd, tmp_rd : std_logic;
+        act_rd : std_logic;
+        tmp_rd, tmp_wr : std_logic;
         ir_rd : std_logic;
         pc_rd, pc_wr : std_logic;
         data_rdi, data_wri, data_rdo, data_wro : std_logic;

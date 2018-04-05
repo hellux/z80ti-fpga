@@ -39,17 +39,17 @@ architecture Behavioral of op_decoder is
                 f.cw.pc_wr := '1';      -- write pc to abus
                 f.cw.addr_rd := '1';    -- read from abus to buffer
                 f.cw.addr_wr := '1';    -- write from buffer to outside abus
-                f.cb.mreq := '1';       -- addr is ready on abus
-                f.cb.rd := '1';         -- cpu wants to read
+                f.cb.mreq := '1';       -- signal addr is ready on abus
+                f.cb.rd := '1';         -- request reading from memory
             when t2 =>
                 f.cw.pc_wr := '1';      -- keep pc on abus
                 f.cw.addr_wr := '1';    -- keep writing addr to mem
-                f.cw.data_rdi := '1';   -- read instr from outer dbus
+                f.cw.data_rdi := '1';   -- store instr to data buf
                 f.cw.pc_rd := '1';      -- read incremented address to pc
                 f.cb.mreq := '1';       -- keep request until byte retrieved
                 f.cb.rd := '1';         -- keep reading
             when t3 =>
-                f.cw.data_wri := '1';   -- write instr to inner dbus
+                f.cw.data_wri := '1';   -- write instr to inner dbus from buf
                 f.cw.ir_rd := '1';      -- read instr from dbus to ir
             when others => null; end case;
         end if;
@@ -102,11 +102,15 @@ architecture Behavioral of op_decoder is
                     end if;
                 end if;
             when "01" =>
-                if (s.z /= x"6") then --LD r[y], r[z]
-                elsif (s.z = x"6") then
-                    if (s.y = x"6") then -- HALT
-                    end if;
-                end if;
+                case s.z is
+                when "110" =>
+                    case s.y is
+                    when "110" => null; -- HALT
+                    when others => null; -- LD r[y], (hl)
+                    end case;
+                -- TODO LD (hl), r[z]
+                when others => ld_r_r(state, f, s.z, s.y); --LD r[y], r[z]
+                end case;
             when "10" => 
                 case s.z is
                 when "110" => null; -- alu[y] (hl)

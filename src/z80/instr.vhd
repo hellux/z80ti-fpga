@@ -20,7 +20,7 @@ package z80_instr is
         overlap, multi_word : std_logic;
     end record;
 
-    -- container for signals so a function can be used
+    -- container for signals so a function can be used (f as return value)
     type id_frame_t is record
         ct : id_ctrl_t;
         cb : ctrlbus_out;
@@ -51,6 +51,9 @@ package z80_instr is
     procedure bit_r(signal state : in id_state_t;
                     variable f : out id_frame_t;
                     signal reg : in std_logic_vector(2 downto 0));
+    procedure ld_r_r(signal state : in id_state_t;
+                     variable f : out id_frame_t;
+                     signal src, dst : in std_logic_vector(2 downto 0));
 end z80_instr;
 
 package body z80_instr is
@@ -109,20 +112,20 @@ package body z80_instr is
         when m1 =>
             case state.t is
             when t4 =>
-                f.cw.act_rd := '1';           -- read from a to tmp accumulator
-                f.cw.rf_addr := '0' & reg;    -- select reg
-                f.cw.rf_wrd := '1';           -- place reg on dbus
-                f.cw.tmp_rd := '1';           -- read from dbus to tmp
+                f.cw.act_rd := '1';         -- read from a to tmp accumulator
+                f.cw.rf_addr := '0' & reg;  -- select reg
+                f.cw.rf_wrd := '1';         -- place reg on dbus
+                f.cw.tmp_rd := '1';         -- read from dbus to tmp
                 f.ct.cycle_end := '1';      -- signal new cycle
             when others => null; end case;
         when m2 =>
             f.ct.overlap := '1';            -- fetch next instr simultaneously
             case state.t is
             when t2 =>
-                f.cw.alu_wr := '1';           -- place result on dbus
-                f.cw.f_rd := '1';             -- read flags from alu
-                f.cw.rf_addr := "0111";       -- select the A reg
-                f.cw.rf_rdd := '1';           -- read alu output from dbus
+                f.cw.alu_wr := '1';         -- place result on dbus
+                f.cw.f_rd := '1';           -- read flags from alu
+                f.cw.rf_addr := "0111";     -- select the A reg
+                f.cw.rf_rdd := '1';         -- read alu output from dbus
                 f.ct.instr_end := '1';      -- signal instr is done
             when others => null; end case;
         when others => null; end case;
@@ -153,6 +156,27 @@ package body z80_instr is
             when others => null; end case;
         when others => null; end case;
     end bit_r;
+
+    procedure ld_r_r(signal state : in id_state_t;
+                     variable f : out id_frame_t;
+                     signal src, dst : in std_logic_vector(2 downto 0))
+    is begin
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := '0' & src;
+                f.cw.rf_wrd := '1';
+                f.cw.tmp_rd := '1';
+            when t5 =>
+                f.cw.rf_addr := '0' & dst;
+                f.cw.tmp_wr := '1';
+                f.cw.rf_rdd := '1';
+                f.ct.instr_end := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+    end ld_r_r;
 
     function reset_frame(state : id_state_t;
                          instr : std_logic_vector(7 downto 0))
@@ -191,6 +215,7 @@ package body z80_instr is
         f.cw.alu_op := instr; -- same.
         f.cw.act_rd := '0';
         f.cw.tmp_rd := '0';
+        f.cw.tmp_wr := '0';
         f.cw.ir_rd := '0';
         f.cw.pc_rd := '0';
         f.cw.pc_wr := '0';
