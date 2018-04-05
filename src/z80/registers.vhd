@@ -23,6 +23,7 @@ begin
     end process;
     bits_next <= di when rd = '1' else bits;
     do <= bits when wr = '1' else (others => 'Z');
+    assert rd = '0' or di /= "ZZZZZZZZ" report "reading Zzzz";
 end Behavioral;
 
 library IEEE;
