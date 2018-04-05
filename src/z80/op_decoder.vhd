@@ -47,8 +47,8 @@ architecture Behavioral of op_decoder is
             case s.x is
             when "00" =>
                 if (s.z = "000") then
-                    if (s.y = "000") then nop(state, f.ct); -- NOP
-                    elsif (s.y = x"1") then -- ex_af(state, ctrl, cw); -- EX AF,AF'
+                    if (s.y = "000") then nop(state, f); -- NOP
+                    elsif (s.y = x"1") then ex_af(state, f); -- EX AF,AF'
                     elsif (s.y = x"2") then -- DJNZ d
                     elsif (s.y = x"3") then -- JR d
                     elsif (s.y >= x"4" and s.y <= x"7") then -- JR cc[y-4] d
@@ -98,7 +98,7 @@ architecture Behavioral of op_decoder is
             when "10" => 
                 case s.z is
                 when "110" => null; -- alu[y] (hl)
-                when others => alu_a_r(state, f.ct, f.cw, s.z); -- alu[y] r[z]
+                when others => alu_a_r(state, f, s.z); -- alu[y] r[z]
                 end case;
             when "11" =>
                 if (s.z = x"0") then -- RET cc[y]
@@ -179,7 +179,7 @@ architecture Behavioral of op_decoder is
                 end if;
             when others => null; end case;
         when cb =>
-            bit_r(state, f.ct, f.cw, s.z);
+            bit_r(state, f, s.z);
         when dd =>
             null; -- TODO
         when ddcb =>
