@@ -120,12 +120,12 @@ package body z80_instr is
         signal state : in id_state_t;
         variable f : out id_frame_t)
     is begin
-        case m1 =>
+        case state.m is
+        when m1 =>
             case state.t is
             when t4 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        case state.m is
         when m2 =>
             fetch_cycle(state, f);
             case state.t is
