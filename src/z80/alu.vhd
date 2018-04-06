@@ -6,27 +6,8 @@ use work.z80_comm.all;
 -- TODO
 --  ensure flags unaffected on some instructions
 --  make sure all op codes are covered
-
--- OPERATION IMPLEMENTATIONS
--- ARITH
---  add                 sum
---  sub                 op2<=-op2, sum
---  increment           op2<=1, sum
---  decrement           op2<=-1, sum
---  compare             op2<=-op2, sum (skip output)
--- LOGIC
---  and                 and
---  or                  or
---  xor                 xor
--- SHIFTS
---  lshift_instr logic        op2<=op2<<1, op1<=0, sum
---  rshift_instr logic        op2<=op2>>1, op1<=0, sum
---  lshift_instr arith        op2<=op2<<1, op1<=0, sum
---  rshift_instr arith        op2<=op2>>1, op1<=0, sum
--- BIT
---  set bit             op2(bs) <= '1'
---  reset bit           op2(bs) <= '0'
---  test bit            z <= not op2(bs)
+--  replace x_op signal with single op type signal (assign with function)
+--  remove x_set signals
 
 -- FLAGS
 -- 7  6  5  4  3  2  1  0
@@ -35,27 +16,23 @@ use work.z80_comm.all;
 -- f5: copy of bit 5
 
 -- INSTRUCTIONS -------
-
 -- MAIN 
 --   0-7 8-f
 -- 8 add adc
 -- 9 sub sbc
 -- a and xor
 -- b or  cp
-
 -- EXTENDED
 --      1   2   4   9   a   c
 -- 4-7      sbc neg     adc neg
 -- a    cpi         cpd
 -- b    cpir        cpdr
-
--- IY
+-- IY, IX
 --   4-5 c-d
 -- 8 add adc
 -- 9 sub sbc
 -- a and xor
 -- b or  cp
-
 -- CB, DDCB, FDCB: BIT INSTR, IX, IY
 --   0-7    8-f
 -- 0 rlc    rrc
@@ -74,16 +51,6 @@ use work.z80_comm.all;
 -- d set2   set3
 -- e set4   set5
 -- f set6   set7
-
--- INSTRUCTION SET STATES
--- name         opcode      state
--- main                     000
--- extended     ED          011
--- bit          CB          100
--- ix           DD          001
--- ix bit       DDCB        101
--- iy           FD          010
--- iy bit       FDCB        110
 
 entity alu is port(
     clk : in std_logic;
