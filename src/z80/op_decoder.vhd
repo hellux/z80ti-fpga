@@ -13,7 +13,7 @@ end op_decoder;
 
 architecture Behavioral of op_decoder is
     signal split : id_split_t;
-    signal state : id_state_t := (main, m1, t1, '0', '0');
+    signal state : id_state_t := (main, m1, t1, '0', '0', '0');
     signal ctrl : id_ctrl_t;
     signal f : id_frame_t;
 
@@ -37,22 +37,24 @@ architecture Behavioral of op_decoder is
            state.overlap = '1' or       -- fetch while exec if overlap
            state.multi_word = '1'       -- fetch if multi-word instr
         then
+            fetch_cycle(state, f);
             case state.t is
             when t1 =>
-                f.cw.pc_wr := '1';      -- write pc to abus
-                f.cw.addr_rd := '1';    -- read from abus to buffer
-                f.cw.addr_wr := '1';    -- write from buffer to outside abus
-                f.cb.mreq := '1';       -- signal addr is ready on abus
-                f.cb.rd := '1';         -- request reading from memory
+                if state.jump_cycle = '1' then
+                    f.cw.rf_addr := "1000";
+                    f.cw.rf_wra := '1'; -- use wz instead of pc
+                else 
+                    f.cw.pc_wr := '1';  -- write pc to abus
+                end if;
             when t2 =>
-                f.cw.pc_wr := '1';      -- keep pc on abus
-                f.cw.addr_wr := '1';    -- keep writing addr to mem
-                f.cw.data_rdi := '1';   -- store instr to data buf
+                if state.jump_cycle = '1' then
+                    f.cw.rf_addr := "1000";
+                    f.cw.rf_wra := '1'; -- keep wz on abus for incr
+                else 
+                    f.cw.pc_wr := '1';  -- keep pc on abus
+                end if;
                 f.cw.pc_rd := '1';      -- read incremented address to pc
-                f.cb.mreq := '1';       -- keep request until byte retrieved
-                f.cb.rd := '1';         -- keep reading
             when t3 =>
-                f.cw.data_wri := '1';   -- write instr to inner dbus from buf
                 f.cw.ir_rd := '1';      -- read instr from dbus to ir
             when others => null; end case;
         end if;

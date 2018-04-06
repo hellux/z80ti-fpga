@@ -10,6 +10,7 @@ package z80_instr is
         instr_end : std_logic;      -- last state of current instr
         overlap : std_logic;        -- fetch during this cycle while exec
         multi_word : std_logic;     -- fetch next word of multi-word instr
+        jump : std_logic;     -- last instr was jump
     end record;
 
     -- current state of cpu, modified synchronously
@@ -17,7 +18,7 @@ package z80_instr is
         set : instr_set_t;
         m : integer;
         t : integer;
-        overlap, multi_word : std_logic;
+        overlap, multi_word, jump_cycle : std_logic;
     end record;
 
     -- container for signals so a function can be used (f as return value)
@@ -38,11 +39,19 @@ package z80_instr is
     return id_frame_t;
 
     -- system
+    -- prereq:
+    --  addr on abus during t1
+    -- ensures:
+    --  data on dbus during t3
+    procedure fetch_cycle(signal state : in id_state_t;
+                          variable f : out id_frame_t);
     procedure fetch_multi(signal state : in id_state_t;
                           variable ctrl : out id_ctrl_t);
     -- instr
     procedure nop(signal state : in id_state_t;
                   variable f : out id_frame_t);
+    procedure jp_nn(signal state : in id_state_t;
+                 variable f : out id_frame_t);
     procedure ex_af(signal state : in id_state_t;
                     variable f : out id_frame_t);
     procedure alu_a_r(signal state : in id_state_t;
@@ -57,6 +66,25 @@ package z80_instr is
 end z80_instr;
 
 package body z80_instr is
+    procedure fetch_cycle(signal state : in id_state_t;
+                          variable f : out id_frame_t)
+    is begin
+        case state.t is
+        when t1 =>
+            f.cw.addr_rd := '1';    -- read from abus to buffer
+            f.cw.addr_wr := '1';    -- write from buffer to outside abus
+            f.cb.mreq := '1';       -- signal addr is ready on abus
+            f.cb.rd := '1';         -- request reading from memory
+        when t2 =>
+            f.cw.addr_wr := '1';    -- keep writing addr to mem
+            f.cw.data_rdi := '1';   -- store instr to data buf
+            f.cb.mreq := '1';       -- keep request until byte retrieved
+            f.cb.rd := '1';         -- keep reading
+        when t3 =>
+            f.cw.data_wri := '1';   -- write instr to inner dbus from buf
+        when others => null; end case;
+    end fetch_cycle;
+
     procedure fetch_multi(
         signal state : in id_state_t;
         variable ctrl : out id_ctrl_t)
@@ -87,6 +115,43 @@ package body z80_instr is
             f.ct.instr_end := '1';
         when others => null; end case;
     end nop;
+
+    procedure jp_nn(
+        signal state : in id_state_t;
+        variable f : out id_frame_t)
+    is begin
+        case m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        case state.m is
+        when m2 =>
+            fetch_cycle(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.pc_wr := '1';
+            when t2 =>
+                f.cw.pc_wr := '1';
+                f.cw.pc_rd := '1';
+            when t3 =>
+                f.cw.rf_addr := "1001";
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            fetch_cycle(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.pc_wr := '1';
+            when t2 =>
+                f.cw.pc_wr := '1';
+                f.cw.pc_rd := '1';
+            when t3 =>
+                f.cw.rf_addr := "1000";
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+    end jp_nn;
 
     procedure ex_af(
         signal state : in id_state_t;

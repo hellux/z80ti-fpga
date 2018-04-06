@@ -19,9 +19,9 @@ architecture arch of mem is
          x"00", -- nop
          x"87", -- add a
          x"47", -- ld b, a
-         x"00",
-         x"00",
-         x"00",
+         x"c3", -- 
+         x"02", -- jp 02
+         x"00", --
          x"00",
          x"00",
          x"00",
