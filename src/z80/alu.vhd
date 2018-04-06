@@ -281,9 +281,9 @@ begin
         signed('0' & (mask or op2))         when set_op = '1' else
         op2_ext                             when bit_op = '1' else
         -op2_ext                            when sub_instr = '1' else
-        op2_ext(6 downto 0) & edge          when shift_instr = '1' 
+        '0' & op2_ext(6 downto 0) & edge    when shift_instr = '1' 
                                              and right_left = '0' else
-        edge & op2_ext(7 downto 1)          when shift_instr = '1'
+        '0' & edge & op2_ext(7 downto 1)    when shift_instr = '1'
                                              and right_left = '1' else
         op2_ext;
 

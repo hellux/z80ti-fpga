@@ -2,6 +2,7 @@ library ieee;
 use work.util.all;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.z80_comm.all;
 
 entity alu_tb_v2 is
 end alu_tb_v2;
@@ -12,7 +13,7 @@ architecture arch of alu_tb_v2 is
         op1, op2 : in std_logic_vector(7 downto 0);
         flags_in : in std_logic_vector(7 downto 0);
         op : in std_logic_vector(7 downto 0);
-        op_set : in std_logic_vector(2 downto 0);
+        op_set : in instr_set_t;
         result, flags_out : out std_logic_vector(7 downto 0));
     end component;
 
@@ -20,7 +21,7 @@ architecture arch of alu_tb_v2 is
         signal op1_s : out std_logic_vector(7 downto 0);
         signal op2_s : out std_logic_vector(7 downto 0);
         signal op_s : out std_logic_vector(7 downto 0);
-        signal set_s : out std_logic_vector(2 downto 0);
+        signal set_s : out instr_set_t;
         signal flags_in_s : out std_logic_vector(7 downto 0);
         signal flags_out_s : in std_logic_vector(7 downto 0);
         signal result_s : in std_logic_vector(7 downto 0);
@@ -28,7 +29,7 @@ architecture arch of alu_tb_v2 is
         constant op1 : std_logic_vector(7 downto 0);
         constant op2 : std_logic_vector(7 downto 0);
         constant op : std_logic_vector(7 downto 0);
-        constant set : std_logic_vector(2 downto 0);
+        constant set : instr_set_t;
         constant flags_in : std_logic_vector(7 downto 0);
         -- assertions
         constant flags_out : std_logic_vector(7 downto 0);
@@ -72,7 +73,7 @@ architecture arch of alu_tb_v2 is
     signal op1, op2 : std_logic_vector(7 downto 0);
     signal flags_in : std_logic_vector(7 downto 0);
     signal op : std_logic_vector(7 downto 0);
-    signal op_set : std_logic_vector(2 downto 0);
+    signal op_set : instr_set_t;
     signal result, flags_out : std_logic_vector(7 downto 0);
 begin
     alu_comp : alu port map(
@@ -97,7 +98,7 @@ begin
         op1 <= x"00";
         op2 <= x"00";
         op <= x"00";
-        op_set <= "000";
+        op_set <= main;
         flags_in <= x"00";
 
         wait for 20 ns;
@@ -106,82 +107,82 @@ begin
 
         report "add";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"01", x"01", x"80", "000", "00000001", "00-0-000", x"02");
+             x"01", x"01", x"80", main, "00000001", "00-0-000", x"02");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"01", x"01", x"29", "000", "00000000", "00-0-000", x"02");
+             x"01", x"01", x"29", main, "00000000", "00-0-000", x"02");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"01", x"7f", x"c6", "000", "00000000", "10-1-100", x"80");
+             x"01", x"7f", x"c6", main, "00000000", "10-1-100", x"80");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"01", x"7f", x"09", "000", "00000000", "10-1-100", x"80");
+             x"01", x"7f", x"09", main, "00000000", "10-1-100", x"80");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"f1", x"7f", x"c6", "000", "00000000", "00-1-001", x"70");
+             x"f1", x"7f", x"c6", main, "00000000", "00-1-001", x"70");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"23", x"33", x"80", "000", "00000000", "00-0-000", x"56");
+             x"23", x"33", x"80", main, "00000000", "00-0-000", x"56");
 
         report "sub";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"29", x"11", x"d6", "000", "00000001", "00-0-010", x"18");
+             x"29", x"11", x"d6", main, "00000001", "00-0-010", x"18");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"ff", x"97", "000", "11111111", "01-0-010", x"00");
+             x"ff", x"ff", x"97", main, "11111111", "01-0-010", x"00");
 
         report "sbc";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"ff", x"62", "011", "11111111", "10-1-011", x"ff");
+             x"ff", x"ff", x"62", ed, "11111111", "10-1-011", x"ff");
 
         report "cp";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"ff", x"b8", "000", "11111111", "01-0-010", x"ff");
+             x"ff", x"ff", x"b8", main, "11111111", "01-0-010", x"ff");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"00", x"00", x"fe", "000", "00000000", "01-0-010", x"00");
+             x"00", x"00", x"fe", main, "00000000", "01-0-010", x"00");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"3c", x"c2", x"a1", "011", "00000000", "00-0-011", x"3c");
+             x"3c", x"c2", x"a1", ed, "00000000", "00-0-011", x"3c");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"10", x"0d", x"b9", "011", "00000000", "00-1-010", x"10");
+             x"10", x"0d", x"b9", ed, "00000000", "00-1-010", x"10");
 
         report "inc";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"01", x"04", "000", "00000000", "00-0-000", x"02");
+             x"ff", x"01", x"04", main, "00000000", "00-0-000", x"02");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"ff", x"3c", "000", "00000000", "01-1-000", x"00");
+             x"ff", x"ff", x"3c", main, "00000000", "01-1-000", x"00");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"ff", x"2c", "000", "00000001", "01-1-001", x"00");
+             x"ff", x"ff", x"2c", main, "00000001", "01-1-001", x"00");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"00", x"00", x"13", "000", "00000001", "00-0-001", x"01");
+             x"00", x"00", x"13", main, "00000001", "00-0-001", x"01");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"00", x"93", x"24", "000", "11100110", "10-0-000", x"94");
+             x"00", x"93", x"24", main, "11100110", "10-0-000", x"94");
 
         report "dec";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"01", x"05", "000", "00000000", "01-1-000", x"00");
+             x"ff", x"01", x"05", main, "00000000", "01-1-000", x"00");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"00", x"3d", "000", "00000000", "10-0-000", x"ff");
+             x"ff", x"00", x"3d", main, "00000000", "10-0-000", x"ff");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"ff", x"00", x"2b", "000", "11111111", "10-0-001", x"ff");
+             x"ff", x"00", x"2b", main, "11111111", "10-0-001", x"ff");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"82", x"82", x"1d", "000", "11111111", "10-1-001", x"81");
+             x"82", x"82", x"1d", main, "11111111", "10-1-001", x"81");
 
         report "neg";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"98", x"ff", x"64", "011", "00000000", "00-1-011", x"01");
+             x"98", x"ff", x"64", ed, "00000000", "00-1-011", x"01");
         -- manual ex
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"00", x"98", x"64", "011", "00000000", "00-1-011", x"68");
+             x"00", x"98", x"64", ed, "00000000", "00-1-011", x"68");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"00", x"00", x"44", "011", "00000000", "01-0-010", x"00");
+             x"00", x"00", x"44", ed, "00000000", "01-0-010", x"00");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"00", x"80", x"7c", "011", "00000000", "10-0-111", x"80");
+             x"00", x"80", x"7c", ed, "00000000", "10-0-111", x"80");
 
         report "bit";
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"f0", x"01", x"40", "100", "00000001", "-0-1--01", x"01");
+             x"f0", x"01", x"40", cb, "00000001", "-0-1--01", x"01");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"f0", x"ff", x"50", "110", "00000000", "-0-1--00", x"ff");
+             x"f0", x"ff", x"50", fdcb, "00000000", "-0-1--00", x"ff");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"f0", x"fd", x"48", "110", "00000000", "-1-1--00", x"fd");
+             x"f0", x"fd", x"48", fdcb, "00000000", "-1-1--00", x"fd");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"f0", x"fd", x"58", "110", "00000000", "-0-1--00", x"fd");
+             x"f0", x"fd", x"58", fdcb, "00000000", "-0-1--00", x"fd");
         test(op1, op2, op, op_set, flags_in, flags_out, result,
-             x"f0", x"c8", x"62", "100", "11111111", "-1-1--01", x"c8");
+             x"f0", x"c8", x"62", cb, "11111111", "-1-1--01", x"c8");
 
         assert false report "TB COMPLETE" severity failure;
      end process;
