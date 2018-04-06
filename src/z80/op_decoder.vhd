@@ -13,7 +13,7 @@ end op_decoder;
 
 architecture Behavioral of op_decoder is
     signal split : id_split_t;
-    signal state : id_state_t := (main, m1, t1, '0', '0', '0');
+    signal state : id_state_t := (main, m1, t1, others => '0');
     signal ctrl : id_ctrl_t;
     signal f : id_frame_t;
 

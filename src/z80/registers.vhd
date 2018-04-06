@@ -22,7 +22,6 @@ begin
     end process;
     bits_next <= di when rd = '1' else bits;
     do <= bits when wr = '1' else (others => 'Z');
-    assert not (rd = '1' and di = "ZZZZZZZZ") report "reading Zz";
 end Behavioral;
 
 library IEEE;
@@ -50,7 +49,6 @@ begin
     end process;
     bits_next <= di when rd = '1' else bits;
     do <= bits when wr = '1' else (others => 'Z');
-    assert not (rd = '1' and di = "ZZZZZZZZZZZZZZZZ") report "reading ZzZz";
 end Behavioral;
 
 library IEEE;

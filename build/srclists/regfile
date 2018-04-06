@@ -1,2 +1,4 @@
-src/z80/reg_file.vhd
-src/z80/regfile_tb.vhd
+tests/util.vhd
+src/z80/common.vhd
+src/z80/regfile.vhd
+tests/z80/regfile_tb_v2.vhd

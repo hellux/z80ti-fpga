@@ -161,7 +161,7 @@ package body z80_instr is
         when m1 =>
             case state.t is
             when t4 =>
-                f.cw.rf_swp := "01";
+                f.cw.rf_swp := af;
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
             when others => null; end case;
@@ -268,13 +268,11 @@ package body z80_instr is
         -- reset control word
         f.cw.rf_addr := "0000";
         f.cw.rf_rdd := '0';
-        f.cw.rf_wrd := '0';
         f.cw.rf_rda := '0';
+        f.cw.rf_wrd := '0';
         f.cw.rf_wra := '0';
-        f.cw.rf_swp := "00";
+        f.cw.rf_swp := none;
         f.cw.f_rd := '0';
-        f.cw.f_wr := '0';
-        f.cw.f_swp := '0';
         f.cw.alu_wr := '0';
         f.cw.alu_set := state.set; -- overwrite in exec for internal alu use
         f.cw.alu_op := instr; -- same.

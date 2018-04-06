@@ -40,13 +40,6 @@ architecture arch of z80 is
         do : out std_logic_vector(15 downto 0));
     end component;
 
-    component reg_pair port(
-        clk, rst : in std_logic;
-        rd, wr, swp : in std_logic;
-        di : in std_logic_vector(7 downto 0);
-        do : out std_logic_vector(7 downto 0));
-    end component;
-
     component alu port(
         clk : in std_logic;
         op1, op2 : in std_logic_vector(7 downto 0);
@@ -56,15 +49,17 @@ architecture arch of z80 is
         result, flags_out : out std_logic_vector(7 downto 0));
     end component;
 
-    component reg_file port(
-        clk : in std_logic;
-        rst : in std_logic;
-        rd, wr : in std_logic;
-        rd_adr, wr_adr : in std_logic_vector(2 downto 0);
-        rd_f, wr_f : in std_logic;
-        swp : in std_logic_vector(1 downto 0);
-        di : in std_logic_vector(7 downto 0);
-        do : out std_logic_vector(7 downto 0));
+    component regfile port(
+        clk, rst : in std_logic;
+        reg_addr : in std_logic_vector(3 downto 0);
+        rdd, rda, rdf : in std_logic;
+        wrd, wra: in std_logic;
+        swp : in rf_swap_t;
+        data : inout std_logic_vector(7 downto 0);
+        addr : in std_logic_vector(15 downto 0);
+        f_in : in std_logic_vector(7 downto 0);
+        addr_out, addr_dis : out std_logic_vector(15 downto 0);
+        a_out, f_out : out std_logic_vector(7 downto 0));
     end component;
 
     component op_decoder port(
@@ -76,8 +71,10 @@ architecture arch of z80 is
     end component;
 
     signal alu_result : std_logic_vector(7 downto 0);
-    signal op1, tmp_do : std_logic_vector(7 downto 0);
+    signal acc, op1, tmp_do : std_logic_vector(7 downto 0);
     signal flags_in, flags_out : std_logic_vector(7 downto 0);
+
+    signal disp_addr : std_logic_vector(15 downto 0);
 
     signal instr : std_logic_vector(7 downto 0);
     signal addr_incr : std_logic_vector(15 downto 0);
@@ -89,23 +86,17 @@ begin
     -- -- ALU section -- --
     alu_comp : alu port map(clk, op1, tmp_do, flags_in, cw.alu_op, cw.alu_set,
                             alu_result, flags_out);
-    -- use a directly to act, now using dbus (incorrect)
-    act : reg_8 port map(clk, cbi.reset, cw.act_rd, '1', dbus, op1);
+    act : reg_8 port map(clk, cbi.reset, cw.act_rd, '1', acc, op1);
     tmp : reg_8 port map(clk, cbi.reset, cw.tmp_rd, '1', dbus, tmp_do);
-    -- TODO use f in reg_file
-    f : reg_pair port map(clk, cbi.reset, cw.f_rd, '1', swp=>'0',
-                          di=>flags_out, do=>flags_in);
-
     dbus <= tmp_do when cw.tmp_wr = '1' else (others => 'Z');
     dbus <= alu_result when cw.alu_wr = '1' else (others => 'Z');
 
 
     -- -- REGISTER SECTION -- --
-    -- TODO for rf: create larger address, bus for abus, flags, act
-    rf : reg_file port map(clk, cbi.reset,
-        cw.rf_rdd, cw.rf_wrd, cw.rf_addr(2 downto 0), cw.rf_addr(2 downto 0),
-        '0', '0', cw.rf_swp, dbus, dbus);
-
+    rf : regfile port map(clk, cbi.reset,
+        cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd,
+                    cw.rf_wrd, cw.rf_wra, cw.rf_swp,
+        dbus, addr_incr, flags_out, abus, disp_addr, acc, flags_in);
 
     -- -- CONTROL SECTION -- --
     ir : reg_8 port map(clk, cbi.reset, cw.ir_rd, '1', dbus, instr);
@@ -116,12 +107,12 @@ begin
 
     -- -- BUSES -- --
     -- data bus, buffer both ways
-    dbus_buf_in : buf8 port map(clk, cbi.reset, cw.data_rdi, cw.data_wri,
+    dbufi : buf8 port map(clk, cbi.reset, cw.data_rdi, cw.data_wri,
                              data, dbus);
-    dbus_buf_out : buf8 port map(clk, cbi.reset, cw.data_rdo, cw.data_wro,
+    dbufo : buf8 port map(clk, cbi.reset, cw.data_rdo, cw.data_wro,
                              dbus, data);
 
     -- addr bus, buffer outgoing
-    abus_buf : buf16 port map(clk, cbi.reset, cw.addr_rd, cw.addr_wr,
+    abuf : buf16 port map(clk, cbi.reset, cw.addr_rd, cw.addr_wr,
                               abus, addr);
 end arch;

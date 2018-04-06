@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use work.z80_comm.all;
 
 entity comp is port(
-    signal clk : in std_logic);
+    signal clk, rst : in std_logic);
 end comp;
 
 architecture arch of comp is
@@ -28,6 +28,7 @@ architecture arch of comp is
     signal addr : std_logic_vector(15 downto 0);
     signal data : std_logic_vector(7 downto 0);
 begin
+    cbi.reset <= rst;
     cpu : z80 port map(clk, cbi, cbo, addr, data);
     ram : mem port map(clk, cbi, cbo, addr, data);
 end arch;

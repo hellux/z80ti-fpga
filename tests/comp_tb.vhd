@@ -6,17 +6,15 @@ end comp_tb;
 
 architecture arch of comp_tb is
     component comp port(
-        signal clk : in std_logic);
+        signal clk, rst : in std_logic);
     end component;
     signal clk : std_logic;
 begin
-    c : comp port map(clk);
-
+    c : comp port map(clk, '0');
     process begin
         clk <= '1';
         wait for 125 ns;
         clk <= '0';
         wait for 125 ns;
     end process;
-
 end arch;
