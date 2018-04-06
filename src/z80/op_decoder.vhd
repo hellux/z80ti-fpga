@@ -24,12 +24,15 @@ architecture Behavioral of op_decoder is
     return id_frame_t is
         variable f : id_frame_t;
     begin
+        -- reset all signals to defaults (overwrite below)
         f := reset_frame(state, instr);
 
+        -- signal m1 is active on control bus
         if state.m = m1 then
             f.cb.m1 := '1';
         end if;
 
+        -- fetch phase
         if state.m = m1 or              -- always fetch during m1
            state.overlap = '1' or       -- fetch while exec if overlap
            state.multi_word = '1'       -- fetch if multi-word instr
@@ -54,6 +57,8 @@ architecture Behavioral of op_decoder is
             when others => null; end case;
         end if;
 
+        -- exec phase
+        -- TODO replace hex with vector (hex doesn't work)
         case state.set is
         when main =>
             case s.x is
@@ -215,6 +220,7 @@ architecture Behavioral of op_decoder is
         return f;
     end determine_cword;
 begin
+    -- split instruction as
     --     | p | |q|
     -- |1 0|0 0| |0|1 1 1|
     -- | x |   y   |  z  |
@@ -224,13 +230,13 @@ begin
     split.p <= instr(5 downto 4);
     split.q <= instr(3);
 
-    -- determine control word
+    -- determine control word (combinational lookup table)
     f <= determine_cword(state, instr, cbi, split);
     cw <= f.cw;
     cbo <= f.cb;
     ctrl <= f.ct;
 
-    -- determine state
+    -- determine state (synchronously)
     state.overlap <= f.ct.overlap;
     state.multi_word <= f.ct.multi_word;
     process(clk) begin
@@ -243,16 +249,13 @@ begin
                 state.t <= t1;
                 state.m <= state.m + 1;
             end if;
+
             if ctrl.instr_end = '1' then
                 state.m <= m1;
                 state.set <= main;
             end if;
 
-            if cbi.reset = '1' then
-                state.set <= main;
-                state.m <= m1;
-                state.t <= t1;
-            elsif ctrl.set_end = '1' then
+            if ctrl.set_end = '1' then
                 case state.set is
                 when main =>
                     case instr is
@@ -270,6 +273,12 @@ begin
                     when x"cb" => state.set <= fdcb;
                     when others => null; end case;
                 when others => null; end case;
+            end if;
+
+            if cbi.reset = '1' then
+                state.set <= main;
+                state.m <= m1;
+                state.t <= t1;
             end if;
         end if;
     end process;
