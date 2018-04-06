@@ -3,6 +3,7 @@ use ieee.std_logic_1164.all;
 
 package z80_comm is
     type instr_set_t is (main, ed, cb, dd, ddcb, fd, fdcb);
+    type rf_swap_t is (none, af, reg, hldh);
 
     type ctrlbus_in is record
         -- cpu control
