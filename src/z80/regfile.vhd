@@ -20,23 +20,23 @@ use work.util.all;
 -- 1010     |______IX_______|
 -- 1011     |______IY_______|
 
--- ADDRESSES (last bit is '-' if addr)
--- r        reg
--- 0000     B
+-- addresses
+-- r        reg8    reg16
+-- 0000     B       BC
 -- 0001     C
--- 0010     D
+-- 0010     D       DE
 -- 0011     E
--- 0100     H
+-- 0100     H       HL
 -- 0101     L
--- 0110     F
+-- 0110     F       FA
 -- 0111     A
--- 1000     W
+-- 1000     W       WZ
 -- 1001     Z
--- 1010     SPh
+-- 1010     SPh     SP
 -- 1011     SPl
--- 1100     IXh
+-- 1100     IXh     IX
 -- 1101     IXl
--- 1110     IYh
+-- 1110     IYh     IY
 -- 1111     IYl
 
 entity regfile is port(

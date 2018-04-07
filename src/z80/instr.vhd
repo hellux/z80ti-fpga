@@ -39,14 +39,14 @@ package z80_instr is
     return id_frame_t;
 
     -- system
-    -- prereq:
-    --  addr on abus during t1
-    -- ensures:
-    --  data on dbus during t3
-    procedure fetch_cycle(signal state : in id_state_t;
-                          variable f : out id_frame_t);
+    -- t1: abus:addr -> t3: dbus:data
+    procedure fetch(signal state : in id_state_t;
+                    variable f : out id_frame_t);
+    -- -> t3: dbus:data, pc++
+    procedure fetch_pc(signal state : in id_state_t;
+                       variable f : out id_frame_t);
     procedure fetch_multi(signal state : in id_state_t;
-                          variable ctrl : out id_ctrl_t);
+                          variable f : out id_frame_t);
     -- instr
     procedure nop(signal state : in id_state_t;
                   variable f : out id_frame_t);
@@ -66,8 +66,8 @@ package z80_instr is
 end z80_instr;
 
 package body z80_instr is
-    procedure fetch_cycle(signal state : in id_state_t;
-                          variable f : out id_frame_t)
+    procedure fetch(signal state : in id_state_t;
+                    variable f : out id_frame_t)
     is begin
         case state.t is
         when t1 =>
@@ -83,24 +83,38 @@ package body z80_instr is
         when t3 =>
             f.cw.data_wri := '1';   -- write instr to inner dbus from buf
         when others => null; end case;
-    end fetch_cycle;
+    end fetch;
+
+    procedure fetch_pc(signal state : in id_state_t;
+                       variable f : out id_frame_t)
+    is begin
+        fetch(state, f);
+        case state.t is
+        when t1 =>
+            f.cw.pc_wr := '1';
+        when t2 =>
+            f.cw.pc_wr := '1';
+            f.cw.pc_rd := '1';
+        when t3 =>
+        when others => null; end case;
+    end fetch_pc;
 
     procedure fetch_multi(
         signal state : in id_state_t;
-        variable ctrl : out id_ctrl_t)
+        variable f : out id_frame_t)
     is begin
-        ctrl.multi_word := '1';
+        f.ct.multi_word := '1';
         case state.m is
         when m1 =>
             case state.t is
             when t4 =>
-                ctrl.cycle_end := '1';
+                f.ct.cycle_end := '1';
             when others => null; end case;
         when others =>
             case state.t is
             when t3 =>
-                ctrl.set_end := '1';
-                ctrl.cycle_end := '1';
+                f.ct.set_end := '1';
+                f.ct.cycle_end := '1';
             when others => null; end case;
         end case;
     end fetch_multi;
@@ -127,26 +141,16 @@ package body z80_instr is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 =>
-            fetch_cycle(state, f);
+            fetch_pc(state, f);
             case state.t is
-            when t1 =>
-                f.cw.pc_wr := '1';
-            when t2 =>
-                f.cw.pc_wr := '1';
-                f.cw.pc_rd := '1';
             when t3 =>
                 f.cw.rf_addr := regZ;
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            fetch_cycle(state, f);
+            fetch_pc(state, f);
             case state.t is
-            when t1 =>
-                f.cw.pc_wr := '1';
-            when t2 =>
-                f.cw.pc_wr := '1';
-                f.cw.pc_rd := '1';
             when t3 =>
                 f.cw.rf_addr := regW;
                 f.ct.cycle_end := '1';

@@ -37,7 +37,7 @@ architecture Behavioral of op_decoder is
            state.overlap = '1' or       -- fetch while exec if overlap
            state.multi_word = '1'       -- fetch if multi-word instr
         then
-            fetch_cycle(state, f);
+            fetch(state, f);
             case state.t is
             when t1 =>
                 if state.jump_cycle = '1' then
@@ -60,54 +60,46 @@ architecture Behavioral of op_decoder is
         end if;
 
         -- exec phase
-        -- TODO replace hex with vector (hex doesn't work)
         case state.set is
-        when main =>
+        when main|dd|fd =>
             case s.x is
             when "00" =>
-                if (s.z = "000") then
-                    if (s.y = "000") then nop(state, f); -- NOP
-                    elsif (s.y = x"1") then ex_af(state, f); -- EX AF,AF'
-                    elsif (s.y = x"2") then -- DJNZ d
-                    elsif (s.y = x"3") then -- JR d
-                    elsif (s.y >= x"4" and s.y <= x"7") then -- JR cc[y-4] d
-                    end if;
-                elsif (s.z = x"1") then
-                    if (s.q = '0') then -- LD rp[p], nn
-                    elsif (s.q = '1') then -- ADD HL, rp[p]
-                    end if;
-                elsif (s.z = x"2") then
-                    if (s.q = '0') then
-                        if (s.p = x"0") then -- LD (BC), A
-                        elsif (s.p = x"1") then -- LD (DE), A
-                        elsif (s.p = x"2") then -- LD (nn), HL
-                        elsif (s.p = x"3") then -- LD (nn), A
-                        end if;
-                    elsif (s.q = '1') then
-                        if (s.p = x"0") then -- LD A, (BC)
-                        elsif (s.p = x"1") then -- LD A, (DE)
-                        elsif (s.p = x"2") then -- LD HL, (nn)
-                        elsif (s.p = x"3") then -- LD A, (nn)
-                        end if;
-                    end if;
-                elsif (s.z = x"3") then
-                    if (s.q = '0') then -- INC rp[y]
-                    elsif (s.q = '1') then -- DEC rp[y]
-                    end if;
-                elsif (s.z = x"4") then -- INC r[y]
-                elsif (s.z = x"5") then -- DEC r[y]
-                elsif (s.z = x"6") then -- LD r[y]
-                elsif (s.z = x"7") then
-                    if (s.y = x"0") then -- RLCA
-                    elsif (s.y = x"1") then -- RRCA
-                    elsif (s.y = x"2") then -- RLA
-                    elsif (s.y = x"3") then -- RRA
-                    elsif (s.y = x"4") then -- DAA
-                    elsif (s.y = x"5") then -- CPL
-                    elsif (s.y = x"6") then -- SCF
-                    elsif (s.y = x"7") then -- CCF
-                    end if;
-                end if;
+                case s.z is
+                when "000" =>
+                    case s.y is
+                    when "000" => nop(state, f);
+                    when "001" => ex_af(state, f);
+                    when "010" => null; -- DJNZ d
+                    when "011" => null; -- JR d
+                    when others => null; -- JR cc[y-4] d
+                    end case;
+                when "001" =>
+                    case s.q is
+                    when '0' => null; -- LD rp[p], nn
+                    when '1' => null; -- ADD hl, rp[p]
+                    when others => null; end case;
+                when "010" =>
+                    case s.q is
+                    when '0' => 
+                        case s.p is
+                        when "00" => null; -- LD (BC), A
+                        when "01" => null; -- LD (DE), A
+                        when "10" => null; -- LD (nn), HL
+                        when "11" => null; -- LD (nn), A
+                        when others => null; end case;
+                    when '1' => 
+                        case s.p is
+                        when "00" => null; -- LD A, (BC)
+                        when "01" => null; -- LD A, (DE)
+                        when "10" => null; -- LD HL, (nn)
+                        when "11" => null; -- LD A, (nn)
+                        when others => null; end case;
+                    when others => null; end case;
+                when "011" => -- INC/DEC rp[y];
+                when "100"|"101" => -- alu_r(state, f, y); -- INC/DEC r[y]
+                when "110" => null; -- LD r[y]
+                when "111" => -- alu_af RRLCA/RRCA/RLA/RRA/DAA/CPL/SCF/CCF
+                when others => null; end case;
             when "01" =>
                 case s.z is
                 when "110" =>
@@ -124,98 +116,105 @@ architecture Behavioral of op_decoder is
                 when others => alu_a_r(state, f, s.z); -- alu[y] r[z]
                 end case;
             when "11" =>
-                if (s.z = x"0") then -- RET cc[y]
-                elsif (s.z = x"1") then
-                    if (s.q = '0') then -- POP rp2[p]
-                    elsif (s.q = '1') then
-                        if (s.p = x"0") then -- RET
-                        elsif (s.p = x"1") then -- EXX
-                        elsif (s.p = x"2") then -- JP HL
-                        elsif (s.p = x"3") then -- LD SP, HL
-                        end if;
-                    end if;
-                elsif (s.z = x"2") then -- JP cc[y], nn
-                elsif (s.z = "011") then
-                    if (s.y = "000") then jp_nn(state, f); -- JP nn
-                    elsif (s.y = "001") then fetch_multi(state, f.ct); -- (CB)
-                    elsif (s.y = x"2") then -- OUT (n), A
-                    elsif (s.y = x"3") then -- IN A, (n)
-                    elsif (s.y = x"4") then -- EX (SP), HL
-                    elsif (s.y = x"5") then -- EX DE, HL
-                    elsif (s.y = x"6") then -- DI
-                    elsif (s.y = x"7") then -- EI
-                    end if;
-                elsif (s.z = x"4") then -- CALL cc[y], nn
-                elsif (s.z = x"5") then
-                    if (s.q = '0') then -- PUSH rp2[p]
-                    elsif (s.q = '1') then
-                        if (s.p = x"0") then -- CALL nn
-                        elsif (s.p = x"1") then fetch_multi(state, f.ct); -- (DD)
-                        elsif (s.p = x"2") then fetch_multi(state, f.ct); -- (ED)
-                        elsif (s.p = x"3") then fetch_multi(state, f.ct); -- (FD)
-                        end if;
-                    end if;
-                elsif (s.z = x"6") then -- alu[y] n
-                elsif (s.z = x"7") then -- RST y*8
-                end if;
+                case s.z is
+                when "000" => null; -- RET cc[y]
+                when "001" => null;
+                    case s.q is
+                    when '0' => null; -- POP rp2[p]
+                    when '1' =>
+                        case s.p is
+                        when "00" => null; -- RET
+                        when "01" => null; -- EXX
+                        when "10" => null; -- JP HL
+                        when "11" => null; -- LD SP, HL
+                        when others => null; end case;
+                    when others => null; end case;
+                when "010" => null; -- JP cc[y], nn
+                when "011" =>
+                    case s.y is
+                    when "000" => jp_nn(state, f);
+                    when "001" => fetch_multi(state, f); -- (CB/DDCD/FDCB)
+                    when "010" => null; -- OUT (n), A
+                    when "011" => null; -- IN A, (n)
+                    when "100" => null; -- EX (SP), HL
+                    when "101" => null; -- EX DE, HL
+                    when "110" => null; -- DI
+                    when "111" => null; -- EI
+                    when others => null; end case;
+                when "100" => null; -- CALL cc[y], nn
+                when "101" => null;
+                    case s.q is
+                    when '0' => null; -- PUSH rp2[p]
+                    when '1' =>
+                        case s.p is
+                        when "00" => null; -- CALL nn
+                        when "01" => fetch_multi(state, f); -- (DD)
+                        when "10" => fetch_multi(state, f); -- (ED)
+                        when "11" => fetch_multi(state, f); -- (FD)
+                        when others => null; end case;
+                    when others => null; end case;
+                when "110" => null; -- alu_a_n(state, f) -- alu[y] n
+                when "111" => null; -- RST y*8
+                when others => null; end case;
             when others => null; end case;
         when ed =>
             case s.x is 
-            when "00" => -- rot[y] r[z]
-                if (s.z = x"0") then
-                    if (s.y < x"6" or s.y = x"7") then -- IN r[y], (C)
-                    elsif (s.y = x"6") then -- IN (C)
-                    end if;
-                elsif (s.z = x"1") then
-                    if (s.y < x"6" or s.y = x"7") then -- OUT r[y], (C)
-                    elsif (s.y = x"6") then -- OUT (C), 0
-                    end if;
-                elsif (s.z = x"2") then
-                    if (s.q = '0') then -- SBC HL, rp[p]
-                    elsif (s.q = '1') then -- ADC HL, rp[p]
-                    end if;
-                elsif (s.z = x"3") then
-                    if (s.q = '0') then -- LD (nn), rp[p]
-                    elsif (s.q = '1') then -- LD rp[p], (nn)
-                    end if;
-                elsif (s.z = x"4") then -- NEG
-                elsif (s.z = x"5") then
-                    if (s.y = x"0" or s.y > x"1") then -- RETN
-                    elsif (s.y = x"1") then -- RETI
-                    end if;
-                elsif (s.z = x"6") then -- IM im[y]
-                elsif (s.z = x"7") then
-                    if (s.y = x"0") then -- LD I, A
-                    elsif (s.y = x"1") then -- LD R, A
-                    elsif (s.y = x"2") then -- LD A, I
-                    elsif (s.y = x"3") then -- LD A, R
-                    elsif (s.y = x"4") then -- RRD
-                    elsif (s.y = x"5") then -- RLD
-                    elsif (s.y = x"6") then -- NOP
-                    elsif (s.y = x"7") then -- NOP
-                    end if;
-                end if;
+            when "01" => -- rot[y] r[z]
+                case s.z is
+                when "000" =>
+                    case s.y is
+                    when "110" => null; -- IN (C)
+                    when others => null; -- IN r[y], (C)
+                    end case;
+                when "001" =>
+                    case s.y is
+                    when "110" => null; -- OUT (C), 0
+                    when others => null; -- OUT r[y], (C)
+                    end case;
+                when "010" =>
+                    case s.q is
+                    when '0' => null; -- SBC HL, rp[p]
+                    when '1' => null; -- ADC HL, rp[p]
+                    when others => null; end case;
+                when "011" =>
+                    case s.q is
+                    when '0' => null; -- LD (nn), rp[p]
+                    when '1' => null; -- LD rp[p], (nn)
+                    when others => null; end case;
+                when "100" => null; -- NEG;
+                when "101" =>
+                    case s.y is
+                    when "001" => null; -- RETI
+                    when others => null; -- RETN
+                    end case;
+                when "110" => null; -- IM im[y]
+                when "111" =>
+                    case s.y is
+                    when "000" => null; -- LD I, A
+                    when "001" => null; -- LD R, A
+                    when "010" => null; -- LD A, I
+                    when "011" => null; -- LD A, R
+                    when "100" => null; -- RRD
+                    when "101" => null; -- RLD
+                    when others => nop(state, f);
+                    end case;
+                when others => null; end case;
             when "10" =>
-                if (s.z <= x"3") then
-                    if (s.y >= x"4") then -- bli[y,z]
-                    end if;
-                end if;
+                case s.y is
+                when "100"|"101"|"110"|"111" => null; -- bli[y,z]
+                when others => null; end case;
             when others => null; end case;
         when cb =>
             bit_r(state, f, s.z);
-        when dd =>
-            null; -- TODO
         when ddcb =>
             case s.z is
-            when "110" => null; -- rot/bit/res/set[y] (IX+d)
-            when others => null; -- LD r[z], rot/res/set[y] (IX+d)
+            when "110" => null; -- rot/bit/res/set (IX+d)
+            when others => null; -- LD r[z], rot/res/set (IX+d)
             end case;
-        when fd =>
-            null; -- TODO
         when fdcb =>
             case s.z is
-            when "110" => null; -- rot/bit/res/set[y] (IY+d)
-            when others => null; -- LD r[z], rot/res/set[y] (IY+d)
+            when "110" => null; -- rot/bit/res/set (IY+d)
+            when others => null; -- LD r[z], rot/res/set (IY+d)
             end case;
         end case;
 
