@@ -4,53 +4,13 @@ use ieee.numeric_std.all;
 use work.z80_comm.all;
 
 -- TODO
---  ensure flags unaffected on some instructions
---  make sure all op codes are covered
---  replace x_op signal with single op type signal (assign with function)
---  remove x_set signals
+--  * rest of instructions
 
 -- FLAGS
 -- 7  6  5  4  3  2  1  0
 -- S  Z  f5 H f3 P/V N  C
 -- f3: copy of bit 3
 -- f5: copy of bit 5
-
--- INSTRUCTIONS -------
--- MAIN 
---   0-7 8-f
--- 8 add adc
--- 9 sub sbc
--- a and xor
--- b or  cp
--- EXTENDED
---      1   2   4   9   a   c
--- 4-7      sbc neg     adc neg
--- a    cpi         cpd
--- b    cpir        cpdr
--- IY, IX
---   4-5 c-d
--- 8 add adc
--- 9 sub sbc
--- a and xor
--- b or  cp
--- CB, DDCB, FDCB: BIT INSTR, IX, IY
---   0-7    8-f
--- 0 rlc    rrc
--- 1 rl     rr
--- 2 sla    sra
--- 3 sll    srl
--- 4 bit0   bit1
--- 5 bit2   bit3
--- 6 bit4   bit5
--- 7 bit6   bit7
--- 8 res0   res1
--- 9 res2   res3
--- a res4   res5
--- b res6   res7
--- c set0   set1
--- d set2   set3
--- e set4   set5
--- f set6   set7
 
 entity alu is port(
     clk : in std_logic;
@@ -66,9 +26,9 @@ architecture arch of alu is
 
     -- preprocess
     signal mask : std_logic_vector(7 downto 0); -- mask for bit set/reset
-    signal edge : std_logic; -- lsb or msb when shift_instring
+    signal edge : std_logic; -- lsb or msb when shifting
     signal op1_ext, op2_ext : signed(8 downto 0);
-    signal op2sn : signed(8 downto 0); -- shift_instr/neg result
+    signal op2sn : signed(8 downto 0); -- shift/neg result
 
     -- calculation
     signal with_carry : signed(8 downto 0); -- for add/sub with carry

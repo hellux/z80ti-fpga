@@ -69,8 +69,8 @@ package z80_comm is
     constant regAF : integer := 6;
     constant regWZ : integer := 8;
     constant regSP : integer := 10;
-    constant regIX : integer := 11;
-    constant regIY : integer := 12;
+    constant regIX : integer := 12;
+    constant regIY : integer := 14;
     -- reg8
     constant regB   : integer := 0;
     constant regC   : integer := 1;
@@ -78,7 +78,6 @@ package z80_comm is
     constant regE   : integer := 3;
     constant regH   : integer := 4;
     constant regL   : integer := 5;
-    -- no reg
     constant regA   : integer := 7;
     constant regW   : integer := 8;
     constant regZ   : integer := 9;

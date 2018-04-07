@@ -6,8 +6,8 @@ use work.util.all;
 
 -- INTERNAL RAM LAYOUT
 -- addr_int    high    low
---           _______________
--- 0000     |___B___|___C___|
+--           _______________  
+-- 0000     |___B___|___C___| 
 -- 0001     |___B___|___C___|
 -- 0010     |___D___|___E___|
 -- 0011     |___D___|___E___|
@@ -19,25 +19,6 @@ use work.util.all;
 -- 1001     |______SP_______|
 -- 1010     |______IX_______|
 -- 1011     |______IY_______|
-
--- addresses
--- r        reg8    reg16
--- 0000     B       BC
--- 0001     C
--- 0010     D       DE
--- 0011     E
--- 0100     H       HL
--- 0101     L
--- 0110     F       AF
--- 0111     A
--- 1000     W       WZ
--- 1001     Z
--- 1010     SPh     SP
--- 1011     SPl
--- 1100     IXh     IX
--- 1101     IXl
--- 1110     IYh     IY
--- 1111     IYl
 
 entity regfile is port(
     -- ctrl
@@ -57,7 +38,9 @@ end regfile;
 architecture arch of regfile is
     type rf_ram_t is array(0 to 11) of std_logic_vector(15 downto 0);
 
-    function get_byte(w : integer; hl : std_logic; ram : rf_ram_t)
+    function get_byte(w : integer;      -- address to 16bit word where byte is
+                      hl : std_logic;   -- hl = 0 => get higher byte
+                      ram : rf_ram_t)   -- ram array
     return std_logic_vector is
         variable word : std_logic_vector(15 downto 0);
     begin

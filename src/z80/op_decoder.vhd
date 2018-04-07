@@ -18,11 +18,8 @@ architecture Behavioral of op_decoder is
     signal ctrl : id_ctrl_t;
     signal f : id_frame_t;
 
-    type r_table_t is array(0 to 7) of integer;
     type rp_table_t is array(0 to 3) of integer;
     type alu_table_t is array(0 to 7) of instr_t;
-    constant r : r_table_t := (regB, regC, regD, regE,
-                               regH, regL, regF, regA);
     constant rp : rp_table_t := (regBC, regDE, regHL, regSP);
     constant rp2 : rp_table_t := (regBC, regDE, regHL, regAF);
     constant alu : alu_table_t := (add_i, adc_i, sub_i, sbc_i,
