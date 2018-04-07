@@ -42,7 +42,7 @@ use work.util.all;
 entity regfile is port(
     -- ctrl
     clk, rst : in std_logic;
-    r : in std_logic_vector(3 downto 0);
+    reg_addr : in integer;
     rdd, rda, rdf : in std_logic;
     wrd, wra : in std_logic;
     swp : in rf_swap_t;
@@ -99,7 +99,7 @@ architecture arch of regfile is
     signal ram : rf_ram_t := (others=> (others => '0'));
     signal swp_reg, swp_af, swp_dehl : std_logic := '0';
     signal ram_next : rf_ram_t;
-    signal w_vec : std_logic_vector(3 downto 0);
+    signal r, w_vec : std_logic_vector(3 downto 0) := "0000";
     signal w, wFA : integer := 0; -- address to word in ram
 begin
     swap_proc : process(clk) begin
@@ -130,6 +130,8 @@ begin
         end if;
     end process;
 
+    r <= std_logic_vector(to_unsigned(reg_addr, 4))
+         when reg_addr >= 0 else "0000"; -- int initializes to -229847923947
     w_vec <= 
         '0' & r(1) & r(2) & swp_reg when
             r(3) = '0' and r(2 downto 1) /= "11" and swp_dehl = '1' else

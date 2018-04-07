@@ -2,6 +2,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 package z80_comm is
+    type instr_t is (unknown, 
+                     add_i, adc_i, sub_i, sbc_i, cp_i, inc_i, dec_i, neg_i,
+                     and_i, or_i, xor_i,
+                     bit_i, res_i, set_i,
+                     rlc_i, rl_i, sla_i, sll_i,
+                     rrc_i, rr_i, sra_i, srl_i,
+                     daa_i, cpl_i, scf_i, ccf_i);
     type instr_set_t is (main, ed, cb, dd, ddcb, fd, fdcb);
     type rf_swap_t is (none, af, reg, dehl);
 
@@ -23,14 +30,15 @@ package z80_comm is
 
     type ctrlword is record 
         -- regfile
-        rf_addr : std_logic_vector(3 downto 0);
+        rf_addr : integer;
         rf_rdd, rf_rda, rf_wrd, rf_wra : std_logic;
         rf_swp : rf_swap_t;
         f_rd : std_logic;
         -- alu
         alu_wr : std_logic;
         alu_set : instr_set_t;
-        alu_op : std_logic_vector(7 downto 0);
+        alu_op : instr_t;
+        alu_bs : integer;
         act_rd : std_logic;
         tmp_rd, tmp_wr : std_logic;
         -- control
@@ -54,18 +62,30 @@ package z80_comm is
     constant t4 : integer := 4;
     constant t5 : integer := 5;
 
-    -- register addresses
-    constant regB  : std_logic_vector(3 downto 0) := "0000";
-    constant regC  : std_logic_vector(3 downto 0) := "0001";
-    constant regD  : std_logic_vector(3 downto 0) := "0010";
-    constant regE  : std_logic_vector(3 downto 0) := "0011";
-    constant regH  : std_logic_vector(3 downto 0) := "0100";
-    constant regL  : std_logic_vector(3 downto 0) := "0101";
-    constant regF  : std_logic_vector(3 downto 0) := "0110";
-    constant regA  : std_logic_vector(3 downto 0) := "0111";
-    constant regW  : std_logic_vector(3 downto 0) := "1000";
-    constant regZ  : std_logic_vector(3 downto 0) := "1001";
-    constant regSP : std_logic_vector(3 downto 0) := "1010";
-    constant regIX : std_logic_vector(3 downto 0) := "1100";
-    constant regIY : std_logic_vector(3 downto 0) := "1110";
+    -- reg16
+    constant regBC : integer := 0;
+    constant regDE : integer := 2;
+    constant regHL : integer := 4;
+    constant regAF : integer := 6;
+    constant regWZ : integer := 8;
+    constant regSP : integer := 10;
+    constant regIX : integer := 11;
+    constant regIY : integer := 12;
+    -- reg8
+    constant regB   : integer := 0;
+    constant regC   : integer := 1;
+    constant regD   : integer := 2;
+    constant regE   : integer := 3;
+    constant regH   : integer := 4;
+    constant regL   : integer := 5;
+    constant regF   : integer := 6;
+    constant regA   : integer := 7;
+    constant regW   : integer := 8;
+    constant regZ   : integer := 9;
+    constant regSPh : integer := 10;
+    constant regSPl : integer := 11;
+    constant regIXh : integer := 12;
+    constant regIXl : integer := 13;
+    constant regIYh : integer := 14;
+    constant regIYl : integer := 15;
 end z80_comm;

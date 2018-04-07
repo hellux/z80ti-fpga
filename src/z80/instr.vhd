@@ -28,13 +28,8 @@ package z80_instr is
         cw : ctrlword;
     end record;
 
-    type id_split_t is record
-        x, p : std_logic_vector(1 downto 0);
-        y, z : std_logic_vector(2 downto 0);
-        q : std_logic;
-    end record;
+    type id_split_t is record x, y, z, p, q : integer; end record;
 
-    -- SYSTEM
     -- t1: abus:addr -> t3: dbus:data
     procedure fetch(signal state : in id_state_t;
                     variable f : out id_frame_t);
@@ -52,13 +47,16 @@ package z80_instr is
                     variable f : out id_frame_t);
     procedure alu_a_r(signal state : in id_state_t;
                       variable f : out id_frame_t;
-                      signal reg : in std_logic_vector(2 downto 0));
+                      constant op : in instr_t;
+                      signal reg : in integer);
     procedure bit_r(signal state : in id_state_t;
                     variable f : out id_frame_t;
-                    signal reg : in std_logic_vector(2 downto 0));
+                    constant op : in instr_t;
+                    bs : in integer;
+                    signal reg : in integer);
     procedure ld_r_r(signal state : in id_state_t;
                      variable f : out id_frame_t;
-                     signal src, dst : in std_logic_vector(2 downto 0));
+                     signal src, dst : in integer);
 end z80_instr;
 
 package body z80_instr is
@@ -174,14 +172,15 @@ package body z80_instr is
     procedure alu_a_r(
         signal state : in id_state_t;
         variable f : out id_frame_t;
-        signal reg : in std_logic_vector(2 downto 0))
+        constant op : in instr_t;
+        signal reg : in integer)
     is begin
         case state.m is
         when m1 =>
             case state.t is
             when t4 =>
                 f.cw.act_rd := '1';         -- read from a to tmp accumulator
-                f.cw.rf_addr := '0' & reg;  -- select reg
+                f.cw.rf_addr := reg;  -- select reg
                 f.cw.rf_wrd := '1';         -- place reg on dbus
                 f.cw.tmp_rd := '1';         -- read from dbus to tmp
                 f.ct.cycle_end := '1';      -- signal new cycle
@@ -192,7 +191,7 @@ package body z80_instr is
             when t2 =>
                 f.cw.alu_wr := '1';         -- place result on dbus
                 f.cw.f_rd := '1';           -- read flags from alu
-                f.cw.rf_addr := "0111";     -- select the A reg
+                f.cw.rf_addr := regA;       -- select the A reg
                 f.cw.rf_rdd := '1';         -- read alu output from dbus
                 f.ct.instr_end := '1';      -- signal instr is done
             when others => null; end case;
@@ -201,13 +200,15 @@ package body z80_instr is
 
     procedure bit_r(signal state : in id_state_t;
                     variable f : out id_frame_t;
-                    signal reg : in std_logic_vector(2 downto 0))
+                    constant op : in instr_t;
+                    bs : in integer;
+                    signal reg : in integer)
     is begin
         case state.m is 
         when m2 =>
             case state.t is
             when t4 =>
-                f.cw.rf_addr := '0' & reg;
+                f.cw.rf_addr := reg;
                 f.cw.rf_wrd := '1';
                 f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
@@ -216,9 +217,11 @@ package body z80_instr is
             f.ct.overlap := '1';
             case state.t is
             when t2 =>
+                f.cw.alu_op := op;
+                f.cw.alu_bs := bs;
                 f.cw.alu_wr := '1';
                 f.cw.f_rd := '1';
-                f.cw.rf_addr := '0' & reg;
+                f.cw.rf_addr := reg;
                 f.cw.rf_rdd := '1';
                 f.ct.instr_end := '1';
             when others => null; end case;
@@ -227,17 +230,17 @@ package body z80_instr is
 
     procedure ld_r_r(signal state : in id_state_t;
                      variable f : out id_frame_t;
-                     signal src, dst : in std_logic_vector(2 downto 0))
+                     signal src, dst : in integer)
     is begin
         case state.m is
         when m1 =>
             case state.t is
             when t4 =>
-                f.cw.rf_addr := '0' & src;
+                f.cw.rf_addr := src;
                 f.cw.rf_wrd := '1';
                 f.cw.tmp_rd := '1';
             when t5 =>
-                f.cw.rf_addr := '0' & dst;
+                f.cw.rf_addr := dst;
                 f.cw.tmp_wr := '1';
                 f.cw.rf_rdd := '1';
                 f.ct.instr_end := '1';

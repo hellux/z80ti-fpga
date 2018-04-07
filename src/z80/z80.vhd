@@ -44,14 +44,14 @@ architecture arch of z80 is
         clk : in std_logic;
         op1, op2 : in std_logic_vector(7 downto 0);
         flags_in : in std_logic_vector(7 downto 0);
-        op : in std_logic_vector(7 downto 0);
-        op_set : in instr_set_t;
+        op : in instr_t;
+        bit_select : in integer;
         result, flags_out : out std_logic_vector(7 downto 0));
     end component;
 
     component regfile port(
         clk, rst : in std_logic;
-        r : in std_logic_vector(3 downto 0);
+        reg_addr : in integer;
         rdd, rda, rdf : in std_logic;
         wrd, wra: in std_logic;
         swp : in rf_swap_t;
@@ -84,7 +84,7 @@ architecture arch of z80 is
     signal abus : std_logic_vector(15 downto 0);
 begin
     -- -- ALU section -- --
-    alu_comp : alu port map(clk, op1, tmp_do, flags_in, cw.alu_op, cw.alu_set,
+    alu_comp : alu port map(clk, op1, tmp_do, flags_in, cw.alu_op, cw.alu_bs,
                             alu_result, flags_out);
     act : reg_8 port map(clk, cbi.reset, cw.act_rd, '1', acc, op1);
     tmp : reg_8 port map(clk, cbi.reset, cw.tmp_rd, '1', dbus, tmp_do);
