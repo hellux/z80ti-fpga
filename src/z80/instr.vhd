@@ -179,21 +179,22 @@ package body z80_instr is
         when m1 =>
             case state.t is
             when t4 =>
-                f.cw.act_rd := '1';         -- read from a to tmp accumulator
-                f.cw.rf_addr := reg;  -- select reg
-                f.cw.rf_wrd := '1';         -- place reg on dbus
-                f.cw.tmp_rd := '1';         -- read from dbus to tmp
-                f.ct.cycle_end := '1';      -- signal new cycle
+                f.cw.act_rd := '1';     -- read from a to tmp accumulator
+                f.cw.rf_addr := reg;    -- select reg
+                f.cw.rf_wrd := '1';     -- place reg on dbus
+                f.cw.tmp_rd := '1';     -- read from dbus to tmp
+                f.ct.cycle_end := '1';  -- signal new cycle
             when others => null; end case;
         when m2 =>
-            f.ct.overlap := '1';            -- fetch next instr simultaneously
+            f.ct.overlap := '1';        -- fetch next instr simultaneously
             case state.t is
             when t2 =>
-                f.cw.alu_wr := '1';         -- place result on dbus
-                f.cw.f_rd := '1';           -- read flags from alu
-                f.cw.rf_addr := regA;       -- select the A reg
-                f.cw.rf_rdd := '1';         -- read alu output from dbus
-                f.ct.instr_end := '1';      -- signal instr is done
+                f.cw.alu_op := op;      -- tell alu operation
+                f.cw.alu_wr := '1';     -- place result on dbus
+                f.cw.f_rd := '1';       -- read flags from alu
+                f.cw.rf_addr := regA;   -- select the A reg
+                f.cw.rf_rdd := '1';     -- read alu output from dbus
+                f.ct.instr_end := '1';  -- signal instr is done
             when others => null; end case;
         when others => null; end case;
     end alu_a_r;

@@ -13,8 +13,8 @@ use work.util.all;
 -- 0011     |___D___|___E___|
 -- 0100     |___H___|___L___|
 -- 0101     |___H___|___L___|
--- 0110     |___F___|___A___|
--- 0111     |___F___|___A___|
+-- 0110     |___A___|___F___|
+-- 0111     |___A___|___F___|
 -- 1000     |___W___|___Z___|
 -- 1001     |______SP_______|
 -- 1010     |______IX_______|
@@ -28,7 +28,7 @@ use work.util.all;
 -- 0011     E
 -- 0100     H       HL
 -- 0101     L
--- 0110     F       FA
+-- 0110     F       AF
 -- 0111     A
 -- 1000     W       WZ
 -- 1001     Z
@@ -68,7 +68,7 @@ architecture arch of regfile is
     end get_byte;
 
     function next_ram(signal ram : rf_ram_t;
-                      signal w, wFA : integer;
+                      signal w, wAF : integer;
                       signal hl : std_logic;
                       signal rdd, rda, rdf : std_logic;
                       signal data, f : std_logic_vector(7 downto 0);
@@ -90,7 +90,7 @@ architecture arch of regfile is
         new_ram(w) := new_word;
 
         if rdf = '1' then
-            new_ram(wFA)(15 downto 8) := f;
+            new_ram(wAF)(7 downto 0) := f;
         end if;
 
         return new_ram;
@@ -100,7 +100,8 @@ architecture arch of regfile is
     signal swp_reg, swp_af, swp_dehl : std_logic := '0';
     signal ram_next : rf_ram_t;
     signal r, w_vec : std_logic_vector(3 downto 0) := "0000";
-    signal w, wFA : integer := 0; -- address to word in ram
+    signal w, wAF : integer := 0; -- address to word in ram
+    signal hl : std_logic;
 begin
     swap_proc : process(clk) begin
         if rising_edge(clk) then
@@ -143,13 +144,19 @@ begin
             when r(3) = '1' else
         "----";
     w <= to_integer(unsigned(w_vec));
-    wFA <= 7 when swp_af = '1' else 6;
+    wAF <= 7 when swp_af = '1' else 6;
 
-    ram_next <= next_ram(ram, w, wFA, r(0), rdd, rda, rdf, data, f_in, addr);
+    hl <= not r(0) when r(3 downto 1) = "011" else r(0); -- flip FA to AF
 
-    f_out    <= get_byte(wFA, '0', ram);
-    a_out    <= get_byte(wFA, '1', ram);
+    ram_next <= next_ram(ram, w, wAF, hl, rdd, rda, rdf, data, f_in, addr);
+
+    a_out    <= get_byte(wAF, '0', ram);
+    f_out    <= get_byte(wAF, '1', ram);
     addr_dis <= ram(w);
-    addr_out <= ram(w)                 when wra  = '1' else (others => 'Z');
-    data     <= get_byte(w, r(0), ram) when wrd  = '1' else (others => 'Z');
+    addr_out <= ram(w)               when wra  = '1' else (others => 'Z');
+    data     <= get_byte(w, hl, ram) when wrd  = '1' else (others => 'Z');
+
+    warnings : process(clk) begin
+        assert reg_addr /= 6 report "ACCESSING '110' ADDRESS";
+    end process;
 end arch;
