@@ -51,7 +51,7 @@ architecture arch of z80 is
 
     component regfile port(
         clk, rst : in std_logic;
-        reg_addr : in std_logic_vector(3 downto 0);
+        r : in std_logic_vector(3 downto 0);
         rdd, rda, rdf : in std_logic;
         wrd, wra: in std_logic;
         swp : in rf_swap_t;

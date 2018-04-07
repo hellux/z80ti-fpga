@@ -20,7 +20,7 @@ architecture arch of mem is
          x"87", -- add a
          x"47", -- ld b, a
          x"c3", -- 
-         x"02", -- jp 02
+         x"02", -- jp 0002
          x"00", --
          x"00",
          x"00",

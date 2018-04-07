@@ -136,7 +136,7 @@ architecture Behavioral of op_decoder is
                     end if;
                 elsif (s.z = x"2") then -- JP cc[y], nn
                 elsif (s.z = "011") then
-                    if (s.y = x"0") then -- JP nn
+                    if (s.y = "000") then jp_nn(state, f); -- JP nn
                     elsif (s.y = "001") then fetch_multi(state, f.ct); -- (CB)
                     elsif (s.y = x"2") then -- OUT (n), A
                     elsif (s.y = x"3") then -- IN A, (n)
@@ -250,6 +250,7 @@ begin
             if ctrl.cycle_end = '1' then
                 state.t <= t1;
                 state.m <= state.m + 1;
+                state.jump_cycle <= ctrl.jump;
             end if;
 
             if ctrl.instr_end = '1' then

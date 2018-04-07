@@ -51,7 +51,7 @@ package z80_instr is
     procedure nop(signal state : in id_state_t;
                   variable f : out id_frame_t);
     procedure jp_nn(signal state : in id_state_t;
-                 variable f : out id_frame_t);
+                    variable f : out id_frame_t);
     procedure ex_af(signal state : in id_state_t;
                     variable f : out id_frame_t);
     procedure alu_a_r(signal state : in id_state_t;
@@ -135,7 +135,8 @@ package body z80_instr is
                 f.cw.pc_wr := '1';
                 f.cw.pc_rd := '1';
             when t3 =>
-                f.cw.rf_addr := "1001";
+                f.cw.rf_addr := regZ;
+                f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
@@ -147,8 +148,10 @@ package body z80_instr is
                 f.cw.pc_wr := '1';
                 f.cw.pc_rd := '1';
             when t3 =>
-                f.cw.rf_addr := "1000";
+                f.cw.rf_addr := regW;
                 f.ct.cycle_end := '1';
+                f.ct.jump := '1';
+                f.ct.instr_end := '1';
             when others => null; end case;
         when others => null; end case;
     end jp_nn;
@@ -254,6 +257,7 @@ package body z80_instr is
         f.ct.instr_end := '0';
         f.ct.overlap := '0';
         f.ct.multi_word := '0';
+        f.ct.jump := '0';
 
         -- reset control bus out signals, keep in signals
         f.cb.m1 := '0';
