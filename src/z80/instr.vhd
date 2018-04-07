@@ -10,7 +10,7 @@ package z80_instr is
         instr_end : std_logic;      -- last state of current instr
         overlap : std_logic;        -- fetch during this cycle while exec
         multi_word : std_logic;     -- fetch next word of multi-word instr
-        jump : std_logic;     -- last instr was jump
+        jump : std_logic;           -- use wz when fetching on next cycle
     end record;
 
     -- current state of cpu, modified synchronously
@@ -34,11 +34,7 @@ package z80_instr is
         q : std_logic;
     end record;
 
-    function reset_frame(state : id_state_t;
-                         instr : std_logic_vector(7 downto 0))
-    return id_frame_t;
-
-    -- system
+    -- SYSTEM
     -- t1: abus:addr -> t3: dbus:data
     procedure fetch(signal state : in id_state_t;
                     variable f : out id_frame_t);
@@ -47,7 +43,7 @@ package z80_instr is
                        variable f : out id_frame_t);
     procedure fetch_multi(signal state : in id_state_t;
                           variable f : out id_frame_t);
-    -- instr
+    -- INSTRUCTIONS
     procedure nop(signal state : in id_state_t;
                   variable f : out id_frame_t);
     procedure jp_nn(signal state : in id_state_t;
@@ -249,54 +245,4 @@ package body z80_instr is
             when others => null; end case;
         when others => null; end case;
     end ld_r_r;
-
-    function reset_frame(state : id_state_t;
-                         instr : std_logic_vector(7 downto 0))
-    return id_frame_t is
-        variable f : id_frame_t;
-    begin
-        -- reset internal ctrl signals
-        f.ct.set_end := '0';
-        f.ct.cycle_end := '0';
-        f.ct.instr_end := '0';
-        f.ct.overlap := '0';
-        f.ct.multi_word := '0';
-        f.ct.jump := '0';
-
-        -- reset control bus out signals, keep in signals
-        f.cb.m1 := '0';
-        f.cb.mreq := '0';
-        f.cb.iorq := '0';
-        f.cb.rd := '0';
-        f.cb.wr := '0';
-        f.cb.rfsh := '0';
-        f.cb.halt := '0';
-        f.cb.busack := '0';
-
-        -- reset control word
-        f.cw.rf_addr := "0000";
-        f.cw.rf_rdd := '0';
-        f.cw.rf_rda := '0';
-        f.cw.rf_wrd := '0';
-        f.cw.rf_wra := '0';
-        f.cw.rf_swp := none;
-        f.cw.f_rd := '0';
-        f.cw.alu_wr := '0';
-        f.cw.alu_set := state.set; -- overwrite in exec for internal alu use
-        f.cw.alu_op := instr; -- same.
-        f.cw.act_rd := '0';
-        f.cw.tmp_rd := '0';
-        f.cw.tmp_wr := '0';
-        f.cw.ir_rd := '0';
-        f.cw.pc_rd := '0';
-        f.cw.pc_wr := '0';
-        f.cw.data_rdi := '0';
-        f.cw.data_wri := '0';
-        f.cw.data_rdo := '0';
-        f.cw.data_wro := '0';
-        f.cw.addr_rd := '0';
-        f.cw.addr_wr := '0';
-
-        return f;
-    end reset_frame;
 end z80_instr;

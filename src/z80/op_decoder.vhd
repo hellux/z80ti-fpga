@@ -25,9 +25,15 @@ architecture Behavioral of op_decoder is
         variable f : id_frame_t;
     begin
         -- reset all signals to defaults (overwrite below)
-        f := reset_frame(state, instr);
+        f.ct := (others => '0'); -- reset internal ctrl signals
+        f.cb := (others => '0'); -- reset control bus out signals
+        f.cw := (rf_addr => "0000",
+                 rf_swp => none,
+                 alu_set => state.set,
+                 alu_op => instr,
+                 others => '0');
 
-        -- signal m1 is active on control bus
+        -- signal if m1 is active on control bus
         if state.m = m1 then
             f.cb.m1 := '1';
         end if;
