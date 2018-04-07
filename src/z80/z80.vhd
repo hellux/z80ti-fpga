@@ -102,7 +102,8 @@ begin
     ir : reg_8 port map(clk, cbi.reset, cw.ir_rd, '1', dbus, instr);
     id : op_decoder port map(clk, cbi, cbo, instr, cw);
     pc : reg_16 port map(clk, cbi.reset, cw.pc_rd, cw.pc_wr, addr_incr, abus);
-    addr_incr <= std_logic_vector(unsigned(abus) + 1);
+    addr_incr <= std_logic_vector(unsigned(abus) + 1)
+                 when abus /= "ZZZZZZZZZZZZZZZZ" else (others => '-');
 
 
     -- -- BUSES -- --

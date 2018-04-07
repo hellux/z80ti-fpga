@@ -43,7 +43,7 @@ architecture arch of alu is
 begin
     c_in <= flags_in(0);
 
-    -- op2 preprocess (shift_instr / neg / bit instr)
+    -- preprocess
     process(bit_select) is
         variable m : std_logic_vector(7 downto 0);
     begin
