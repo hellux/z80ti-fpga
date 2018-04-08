@@ -8,8 +8,6 @@ package z80_instr is
         set_end : std_logic;        -- last state of current set
         cycle_end : std_logic;      -- last state of current cycle
         instr_end : std_logic;      -- last state of current instr
-        overlap : std_logic;        -- fetch during this cycle while exec
-        multi_word : std_logic;     -- fetch next word of multi-word instr
         jump : std_logic;           -- use wz when fetching on next cycle
     end record;
 
@@ -18,7 +16,7 @@ package z80_instr is
         set : instr_set_t;
         m : integer range 1 to 6;
         t : integer range 1 to 5;
-        overlap, multi_word, jump_cycle : std_logic;
+        jump_cycle : std_logic; -- use wz as pc if last instr was jp
     end record;
 
     -- container for signals so a function can be used (f as return value)
@@ -34,6 +32,8 @@ package z80_instr is
     -- -> t3: dbus:data, pc++
     procedure fetch_pc(signal state : in id_state_t;
                        variable f : out id_frame_t);
+    procedure fetch_instr(signal state : in id_state_t;
+                          variable f : out id_frame_t);
     procedure fetch_multi(signal state : in id_state_t;
                           variable f : out id_frame_t);
     -- INSTRUCTIONS
@@ -101,22 +101,47 @@ package body z80_instr is
         when others => null; end case;
     end fetch_pc;
 
+    procedure fetch_instr(signal state : in id_state_t;
+                          variable f : out id_frame_t)
+    is begin
+        fetch(state, f);
+        case state.t is
+        when t1 =>
+            if state.jump_cycle = '1' then
+                f.cw.rf_addr := regWZ;
+                f.cw.rf_wra := '1'; -- use wz instead of pc
+            else 
+                f.cw.pc_wr := '1';  -- write pc to abus
+            end if;
+        when t2 =>
+            if state.jump_cycle = '1' then
+                f.cw.rf_addr := regWZ;
+                f.cw.rf_wra := '1'; -- keep wz on abus for incr
+            else 
+                f.cw.pc_wr := '1';  -- keep pc on abus
+            end if;
+            f.cw.pc_rd := '1';      -- read incremented address to pc
+        when t3 =>
+            f.cw.ir_rd := '1';      -- read instr from dbus to ir
+        when others => null; end case;
+    end fetch_instr;
+
     procedure fetch_multi(
         signal state : in id_state_t;
         variable f : out id_frame_t)
     is begin
-        f.ct.multi_word := '1';
         case state.m is
         when m1 =>
             case state.t is
-            when t4 =>
-                f.ct.cycle_end := '1';
+            when t4 => -- why can't we end at t3?
+                f.ct.cycle_end := '1';  -- end m1
             when others => null; end case;
         when others =>
+            fetch_instr(state, f);      -- fetch next byte
             case state.t is
             when t3 =>
-                f.ct.set_end := '1';
-                f.ct.cycle_end := '1';
+                f.ct.set_end := '1';    -- update set to prefix
+                f.ct.cycle_end := '1';  -- end mcycle
             when others => null; end case;
         end case;
     end fetch_multi;
@@ -194,7 +219,7 @@ package body z80_instr is
                 f.ct.cycle_end := '1';  -- signal new cycle
             when others => null; end case;
         when m2 =>
-            f.ct.overlap := '1';        -- fetch next instr simultaneously
+            fetch_instr(state, f);      -- fetch next instr simultaneously
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;      -- tell alu operation
@@ -226,7 +251,7 @@ package body z80_instr is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            f.ct.overlap := '1';        -- fetch next instr simultaneously
+            fetch_instr(state, f);      -- fetch next instr simultaneously
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;      -- tell alu operation
@@ -254,7 +279,7 @@ package body z80_instr is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 =>
-            f.ct.overlap := '1';
+            fetch_instr(state, f);
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;
@@ -281,7 +306,7 @@ package body z80_instr is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 =>
-            f.ct.overlap := '1';
+            fetch_instr(state, f);
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;
@@ -310,7 +335,7 @@ package body z80_instr is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            f.ct.overlap := '1';
+            fetch_instr(state, f);
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;

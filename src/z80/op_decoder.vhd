@@ -52,36 +52,10 @@ architecture Behavioral of op_decoder is
                  alu_bs => 0,
                  others => '0');
 
-        -- signal if m1 is active on control bus
-        if state.m = m1 then
-            f.cb.m1 := '1';
-        end if;
-
         -- fetch phase
-        if state.m = m1 or              -- always fetch during m1
-           state.overlap = '1' or       -- fetch while exec if overlap
-           state.multi_word = '1'       -- fetch if multi-word instr
-        then
-            fetch(state, f);
-            case state.t is
-            when t1 =>
-                if state.jump_cycle = '1' then
-                    f.cw.rf_addr := regWZ;
-                    f.cw.rf_wra := '1'; -- use wz instead of pc
-                else 
-                    f.cw.pc_wr := '1';  -- write pc to abus
-                end if;
-            when t2 =>
-                if state.jump_cycle = '1' then
-                    f.cw.rf_addr := regWZ;
-                    f.cw.rf_wra := '1'; -- keep wz on abus for incr
-                else 
-                    f.cw.pc_wr := '1';  -- keep pc on abus
-                end if;
-                f.cw.pc_rd := '1';      -- read incremented address to pc
-            when t3 =>
-                f.cw.ir_rd := '1';      -- read instr from dbus to ir
-            when others => null; end case;
+         if state.m = m1 then
+            f.cb.m1 := '1';
+            fetch_instr(state, f);
         end if;
 
         -- exec phase
@@ -284,8 +258,6 @@ begin
     ctrl <= f.ct;
 
     -- determine state
-    state.overlap <= f.ct.overlap;
-    state.multi_word <= f.ct.multi_word;
     process(clk) begin
         if rising_edge(clk) then
             if cbi.wt /= '1' then
