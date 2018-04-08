@@ -28,8 +28,6 @@ package z80_instr is
         cw : ctrlword;
     end record;
 
-    type id_split_t is record x, y, z, p, q : integer; end record;
-
     -- t1: abus:addr -> t3: dbus:data
     procedure fetch(signal state : in id_state_t;
                     variable f : out id_frame_t);

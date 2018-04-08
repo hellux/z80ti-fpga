@@ -13,13 +13,19 @@ entity op_decoder is port(
 end op_decoder;
 
 architecture Behavioral of op_decoder is
+    type id_split_t is record
+        x, p : integer range 0 to 3;
+        y, z : integer range 0 to 7;
+        q : integer range 0 to 1;
+    end record;
+    type rp_table_t is array(0 to 3) of integer range 0 to 15;
+    type alu_table_t is array(0 to 7) of instr_t;
+
     signal split : id_split_t;
     signal state : id_state_t := (main, m1, t1, others => '0');
     signal ctrl : id_ctrl_t;
     signal f : id_frame_t;
 
-    type rp_table_t is array(0 to 3) of integer;
-    type alu_table_t is array(0 to 7) of instr_t;
     constant rp : rp_table_t := (regBC, regDE, regHL, regSP);
     constant rp2 : rp_table_t := (regBC, regDE, regHL, regAF);
     constant alu : alu_table_t := (add_i, adc_i, sub_i, sbc_i,
@@ -94,7 +100,7 @@ architecture Behavioral of op_decoder is
                     case s.q is
                     when 0 => null; -- LD rp[p], nn
                     when 1 => null; -- ADD hl, rp[p]
-                    when others => null; end case;
+                    end case;
                 when 2 =>
                     case s.q is
                     when 0 => 
@@ -103,20 +109,20 @@ architecture Behavioral of op_decoder is
                         when 1 => null; -- LD (DE), A
                         when 2 => null; -- LD (nn), HL
                         when 3 => null; -- LD (nn), A
-                        when others => null; end case;
+                        end case;
                     when 1 => 
                         case s.p is
                         when 0 => null; -- LD A, (BC)
                         when 1 => null; -- LD A, (DE)
                         when 2 => null; -- LD HL, (nn)
                         when 3 => null; -- LD A, (nn)
-                        when others => null; end case;
-                    when others => null; end case;
+                        end case;
+                    end case;
                 when 3 => -- INC/DEC rp[y];
                     case s.q is
                     when 0 => null; -- INC rp[y]
                     when 1 => null; -- DEC rp[y]
-                    when others => end case;
+                    end case;
                 when 4 => -- alu_r(state, f, inc_i, y); -- INC r[y]
                 when 5 => -- alu_r(state, f, dec_i, y); -- DEC r[y]
                 when 6 => null; -- LD r[y]
@@ -130,8 +136,8 @@ architecture Behavioral of op_decoder is
                     when 5 => --alu_af(state, f, cpl_i); -- CPL
                     when 6 => --alu_af(state, f, scf_i); -- SCF
                     when 7 => --alu_af(state, f, ccf_i); -- CCF
-                    when others => null; end case;
-                when others => null; end case;
+                    end case;
+                end case;
             when 1 =>
                 case s.z is
                 when 6 =>
@@ -159,8 +165,8 @@ architecture Behavioral of op_decoder is
                         when 1 => null; -- EXX
                         when 2 => null; -- JP HL
                         when 3 => null; -- LD SP, HL
-                        when others => null; end case;
-                    when others => null; end case;
+                        end case;
+                    end case;
                 when 2 => null; -- JP cc[y], nn
                 when 3 =>
                     case s.y is
@@ -172,7 +178,7 @@ architecture Behavioral of op_decoder is
                     when 5 => null; -- EX DE, HL
                     when 6 => null; -- DI
                     when 7 => null; -- EI
-                    when others => null; end case;
+                    end case;
                 when 4 => null; -- CALL cc[y], nn
                 when 5 => null;
                     case s.q is
@@ -182,13 +188,13 @@ architecture Behavioral of op_decoder is
                         when 0 => null; -- CALL nn
                         when 1 => fetch_multi(state, f); -- (DD)
                         when 2 => fetch_multi(state, f); -- (ED)
-                        when 4 => fetch_multi(state, f); -- (FD)
-                        when others => null; end case;
-                    when others => null; end case;
+                        when 3 => fetch_multi(state, f); -- (FD)
+                        end case;
+                    end case;
                 when 6 => null; -- alu_a_n(state, f) -- alu[y] n
                 when 7 => null; -- RST y*8
-                when others => null; end case;
-            when others => null; end case;
+                end case;
+            end case;
         when ed =>
             case s.x is 
             when 1 => -- rot[y] r[z]
@@ -207,12 +213,12 @@ architecture Behavioral of op_decoder is
                     case s.q is
                     when 0 => null; -- SBC HL, rp[p]
                     when 1 => null; -- ADC HL, rp[p]
-                    when others => null; end case;
+                    end case;
                 when 3 =>
                     case s.q is
                     when 0 => null; -- LD (nn), rp[p]
                     when 1 => null; -- LD rp[p], (nn)
-                    when others => null; end case;
+                    end case;
                 when 4 => null; -- NEG;
                 when 5 =>
                     case s.y is
@@ -228,21 +234,22 @@ architecture Behavioral of op_decoder is
                     when 3 => null; -- LD A, R
                     when 4 => null; -- RRD
                     when 5 => null; -- RLD
-                    when others => nop(state, f);
+                    when 6|7 => nop(state, f);
                     end case;
-                when others => null; end case;
+                end case;
             when 2 =>
                 case s.y is
                 when 4|5|6|7 => null; -- bli[y,z]
-                when others => null; end case;
-            when others => null; end case;
+                when others => null; -- NONI
+                end case;
+            when others => null; end case; -- NONI
         when cb =>
             case s.x is
             when 0 => bit_r(state, f, rot(s.y), 0, s.z);
             when 1 => bit_r(state, f, bit_i, s.y, s.z);
             when 2 => bit_r(state, f, res_i, s.y, s.z);
             when 3 => bit_r(state, f, set_i, s.y, s.z);
-            when others => null; end case;
+            end case;
         when ddcb|fdcb =>
             case s.x is
             when 0 =>
@@ -262,7 +269,7 @@ architecture Behavioral of op_decoder is
                 when 6 => -- set y, (IX/Y+d)
                 when others => -- LD r[z], set y, (IX/Y+d)
                 end case;
-            when others => null; end case;
+            end case;
         end case;
 
         return f;

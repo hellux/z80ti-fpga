@@ -12,7 +12,7 @@ architecture arch of alu_tb_v2 is
         clk : in std_logic;
         op1, op2, flags_in : in std_logic_vector(7 downto 0);
         op : in instr_t;
-        bit_select : in integer;
+        bit_select : in integer range 0 to 7;
         result, flags_out : out std_logic_vector(7 downto 0));
     end component;
 
@@ -20,7 +20,7 @@ architecture arch of alu_tb_v2 is
         signal op1_s : out std_logic_vector(7 downto 0);
         signal op2_s : out std_logic_vector(7 downto 0);
         signal op_s : out instr_t;
-        signal bit_select_s : out integer;
+        signal bit_select_s : out integer range 0 to 7;
         signal flags_in_s : out std_logic_vector(7 downto 0);
         signal flags_out_s : in std_logic_vector(7 downto 0);
         signal result_s : in std_logic_vector(7 downto 0);
@@ -28,7 +28,7 @@ architecture arch of alu_tb_v2 is
         constant op1 : std_logic_vector(7 downto 0);
         constant op2 : std_logic_vector(7 downto 0);
         constant op : instr_t;
-        constant bit_select : integer;
+        constant bit_select : integer range 0 to 7;
         constant flags_in : std_logic_vector(7 downto 0);
         -- assertions
         constant flags_out : std_logic_vector(7 downto 0);
@@ -70,7 +70,7 @@ architecture arch of alu_tb_v2 is
     signal op1, op2 : std_logic_vector(7 downto 0);
     signal flags_in : std_logic_vector(7 downto 0);
     signal op : instr_t;
-    signal bit_select : integer;
+    signal bit_select : integer range 0 to 7;
     signal result, flags_out : std_logic_vector(7 downto 0);
 begin
     alu_comp : alu port map(

@@ -23,7 +23,7 @@ use work.util.all;
 entity regfile is port(
     -- ctrl
     clk, rst : in std_logic;
-    reg_addr : in integer;
+    reg_addr : in integer range 0 to 15;
     rdd, rda, rdf : in std_logic;
     wrd, wra : in std_logic;
     swp : in rf_swap_t;

@@ -45,13 +45,13 @@ architecture arch of z80 is
         op1, op2 : in std_logic_vector(7 downto 0);
         flags_in : in std_logic_vector(7 downto 0);
         op : in instr_t;
-        bit_select : in integer;
+        bit_select : in integer range 0 to 7;
         result, flags_out : out std_logic_vector(7 downto 0));
     end component;
 
     component regfile port(
         clk, rst : in std_logic;
-        reg_addr : in integer;
+        reg_addr : in integer range 0 to 15;
         rdd, rda, rdf : in std_logic;
         wrd, wra: in std_logic;
         swp : in rf_swap_t;

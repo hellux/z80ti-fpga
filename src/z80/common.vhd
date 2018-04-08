@@ -30,7 +30,7 @@ package z80_comm is
 
     type ctrlword is record 
         -- regfile
-        rf_addr : integer;
+        rf_addr : integer range 0 to 15;
         rf_rdd, rf_rda, rf_wrd, rf_wra : std_logic;
         rf_swp : rf_swap_t;
         f_rd : std_logic;
@@ -38,7 +38,7 @@ package z80_comm is
         alu_wr : std_logic;
         alu_set : instr_set_t;
         alu_op : instr_t;
-        alu_bs : integer;
+        alu_bs : integer range 0 to 7;
         act_rd : std_logic;
         tmp_rd, tmp_wr : std_logic;
         -- control

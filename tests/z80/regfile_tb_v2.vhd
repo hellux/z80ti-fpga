@@ -10,7 +10,7 @@ end regfile_tb_v2;
 architecture arch of regfile_tb_v2 is
     component regfile port(
         clk, rst : in std_logic;
-        reg_addr : in integer;
+        reg_addr : in integer range 0 to 15;
         rdd, rda, rdf : in std_logic;
         wrd, wra : in std_logic;
         swp : in rf_swap_t;
@@ -22,7 +22,7 @@ architecture arch of regfile_tb_v2 is
     end component;
 
     signal clk, rst, rdd, rda, rdf, wrd, wra, wrf : std_logic;
-    signal reg_addr : integer;
+    signal reg_addr : integer range 0 to 15;
     signal swp : rf_swap_t;
     signal f_in, data, a_out, f_out : std_logic_vector(7 downto 0);
     signal addr, addr_out, addr_dis : std_logic_vector(15 downto 0);
@@ -57,7 +57,7 @@ begin
     end process;
 
     process
-        variable i : integer;
+        variable i : integer range 0 to 15;
         variable value : std_logic_vector(7 downto 0);
         variable value_addr : std_logic_vector(15 downto 0);
     begin
