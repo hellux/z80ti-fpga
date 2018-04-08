@@ -17,7 +17,7 @@ architecture arch of regfile_tb_v2 is
         data : inout std_logic_vector(7 downto 0);
         addr : in std_logic_vector(15 downto 0);
         f_in : in std_logic_vector(7 downto 0);
-        addr_out, addr_dis : out std_logic_vector(15 downto 0);
+        addr_out, addr_out_dis : out std_logic_vector(15 downto 0);
         a_out, f_out : out std_logic_vector(7 downto 0));
     end component;
 

@@ -42,6 +42,9 @@ package z80_comm is
         alu_bs : integer range 0 to 7;
         act_rd : std_logic;
         tmp_rd, tmp_wr : std_logic;
+        -- displacement
+        dis_wr : std_logic;
+        pc_disp : std_logic;
         -- control
         ir_rd : std_logic;
         pc_rd, pc_wr : std_logic;

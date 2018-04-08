@@ -47,6 +47,11 @@ package z80_instr is
     procedure jp_cc_nn(signal state : in id_state_t;
                        variable f : out id_frame_t;
                        cond : in integer);
+    procedure jr_d(signal state : in id_state_t;
+                   variable f : out id_frame_t);
+    procedure jr_cc_d(signal state : in id_state_t;
+                       variable f : out id_frame_t;
+                       cond : in integer);
     procedure ex(signal state : in id_state_t;
                  variable f : out id_frame_t;
                  constant swp : rf_swap_t);
@@ -173,9 +178,8 @@ package body z80_instr is
         when others => null; end case;
     end nop;
 
-    procedure jp_nn(
-        signal state : in id_state_t;
-        variable f : out id_frame_t)
+    procedure jp_nn(signal state : in id_state_t;
+                    variable f : out id_frame_t)
     is begin
         case state.m is
         when m1 => f.ct.cycle_end := during_t(state, t4);
@@ -222,6 +226,56 @@ package body z80_instr is
             when others => null; end case;
         end case;
     end jp_cc_nn;
+
+    procedure jr_d(signal state : in id_state_t;
+                   variable f : out id_frame_t)
+    is begin
+        case state.m is
+        when m1 => f.ct.cycle_end := during_t(state, t4);
+        when m2 =>
+            fetch_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.rf_addr := regZ;   -- store d in Z
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            -- why do z80 use 5 tcycles?
+            -- is this implementation correct? TODO compare with emulator
+            case state.t is
+            when t5 =>
+                f.cw.rf_addr := regZ;
+                f.cw.rf_wrd := '1';     -- place Z on dbus
+                f.cw.pc_disp := '1';    -- send pc to displacer
+                f.cw.dis_wr := '1';     -- write displaced addr (pc+z) to abus
+                f.cw.pc_rd := '1';      -- write displaced+1 to pc
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+    end jr_d;
+
+    procedure jr_cc_d(signal state : in id_state_t;
+                       variable f : out id_frame_t;
+                       cond : in integer)
+    is begin
+        case state.cc(cond) is
+        when true => jr_d(state, f);
+        when false =>
+            case state.m is
+            when m1 =>
+                f.ct.cycle_end := during_t(state, t4);
+            when m2 =>
+                fetch_pc(state, f); -- increment pc to skip nn
+                case state.t is
+                when t3 =>
+                    f.ct.cycle_end := '1';
+                    f.ct.instr_end := '1';
+                when others => null; end case;
+            when others => null; end case;
+        end case;
+    end jr_cc_d;
 
     procedure ex(signal state : in id_state_t;
                  variable f : out id_frame_t;

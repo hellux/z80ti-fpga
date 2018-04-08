@@ -31,7 +31,7 @@ entity regfile is port(
     data : inout std_logic_vector(7 downto 0);
     addr : in std_logic_vector(15 downto 0);
     f_in : in std_logic_vector(7 downto 0);
-    addr_out, addr_dis : out std_logic_vector(15 downto 0);
+    addr_out, addr_out_dis : out std_logic_vector(15 downto 0);
     a_out, f_out : out std_logic_vector(7 downto 0));
 end regfile;
 
@@ -135,7 +135,7 @@ begin
 
     a_out    <= get_byte(wAF, '0', ram);
     f_out    <= get_byte(wAF, '1', ram);
-    addr_dis <= ram(w);
+    addr_out_dis <= ram(w);
     addr_out <= ram(w)               when wra  = '1' else (others => 'Z');
     data     <= get_byte(w, hl, ram) when wrd  = '1' else (others => 'Z');
 end arch;

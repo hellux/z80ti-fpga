@@ -58,7 +58,7 @@ architecture arch of z80 is
         data : inout std_logic_vector(7 downto 0);
         addr : in std_logic_vector(15 downto 0);
         f_in : in std_logic_vector(7 downto 0);
-        addr_out, addr_dis : out std_logic_vector(15 downto 0);
+        addr_out, addr_out_dis : out std_logic_vector(15 downto 0);
         a_out, f_out : out std_logic_vector(7 downto 0));
     end component;
 
@@ -70,19 +70,39 @@ architecture arch of z80 is
         cw : out ctrlword);
     end component;
 
+    signal instr : std_logic_vector(7 downto 0);
+    signal addr_in, pc_out : std_logic_vector(15 downto 0);
+    signal cw : ctrlword;
+
+    signal rf_disp_addr, disp_addr : std_logic_vector(15 downto 0);
+
     signal alu_result : std_logic_vector(7 downto 0);
     signal acc, op1, tmp_do : std_logic_vector(7 downto 0);
     signal flags_in, flags_out : std_logic_vector(7 downto 0); -- rel to alu
 
-    signal disp_addr : std_logic_vector(15 downto 0);
-
-    signal instr : std_logic_vector(7 downto 0);
-    signal addr_incr : std_logic_vector(15 downto 0);
-    signal cw : ctrlword;
-
     signal dbus : std_logic_vector(7 downto 0) := "ZZZZZZZZ";
     signal abus : std_logic_vector(15 downto 0);
 begin
+    -- -- CONTROL SECTION -- --
+    ir : reg_8 port map(clk, cbi.reset, cw.ir_rd, '1', dbus, instr);
+    id : op_decoder port map(clk, cbi, cbo, instr, flags_in, cw);
+
+    -- -- REGISTER SECTION -- --
+    rf : regfile port map(clk, cbi.reset,
+        cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd,
+                    cw.rf_wrd, cw.rf_wra, cw.rf_swp,
+        dbus, addr_in, flags_out, abus, rf_disp_addr, acc, flags_in);
+    pc : reg_16 port map(clk, cbi.reset, cw.pc_rd, '1', addr_in, pc_out);
+    addr_in <= std_logic_vector(unsigned(abus) + 1)
+                 when abus /= "ZZZZZZZZZZZZZZZZ" else (others => '-');
+    abus <= pc_out when cw.pc_wr = '1' else (others => 'Z');
+    disp_addr <= pc_out when cw.pc_disp = '1' else rf_disp_addr;
+    abus <=
+        std_logic_vector(signed(disp_addr) + resize(signed(dbus), 16))
+            when cw.dis_wr = '1' else
+        (others => 'Z');
+
+
     -- -- ALU section -- --
     alu_comp : alu port map(clk, op1, tmp_do, flags_in, cw.alu_op, cw.alu_bs,
                             alu_result, flags_out);
@@ -90,20 +110,6 @@ begin
     tmp : reg_8 port map(clk, cbi.reset, cw.tmp_rd, '1', dbus, tmp_do);
     dbus <= tmp_do when cw.tmp_wr = '1' else (others => 'Z');
     dbus <= alu_result when cw.alu_wr = '1' else (others => 'Z');
-
-
-    -- -- REGISTER SECTION -- --
-    rf : regfile port map(clk, cbi.reset,
-        cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd,
-                    cw.rf_wrd, cw.rf_wra, cw.rf_swp,
-        dbus, addr_incr, flags_out, abus, disp_addr, acc, flags_in);
-
-    -- -- CONTROL SECTION -- --
-    ir : reg_8 port map(clk, cbi.reset, cw.ir_rd, '1', dbus, instr);
-    id : op_decoder port map(clk, cbi, cbo, instr, flags_in, cw);
-    pc : reg_16 port map(clk, cbi.reset, cw.pc_rd, cw.pc_wr, addr_incr, abus);
-    addr_incr <= std_logic_vector(unsigned(abus) + 1)
-                 when abus /= "ZZZZZZZZZZZZZZZZ" else (others => '-');
 
 
     -- -- BUSES -- --

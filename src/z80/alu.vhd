@@ -4,6 +4,8 @@ use ieee.numeric_std.all;
 use work.z80_comm.all;
 
 -- TODO
+--  * daa
+--  * scf, ccf
 --  * rest of instructions
 
 entity alu is port(

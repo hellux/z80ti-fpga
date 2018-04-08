@@ -70,8 +70,8 @@ architecture Behavioral of op_decoder is
                     when 0 => nop(state, f); -- NOP
                     when 1 => ex(state, f, af); -- EX AF, AF'
                     when 2 => null; -- DJNZ d
-                    when 3 => null; -- JR d
-                    when 4|5|6|7 => null; -- JR cc[y-4] d
+                    when 3 => null; jr_d(state, f);
+                    when 4|5|6|7 => jr_cc_d(state, f, s.y-4); -- JR cc[y-4] d
                     end case;
                 when 1 =>
                     case s.q is

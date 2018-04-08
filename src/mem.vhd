@@ -29,8 +29,8 @@ architecture arch of mem is
          x"00", -- n
          x"d9", -- exx
          x"b1", -- or b
-         x"00",
-         x"00",
+         x"28", -- jr z, d
+         x"f5", -- -10
          x"00",
          x"00",
          x"00",
