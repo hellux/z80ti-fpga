@@ -233,23 +233,27 @@ package body z80_instr is
         case state.m is
         when m1 => f.ct.cycle_end := during_t(state, t4);
         when m2 =>
-            fetch_pc(state, f);
+            fetch(state, f);
             case state.t is
+            when t1 =>
+                f.cw.pc_wr := '1';
+            when t2 =>
+                f.cw.pc_wr := '1';
+                -- no pc increment
             when t3 =>
-                f.cw.rf_addr := regZ;   -- store d in Z
-                f.cw.rf_rdd := '1';
-                f.ct.cycle_end := '1';
-            when others => null; end case;
-        when m3 =>
-            -- why do z80 use 5 tcycles?
-            -- is this implementation correct? TODO compare with emulator
-            case state.t is
-            when t5 =>
-                f.cw.rf_addr := regZ;
-                f.cw.rf_wrd := '1';     -- place Z on dbus
                 f.cw.pc_disp := '1';    -- send pc to displacer
                 f.cw.dis_wr := '1';     -- write displaced addr (pc+z) to abus
                 f.cw.pc_rd := '1';      -- write displaced+1 to pc
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            -- why does z80 use this cycle for 5 cp?
+            case state.t is
+            when t1 => -- chilla
+            when t2 => -- gå på rast
+            when t3 => -- ta kaffepaus i java
+            when t4 => -- gå ut och ta lite frisk luft
+            when t5 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
             when others => null; end case;

@@ -29,14 +29,14 @@ architecture arch of mem is
          x"00", -- n
          x"d9", -- exx
          x"b1", -- or b
+         x"00", -- nop
          x"28", -- jr z, d
-         x"f5", -- -10
+         x"03", -- d
          x"00",
          x"00",
          x"00",
-         x"00",
-         x"00",
-         x"00",
+         x"28", -- jr z,d
+         x"f9", -- d
          x"00",
          x"00",
          x"00",
