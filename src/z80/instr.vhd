@@ -14,6 +14,7 @@ package z80_instr is
     -- current state/context of cpu
     type id_state_t is record
         set : instr_set_t;
+        cc : cond_t;
         m : integer range 1 to 6;
         t : integer range 1 to 5;
         jump_cycle : std_logic; -- use wz as pc if last instr was jp

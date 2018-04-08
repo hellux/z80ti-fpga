@@ -51,24 +51,24 @@ package z80_comm is
     end record;
 
     -- flags
-    constant  C_f : integer := 0;
-    constant  N_f : integer := 1;
-    constant PV_f : integer := 2;
-    constant f3_f : integer := 3;
-    constant  H_f : integer := 4;
-    constant f5_f : integer := 5;
-    constant  Z_f : integer := 6;
-    constant  S_f : integer := 7;
+    constant  C_f : integer := 0;   -- carry
+    constant  N_f : integer := 1;   -- subtract instr
+    constant PV_f : integer := 2;   -- parity/overflow
+    constant f3_f : integer := 3;   -- copy of bit 3
+    constant  H_f : integer := 4;   -- half carry
+    constant f5_f : integer := 5;   -- copy of bit 5
+    constant  Z_f : integer := 6;   -- zero
+    constant  S_f : integer := 7;   -- sign
 
     -- conditions
-    constant NZ_c : integer := 0;
-    constant  Z_c : integer := 1;
-    constant NC_c : integer := 2;
-    constant  C_c : integer := 3;
-    constant PO_c : integer := 4;
-    constant PE_c : integer := 5;
-    constant  P_c : integer := 6;
-    constant  M_c : integer := 7;
+    constant NZ_c : integer := 0;   -- non-zero
+    constant  Z_c : integer := 1;   -- zero
+    constant NC_c : integer := 2;   -- no carry
+    constant  C_c : integer := 3;   -- carry
+    constant PO_c : integer := 4;   -- parity odd
+    constant PE_c : integer := 5;   -- parity even
+    constant  P_c : integer := 6;   -- sign positive
+    constant  M_c : integer := 7;   -- sign negative
 
     -- machine states
     constant m1 : integer := 1;

@@ -66,13 +66,13 @@ architecture arch of z80 is
         clk : in std_logic;
         cbi : in ctrlbus_in;
         cbo : out ctrlbus_out;
-        instr : in std_logic_vector(7 downto 0);
+        instr, flags : in std_logic_vector(7 downto 0);
         cw : out ctrlword);
     end component;
 
     signal alu_result : std_logic_vector(7 downto 0);
     signal acc, op1, tmp_do : std_logic_vector(7 downto 0);
-    signal flags_in, flags_out : std_logic_vector(7 downto 0);
+    signal flags_in, flags_out : std_logic_vector(7 downto 0); -- rel to alu
 
     signal disp_addr : std_logic_vector(15 downto 0);
 
@@ -100,7 +100,7 @@ begin
 
     -- -- CONTROL SECTION -- --
     ir : reg_8 port map(clk, cbi.reset, cw.ir_rd, '1', dbus, instr);
-    id : op_decoder port map(clk, cbi, cbo, instr, cw);
+    id : op_decoder port map(clk, cbi, cbo, instr, flags_in, cw);
     pc : reg_16 port map(clk, cbi.reset, cw.pc_rd, cw.pc_wr, addr_incr, abus);
     addr_incr <= std_logic_vector(unsigned(abus) + 1)
                  when abus /= "ZZZZZZZZZZZZZZZZ" else (others => '-');
