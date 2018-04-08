@@ -14,7 +14,7 @@ end mem;
 architecture arch of mem is
     type mem_t is array(0 to 31) of std_logic_vector(7 downto 0);
     signal mem_s : mem_t :=
-        (x"00", -- nop
+        (x"b1", -- or b
          x"cb", -- bit instr
          x"f7", -- set 6, a
          x"00", -- nop
@@ -35,8 +35,8 @@ architecture arch of mem is
          x"00",
          x"00",
          x"00",
-         x"28", -- jr z,d
-         x"f9", -- d
+         x"46", -- ld b, (hl)
+         x"00",
          x"00",
          x"00",
          x"00",

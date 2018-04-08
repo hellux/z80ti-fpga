@@ -80,6 +80,9 @@ package z80_instr is
     procedure ld_r_n(signal state : in id_state_t;
                      variable f : out id_frame_t;
                      signal reg: in integer);
+    procedure ld_r_hlx(signal state : in id_state_t;
+                       variable f : out id_frame_t;
+                       signal reg: in integer);
 end z80_instr;
 
 package body z80_instr is
@@ -481,4 +484,26 @@ package body z80_instr is
             when others => null; end case;
         when others => null; end case;
     end ld_r_n;
+
+    procedure ld_r_hlx(signal state : in id_state_t;
+                       variable f : out id_frame_t;
+                       signal reg: in integer)
+    is begin
+        case state.m is
+        when m1 =>
+            f.ct.cycle_end := during_t(state, t4);
+        when m2 => 
+            fetch(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regHL;
+                f.cw.rf_wra := '1';
+            when t3 =>
+                f.cw.rf_addr := reg;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+    end ld_r_hlx;
 end z80_instr;

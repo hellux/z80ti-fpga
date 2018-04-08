@@ -61,7 +61,7 @@ architecture Behavioral of op_decoder is
 
         -- exec phase
         case state.set is
-        when main|dd|fd =>
+        when main =>
             case s.x is
             when 0 =>
                 case s.z is
@@ -110,7 +110,7 @@ architecture Behavioral of op_decoder is
                 when 6 =>
                     case s.y is
                     when 6 => null; -- HALT
-                    when others => null; -- LD r[y], (hl)
+                    when others => ld_r_hlx(state, f, s.y); -- LD r[y], (hl)
                     end case;
                 -- TODO LD (hl), r[z]
                 when others => ld_r_r(state, f, s.z, s.y); --LD r[y], r[z]
@@ -237,6 +237,7 @@ architecture Behavioral of op_decoder is
                 when others => -- LD r[z], set y, (IX/Y+d)
                 end case;
             end case;
+        when dd|fd => null; -- TODO
         end case;
 
         return f;
