@@ -11,6 +11,7 @@ package z80_comm is
                      daa_i, cpl_i, scf_i, ccf_i);
     type instr_set_t is (main, ed, cb, dd, ddcb, fd, fdcb);
     type rf_swap_t is (none, af, reg, dehl);
+    type cond_t is array(0 to 7) of boolean;
 
     type ctrlbus_in is record
         -- cpu control
@@ -48,6 +49,26 @@ package z80_comm is
         data_rdi, data_wri, data_rdo, data_wro : std_logic;
         addr_rd, addr_wr : std_logic;
     end record;
+
+    -- flags
+    constant  C_f : integer := 0;
+    constant  N_f : integer := 1;
+    constant PV_f : integer := 2;
+    constant f3_f : integer := 3;
+    constant  H_f : integer := 4;
+    constant f5_f : integer := 5;
+    constant  Z_f : integer := 6;
+    constant  S_f : integer := 7;
+
+    -- conditions
+    constant NZ_c : integer := 0;
+    constant  Z_c : integer := 1;
+    constant NC_c : integer := 2;
+    constant  C_c : integer := 3;
+    constant PO_c : integer := 4;
+    constant PE_c : integer := 5;
+    constant  P_c : integer := 6;
+    constant  M_c : integer := 7;
 
     -- machine states
     constant m1 : integer := 1;

@@ -6,12 +6,6 @@ use work.z80_comm.all;
 -- TODO
 --  * rest of instructions
 
--- FLAGS
--- 7  6  5  4  3  2  1  0
--- S  Z  f5 H f3 P/V N  C
--- f3: copy of bit 3
--- f5: copy of bit 5
-
 entity alu is port(
     clk : in std_logic;
     op1, op2, flags_in : in std_logic_vector(7 downto 0);
@@ -21,9 +15,6 @@ entity alu is port(
 end alu;
 
 architecture arch of alu is
-    -- alias
-    signal c_in : std_logic;
-
     -- preprocess
     signal mask : std_logic_vector(7 downto 0); -- mask for bit set/reset
     signal edge : std_logic; -- lsb or msb when shifting
@@ -39,10 +30,7 @@ architecture arch of alu is
 
     -- flags
     signal overflow, overflow_neg, parity : std_logic;
-    signal S, Z, f5, H, f3, PV, N, C : std_logic;
 begin
-    c_in <= flags_in(0);
-
     -- preprocess
     process(bit_select) is
         variable m : std_logic_vector(7 downto 0);
@@ -54,11 +42,11 @@ begin
         mask <= m;
     end process;
     with op select edge <=
-        '0'    when sla_i|sll_i|srl_i,
-        c_in   when rl_i|rr_i,
-        op2(0) when rrc_i,
-        op2(7) when rlc_i|sra_i,
-        '-'    when others;
+        '0'             when sla_i|sll_i|srl_i,
+        flags_in(C_f)   when rl_i|rr_i,
+        op2(0)          when rrc_i,
+        op2(7)          when rlc_i|sra_i,
+        '-'             when others;
     with op select op1_ext <=
         to_signed(1, 9)     when inc_i,
         to_signed(-1, 9)    when dec_i,
@@ -77,9 +65,10 @@ begin
         op2_ext                             when others;
 
     -- calculation
-    with_carry <= to_signed(1, 9)
-                    when c_in = '1' and (op = adc_i or op = sbc_i) else
-                  to_signed(0, 9);
+    with_carry <=
+        to_signed(1, 9)
+            when flags_in(C_f) = '1' and (op = adc_i or op = sbc_i) else
+        to_signed(0, 9);
     result_and <= op1_ext and op2_ext;
     result_xor <= op1_ext xor op2_ext;
     result_or  <= op1_ext or  op2_ext;
@@ -113,41 +102,40 @@ begin
         '-' when others;
     overflow_neg <= '1' when op2 = x"80" else '0';
 
-    S <= result_buf(7);
-    Z <= not result_buf(bit_select) when op = bit_i else
-         '1'                        when result_buf = 0 else
-         '0';
-    f5 <= result_buf(5);
-    with op select H <=
+    with op select flags_out(C_f) <=
+    '0'             when and_i|or_i|xor_i,
+    calc_result(8)  when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i,
+    op2(7)          when rlc_i|rl_i|sla_i|sll_i,
+    op2(0)          when rrc_i|rr_i|sra_i|srl_i,
+    flags_in(C_f)   when others;
+
+    with op select flags_out(N_f) <=
+        '1' when sub_i|sbc_i|cp_i|neg_i,
+        '0' when others;
+
+    with op select flags_out(PV_f) <=
+        overflow        when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i,
+        overflow_neg    when neg_i,
+        parity          when and_i|or_i|xor_i|bit_i|res_i|set_i|
+                             rlc_i|rl_i|sla_i|sll_i|
+                             rrc_i|rr_i|sra_i|srl_i,
+        flags_in(PV_f)  when others;
+
+    flags_out(f3_f) <= result_buf(3);
+
+    with op select flags_out(H_f) <=
         result_buf(4) xor op1_ext(4) xor op2sn(4)
             when add_i|adc_i|inc_i|dec_i,
         result_buf(4) xor op1_ext(4) xor op2_ext(4)
             when sub_i|sbc_i|cp_i|neg_i,
         '1' when others;
-    f3 <= result_buf(3);
-    with op select PV <=
-        overflow     when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i,
-        overflow_neg when neg_i,
-        parity       when and_i|or_i|xor_i|bit_i|res_i|set_i|
-                          rlc_i|rl_i|sla_i|sll_i|
-                          rrc_i|rr_i|sra_i|srl_i,
-        flags_in(2)  when others;
-    with op select N <=
-        '1' when sub_i|sbc_i|cp_i|neg_i,
-        '0' when others;
-    with op select C <=
-    '0'             when and_i|or_i|xor_i,
-    calc_result(8)  when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i,
-    op2(7)          when rlc_i|rl_i|sla_i|sll_i,
-    op2(0)          when rrc_i|rr_i|sra_i|srl_i,
-    flags_in(0)     when others;
 
-    flags_out(0) <= C;
-    flags_out(1) <= N;
-    flags_out(2) <= PV;
-    flags_out(3) <= f3;
-    flags_out(4) <= H;
-    flags_out(5) <= f5;
-    flags_out(6) <= Z;
-    flags_out(7) <= S;
+    flags_out(f5_f) <= result_buf(5);
+
+    flags_out(Z_f) <=
+        not result_buf(bit_select) when op = bit_i else
+        '1'                       when result_buf = 0 else
+        '0';
+
+    flags_out(S_f) <= result_buf(7);
 end arch;
