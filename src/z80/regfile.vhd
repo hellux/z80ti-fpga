@@ -138,8 +138,4 @@ begin
     addr_dis <= ram(w);
     addr_out <= ram(w)               when wra  = '1' else (others => 'Z');
     data     <= get_byte(w, hl, ram) when wrd  = '1' else (others => 'Z');
-
-    warnings : process(clk) begin
-        assert reg_addr /= 6 report "ACCESSING '110' ADDRESS";
-    end process;
 end arch;

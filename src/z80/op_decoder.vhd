@@ -26,12 +26,14 @@ architecture Behavioral of op_decoder is
     signal ctrl : id_ctrl_t;
     signal f : id_frame_t;
 
-    constant rp : rp_table_t := (regBC, regDE, regHL, regSP);
+    constant rp  : rp_table_t := (regBC, regDE, regHL, regSP);
     constant rp2 : rp_table_t := (regBC, regDE, regHL, regAF);
     constant alu : alu_table_t := (add_i, adc_i, sub_i, sbc_i,
                                    and_i, xor_i, or_i, cp_i);
     constant rot : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
                                    sla_i, sra_i, sll_i, srl_i);
+    constant afi : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
+                                   daa_i, cpl_i, scf_i, ccf_i);
 
     function decode(signal state : id_state_t;
                     signal instr : std_logic_vector(7 downto 0);
@@ -94,7 +96,7 @@ architecture Behavioral of op_decoder is
                     when 1 => ex_af(state, f);
                     when 2 => null; -- DJNZ d
                     when 3 => null; -- JR d
-                    when others => null; -- JR cc[y-4] d
+                    when 4|5|6|7 => null; -- JR cc[y-4] d
                     end case;
                 when 1 =>
                     case s.q is
@@ -123,20 +125,10 @@ architecture Behavioral of op_decoder is
                     when 0 => null; -- INC rp[y]
                     when 1 => null; -- DEC rp[y]
                     end case;
-                when 4 => -- alu_r(state, f, inc_i, y); -- INC r[y]
-                when 5 => -- alu_r(state, f, dec_i, y); -- DEC r[y]
+                when 4 => alu_r(state, f, inc_i, s.y); -- INC r[y]
+                when 5 => alu_r(state, f, dec_i, s.y); -- DEC r[y]
                 when 6 => null; -- LD r[y]
-                when 7 =>
-                    case s.y is
-                    when 0 => --alu_af(state, f, rrlc_i); -- RRLCA
-                    when 1 => --alu_af(state, f, rrc_i); -- RRCA
-                    when 2 => --alu_af(state, f, rla_i); -- RLA
-                    when 3 => --alu_af(state, f, rra_i); -- RRA
-                    when 4 => --alu_af(state, f, daa_i); -- DAA 
-                    when 5 => --alu_af(state, f, cpl_i); -- CPL
-                    when 6 => --alu_af(state, f, scf_i); -- SCF
-                    when 7 => --alu_af(state, f, ccf_i); -- CCF
-                    end case;
+                when 7 => alu_af(state, f, afi(s.y));
                 end case;
             when 1 =>
                 case s.z is
@@ -191,13 +183,13 @@ architecture Behavioral of op_decoder is
                         when 3 => fetch_multi(state, f); -- (FD)
                         end case;
                     end case;
-                when 6 => null; -- alu_a_n(state, f) -- alu[y] n
+                when 6 => null; alu_a_n(state, f, alu(s.y)); -- alu[y] n
                 when 7 => null; -- RST y*8
                 end case;
             end case;
         when ed =>
             case s.x is 
-            when 1 => -- rot[y] r[z]
+            when 1 =>
                 case s.z is
                 when 0 =>
                     case s.y is
@@ -219,7 +211,7 @@ architecture Behavioral of op_decoder is
                     when 0 => null; -- LD (nn), rp[p]
                     when 1 => null; -- LD rp[p], (nn)
                     end case;
-                when 4 => null; -- NEG;
+                when 4 => alu_af(state, f, neg_i) ; -- NEG;
                 when 5 =>
                     case s.y is
                     when 1 => null; -- RETI
@@ -242,7 +234,7 @@ architecture Behavioral of op_decoder is
                 when 4|5|6|7 => null; -- bli[y,z]
                 when others => null; -- NONI
                 end case;
-            when others => null; end case; -- NONI
+            when 0|3 => null; end case; -- NONI
         when cb =>
             case s.x is
             when 0 => bit_r(state, f, rot(s.y), 0, s.z);

@@ -16,8 +16,8 @@ package z80_instr is
     -- current state of cpu, modified synchronously
     type id_state_t is record
         set : instr_set_t;
-        m : integer;
-        t : integer;
+        m : integer range 1 to 6;
+        t : integer range 1 to 5;
         overlap, multi_word, jump_cycle : std_logic;
     end record;
 
@@ -47,6 +47,16 @@ package z80_instr is
                       variable f : out id_frame_t;
                       constant op : in instr_t;
                       signal reg : in integer);
+    procedure alu_a_n(signal state : in id_state_t;
+                      variable f : out id_frame_t;
+                      constant op : in instr_t);
+    procedure alu_r(signal state : in id_state_t;
+                    variable f : out id_frame_t;
+                    constant op : in instr_t;
+                    signal reg : in integer);
+    procedure alu_af(signal state : in id_state_t;
+                     variable f : out id_frame_t;
+                     constant op : in instr_t);
     procedure bit_r(signal state : in id_state_t;
                     variable f : out id_frame_t;
                     constant op : in instr_t;
@@ -196,6 +206,93 @@ package body z80_instr is
             when others => null; end case;
         when others => null; end case;
     end alu_a_r;
+
+    procedure alu_a_n(signal state : in id_state_t;
+                      variable f : out id_frame_t;
+                      constant op : in instr_t)
+    is begin
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.act_rd := '1';     -- read from a to tmp accumulator
+                f.ct.cycle_end := '1';  -- signal new cycle
+            when others => null; end case;
+        when m2 =>
+            fetch(state, f);
+            case state.t is
+            when t3 => 
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f.ct.overlap := '1';        -- fetch next instr simultaneously
+            case state.t is
+            when t2 =>
+                f.cw.alu_op := op;      -- tell alu operation
+                f.cw.alu_wr := '1';     -- place result on dbus
+                f.cw.f_rd := '1';       -- read flags from alu
+                f.cw.rf_addr := regA;   -- select the A reg
+                f.cw.rf_rdd := '1';     -- read alu output from dbus
+                f.ct.instr_end := '1';  -- signal instr is done
+            when others => null; end case;
+        when others => null; end case;
+    end alu_a_n;
+
+    procedure alu_r(signal state : in id_state_t;
+                    variable f : out id_frame_t;
+                    constant op : in instr_t;
+                    signal reg : in integer)
+    is begin
+        case state.m is
+        when m1 => 
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := reg;
+                f.cw.rf_wrd := '1';
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            f.ct.overlap := '1';
+            case state.t is
+            when t2 =>
+                f.cw.alu_op := op;
+                f.cw.alu_wr := '1';
+                f.cw.f_rd := '1';
+                f.cw.rf_addr := reg;
+                f.cw.rf_rdd := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+    end alu_r;
+
+    procedure alu_af(signal state : in id_state_t;
+                     variable f : out id_frame_t;
+                     constant op : in instr_t)
+    is begin
+        case state.m is
+        when m1 => 
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := regA;
+                f.cw.rf_wrd := '1';
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            f.ct.overlap := '1';
+            case state.t is
+            when t2 =>
+                f.cw.alu_op := op;
+                f.cw.alu_wr := '1';
+                f.cw.f_rd := '1';
+                f.cw.rf_addr := regA;
+                f.cw.rf_rdd := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+    end alu_af;
 
     procedure bit_r(signal state : in id_state_t;
                     variable f : out id_frame_t;
