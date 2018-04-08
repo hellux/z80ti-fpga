@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use work.z80_comm.all;
 
 package z80_instr is
-    -- control signals for id, modified combinationally by instructions
+    -- control signals for id
     type id_ctrl_t is record
         set_end : std_logic;        -- last state of current set
         cycle_end : std_logic;      -- last state of current cycle
@@ -11,7 +11,7 @@ package z80_instr is
         jump : std_logic;           -- use wz when fetching on next cycle
     end record;
 
-    -- current state of cpu, modified synchronously
+    -- current state/context of cpu
     type id_state_t is record
         set : instr_set_t;
         m : integer range 1 to 6;
@@ -19,7 +19,7 @@ package z80_instr is
         jump_cycle : std_logic; -- use wz as pc if last instr was jp
     end record;
 
-    -- container for signals so a function can be used (f as return value)
+    -- container for out signals
     type id_frame_t is record
         ct : id_ctrl_t;
         cb : ctrlbus_out;
@@ -133,7 +133,7 @@ package body z80_instr is
         case state.m is
         when m1 =>
             case state.t is
-            when t4 => -- why can't we end at t3?
+            when t4 =>
                 f.ct.cycle_end := '1';  -- end m1
             when others => null; end case;
         when others =>
@@ -364,8 +364,8 @@ package body z80_instr is
                 f.cw.rf_addr := dst;
                 f.cw.tmp_wr := '1';
                 f.cw.rf_rdd := '1';
-                f.ct.instr_end := '1';
                 f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
             when others => null; end case;
         when others => null; end case;
     end ld_r_r;

@@ -260,19 +260,18 @@ begin
     -- determine state
     process(clk) begin
         if rising_edge(clk) then
-            if cbi.wt /= '1' then
-                state.t <= state.t + 1;
-            end if;
-
             if ctrl.cycle_end = '1' then
                 state.t <= t1;
-                state.m <= state.m + 1;
                 state.jump_cycle <= ctrl.jump;
+            elsif cbi.wt /= '1' then
+                state.t <= state.t + 1;
             end if;
 
             if ctrl.instr_end = '1' then
                 state.m <= m1;
                 state.set <= main;
+            elsif ctrl.cycle_end = '1' then
+                state.m <= state.m + 1;
             end if;
 
             if ctrl.set_end = '1' then

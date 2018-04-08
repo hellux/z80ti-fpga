@@ -19,13 +19,13 @@ architecture arch of mem is
          x"cb", -- bit instr
          x"f7", -- set 6, a
          x"00", -- nop
+         x"47", -- ld b, a
          x"87", -- add a
          x"08", -- ex af, af'
          x"c3", -- 
          x"02", -- jp 0002
          x"00", --
          x"00", -- nop
-         x"00",
          x"00",
          x"00",
          x"00",
