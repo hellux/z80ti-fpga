@@ -67,8 +67,8 @@ architecture Behavioral of op_decoder is
                 case s.z is
                 when 0 =>
                     case s.y is
-                    when 0 => nop(state, f);
-                    when 1 => ex_af(state, f);
+                    when 0 => nop(state, f); -- NOP
+                    when 1 => ex(state, f, af); -- EX AF, AF'
                     when 2 => null; -- DJNZ d
                     when 3 => null; -- JR d
                     when 4|5|6|7 => null; -- JR cc[y-4] d
@@ -102,7 +102,7 @@ architecture Behavioral of op_decoder is
                     end case;
                 when 4 => alu_r(state, f, inc_i, s.y); -- INC r[y]
                 when 5 => alu_r(state, f, dec_i, s.y); -- DEC r[y]
-                when 6 => null; -- LD r[y]
+                when 6 => ld_r_n(state, f, s.y); -- LD r[y], n
                 when 7 => alu_af(state, f, afi(s.y));
                 end case;
             when 1 =>
@@ -129,12 +129,12 @@ architecture Behavioral of op_decoder is
                     when 1 =>
                         case s.p is
                         when 0 => null; -- RET
-                        when 1 => null; -- EXX
+                        when 1 => null; ex(state, f, reg); -- EXX
                         when 2 => null; -- JP HL
                         when 3 => null; -- LD SP, HL
                         end case;
                     end case;
-                when 2 => null; -- JP cc[y], nn
+                when 2 => jp_cc_nn(state, f, s.y); -- JP cc[y], nn
                 when 3 =>
                     case s.y is
                     when 0 => jp_nn(state, f);
@@ -142,7 +142,7 @@ architecture Behavioral of op_decoder is
                     when 2 => null; -- OUT (n), A
                     when 3 => null; -- IN A, (n)
                     when 4 => null; -- EX (SP), HL
-                    when 5 => null; -- EX DE, HL
+                    when 5 => null; ex(state, f, dehl); -- EX DE, HL
                     when 6 => null; -- DI
                     when 7 => null; -- EI
                     end case;

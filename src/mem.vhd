@@ -12,20 +12,36 @@ entity mem is port(
 end mem;
 
 architecture arch of mem is
-    type mem_t is array(0 to 15) of std_logic_vector(7 downto 0);
+    type mem_t is array(0 to 31) of std_logic_vector(7 downto 0);
     signal mem_s : mem_t :=
         (x"00", -- nop
-         x"00", -- nop
          x"cb", -- bit instr
          x"f7", -- set 6, a
          x"00", -- nop
          x"47", -- ld b, a
          x"87", -- add a
          x"08", -- ex af, af'
-         x"c3", -- 
-         x"02", -- jp 0002
-         x"00", --
-         x"00", -- nop
+         x"3e", -- ld a, n
+         x"05", -- n
+         x"3d", -- dec a
+         x"c2", -- jp nz, nn
+         x"09", -- n
+         x"00", -- n
+         x"d9", -- exx
+         x"b1", -- or b
+         x"00",
+         x"00",
+         x"00",
+         x"00",
+         x"00",
+         x"00",
+         x"00",
+         x"00",
+         x"00",
+         x"00",
+         x"00",
+         x"00",
+         x"00",
          x"00",
          x"00",
          x"00",

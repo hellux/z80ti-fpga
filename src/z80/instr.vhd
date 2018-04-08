@@ -1,4 +1,4 @@
-library IEEE;
+library ieee;
 use ieee.std_logic_1164.all;
 use work.z80_comm.all;
 
@@ -27,6 +27,8 @@ package z80_instr is
         cw : ctrlword;
     end record;
 
+    function during_t(signal state : in id_state_t; constant t : in integer)
+    return std_logic;
     -- t1: abus:addr -> t3: dbus:data
     procedure fetch(signal state : in id_state_t;
                     variable f : out id_frame_t);
@@ -42,8 +44,12 @@ package z80_instr is
                   variable f : out id_frame_t);
     procedure jp_nn(signal state : in id_state_t;
                     variable f : out id_frame_t);
-    procedure ex_af(signal state : in id_state_t;
-                    variable f : out id_frame_t);
+    procedure jp_cc_nn(signal state : in id_state_t;
+                       variable f : out id_frame_t;
+                       cond : in integer);
+    procedure ex(signal state : in id_state_t;
+                 variable f : out id_frame_t;
+                 constant swp : rf_swap_t);
     procedure alu_a_r(signal state : in id_state_t;
                       variable f : out id_frame_t;
                       constant op : in instr_t;
@@ -66,9 +72,22 @@ package z80_instr is
     procedure ld_r_r(signal state : in id_state_t;
                      variable f : out id_frame_t;
                      signal src, dst : in integer);
+    procedure ld_r_n(signal state : in id_state_t;
+                     variable f : out id_frame_t;
+                     signal reg: in integer);
 end z80_instr;
 
 package body z80_instr is
+    function during_t(signal state : in id_state_t; constant t : in integer)
+    return std_logic is
+    begin
+        if state.t = t then
+            return '1';
+        else
+            return '0';
+        end if;
+    end during_t;
+
     procedure fetch(signal state : in id_state_t;
                     variable f : out id_frame_t)
     is begin
@@ -132,11 +151,7 @@ package body z80_instr is
         variable f : out id_frame_t)
     is begin
         case state.m is
-        when m1 =>
-            case state.t is
-            when t4 =>
-                f.ct.cycle_end := '1';  -- end m1
-            when others => null; end case;
+        when m1 => f.ct.cycle_end := during_t(state, t4); -- end m1
         when others =>
             fetch_instr(state, f);      -- fetch next byte
             case state.t is
@@ -163,11 +178,7 @@ package body z80_instr is
         variable f : out id_frame_t)
     is begin
         case state.m is
-        when m1 =>
-            case state.t is
-            when t4 =>
-                f.ct.cycle_end := '1';
-            when others => null; end case;
+        when m1 => f.ct.cycle_end := during_t(state, t4);
         when m2 =>
             fetch_pc(state, f);
             case state.t is
@@ -188,20 +199,44 @@ package body z80_instr is
         when others => null; end case;
     end jp_nn;
 
-    procedure ex_af(
-        signal state : in id_state_t;
-        variable f : out id_frame_t)
+    procedure jp_cc_nn(signal state : in id_state_t;
+                       variable f : out id_frame_t;
+                       cond : in integer)
+    is begin
+        case state.cc(cond) is
+        when true => jp_nn(state, f);
+        when false =>
+            case state.m is
+            when m1 =>
+                f.ct.cycle_end := during_t(state, t4);
+            when m2 =>
+                fetch_pc(state, f); -- increment pc to skip nn
+                f.ct.cycle_end := during_t(state, t3);
+            when m3 =>
+                fetch_pc(state, f);
+                case state.t is
+                when t3 =>
+                    f.ct.cycle_end := '1';
+                    f.ct.instr_end := '1';
+                when others => null; end case;
+            when others => null; end case;
+        end case;
+    end jp_cc_nn;
+
+    procedure ex(signal state : in id_state_t;
+                 variable f : out id_frame_t;
+                 constant swp : rf_swap_t)
     is begin
         case state.m is
         when m1 =>
             case state.t is
             when t4 =>
-                f.cw.rf_swp := af;
+                f.cw.rf_swp := swp;
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
             when others => null; end case;
         when others => null; end case;
-    end ex_af;
+    end ex;
 
     procedure alu_a_r(
         signal state : in id_state_t;
@@ -370,4 +405,22 @@ package body z80_instr is
             when others => null; end case;
         when others => null; end case;
     end ld_r_r;
+
+    procedure ld_r_n(signal state : in id_state_t;
+                     variable f : out id_frame_t;
+                     signal reg: in integer)
+    is begin
+        case state.m is
+        when m1 => f.ct.cycle_end := during_t(state, t4);
+        when m2 =>
+            fetch_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.rf_addr := reg;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+    end ld_r_n;
 end z80_instr;
