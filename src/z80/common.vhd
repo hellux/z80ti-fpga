@@ -100,6 +100,7 @@ package z80_comm is
     constant regE   : integer := 3;
     constant regH   : integer := 4;
     constant regL   : integer := 5;
+    constant regF   : integer := 6;
     constant regA   : integer := 7;
     constant regW   : integer := 8;
     constant regZ   : integer := 9;
