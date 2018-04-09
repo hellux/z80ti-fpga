@@ -2,7 +2,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
-use work.util.all;
 
 -- INTERNAL RAM LAYOUT
 -- addr_int    high    low
@@ -114,8 +113,7 @@ begin
         end if;
     end process;
 
-    r <= std_logic_vector(to_unsigned(reg_addr, 4))
-         when reg_addr >= 0 else "0000"; -- int initializes to -229847923947
+    r <= std_logic_vector(to_unsigned(reg_addr, 4));
     w_vec <= 
         '0' & r(1) & r(2) & swp_reg when
             r(3) = '0' and r(2 downto 1) /= "11" and swp_dehl = '1' else
