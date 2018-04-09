@@ -4,20 +4,20 @@ use ieee.numeric_std.all;
 use work.z80_comm.all;
 
 -- INTERNAL RAM LAYOUT
--- addr        high    low       addr
---           _______________  
--- 00000    |___B___|___C___|    00001
--- 00010    |___B___|___C___|    00011
--- 00100    |___D___|___E___|    00101
--- 00110    |___D___|___E___|    00111
--- 01000    |___H___|___L___|    01001
--- 01010    |___H___|___L___|    01011
--- 01100    |___A___|___F___|    01101
--- 01110    |___A___|___F___|    01111
--- 10000    |___W___|___Z___|    10001
--- 10010    |______SP_______|    10011
--- 10100    |______IX_______|    10011
--- 10110    |______IY_______|    10111
+--   addr       high    low      addr
+--            _______________  
+-- 00 00000  |___B___|___C___|  00001 01
+-- 02 00010  |___B___|___C___|  00011 03
+-- 04 00100  |___D___|___E___|  00101 05
+-- 06 00110  |___D___|___E___|  00111 07
+-- 08 01000  |___H___|___L___|  01001 09
+-- 10 01010  |___H___|___L___|  01011 11
+-- 12 01100  |___A___|___F___|  01101 13
+-- 14 01110  |___A___|___F___|  01111 15
+-- 16 10000  |___W___|___Z___|  10001 17
+-- 18 10010  |______SP_______|  10011 19
+-- 20 10100  |______IX_______|  10011 21
+-- 22 10110  |______IY_______|  10111 23
 
 entity regfile is port(
     -- ctrl
@@ -35,7 +35,7 @@ entity regfile is port(
 end regfile;
 
 architecture arch of regfile is
-    type rf_ram_t is array(0 to 22) of std_logic_vector(7 downto 0);
+    type rf_ram_t is array(0 to 23) of std_logic_vector(7 downto 0);
     type rf_swap_state_t is record reg, af, dehl : std_logic; end record;
 
     function baddr(reg_addr : integer;
@@ -62,10 +62,34 @@ architecture arch of regfile is
         else
             hl := r(0);
         end if;
+        report "reg " & integer'image(reg_addr) & " --> " &
+        integer'image(to_integer(unsigned(w_vec & hl)));
         return to_integer(unsigned(w_vec & hl));
     end baddr;
 
-    signal ram : rf_ram_t := (others => (others => '0'));
+    function next_ram(signal ram : rf_ram_t;
+                      signal s : rf_swap_state_t;
+                      signal reg_addr : integer range 0 to 7;
+                      signal rdd, rda, rdf : std_logic;
+                      signal data, f : std_logic_vector(7 downto 0);
+                      signal addr : std_logic_vector(15 downto 0))
+    return rf_ram_t is
+        variable new_ram : rf_ram_t;
+    begin
+        new_ram := ram;
+        if rdd = '1' then
+            new_ram(baddr(reg_addr, s)) := data;
+        elsif rda = '1' then
+            new_ram(baddr(reg_addr, s)) := addr(15 downto 8);
+            new_ram(baddr(reg_addr, s)) := addr(7 downto 0);
+        end if;
+        if rdf = '1' then
+            new_ram(baddr(regF, s)) := f;
+        end if;
+        return new_ram;
+    end next_ram;
+
+    signal ram, ram_next : rf_ram_t := (others => (others => '0'));
     signal s : rf_swap_state_t := (others => '0');
     signal addr_out_tmp : std_logic_vector(15 downto 0);
 begin
@@ -87,24 +111,20 @@ begin
 
     ram_proc : process(clk) begin
         if rising_edge(clk) then
-            if rdd = '1' then
-                ram(baddr(reg_addr, s)) <= data;
-            elsif rda = '1' then
-                ram(baddr(reg_addr, s)) <= addr(15 downto 8);
-                ram(baddr(reg_addr, s)) <= addr(7 downto 0);
-            end if;
-            if rdf = '1' then
-                ram(baddr(regF, s)) <= f_in;
-            end if;
             if rst = '1' then
                 ram <= (others => (others => '0'));
+            else
+                ram <= ram_next;
             end if;
         end if;
     end process;
 
+    ram_next <= next_ram(ram, s, reg_addr, rdd, rda, rdf, data, f_in, addr);
+
     a_out    <= ram(baddr(regA, s));
     f_out    <= ram(baddr(regF, s));
-    addr_out_tmp <= ram(baddr(reg_addr, s)) & ram(baddr(reg_addr+1, s));
+    addr_out_tmp <= ram(baddr(reg_addr, s)) & ram(baddr(reg_addr, s)+1)
+                    when reg_addr <= 10 else (others => 'Z');
     addr_out_dis <= addr_out_tmp;
     addr_out <= addr_out_tmp            when wra  = '1' else (others => 'Z');
     data     <= ram(baddr(reg_addr, s)) when wrd  = '1' else (others => 'Z');

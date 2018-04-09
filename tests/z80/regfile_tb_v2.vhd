@@ -72,7 +72,7 @@ begin
 
         report "TB STARRT";
 
-        -- write to all reg
+        report("write to all reg");
         rdd <= '1';
         for i in 0 to 15 loop
             reg_addr <= i;
@@ -84,7 +84,7 @@ begin
 
         wait for 1 us;
 
-        -- read from all reg
+        report("read from all reg");
         wrd <= '1';
         for i in 0 to 15 loop
             reg_addr <= i;
@@ -95,13 +95,13 @@ begin
         end loop;
         wrd <= '0';
         
-        -- swap main reg
+        report("swap main reg");
         swp <= reg;
         wait for 250 ns;
         swp <= none;
         wait for 250 ns;
 
-        -- ensure swapped regs are zero
+        report("ensure swapped regs are zero");
         wrd <= '1';
         for i in 0 to 5 loop
             reg_addr <= i;
@@ -112,7 +112,7 @@ begin
         end loop;
         wrd <= '0';
 
-        -- make sure others not swapped
+        report("make sure others not swapped");
         wrd <= '1';
         for i in 6 to 12 loop
             reg_addr <= i;
@@ -123,7 +123,7 @@ begin
         end loop;
         wrd <= '0';
 
-        -- write to swapped
+        report("write to swapped");
         rdd <= '1';
         for i in 0 to 5 loop
             reg_addr <= i;
@@ -138,7 +138,7 @@ begin
         swp <= none;
         wait for 250 ns;
 
-        -- write to swapped af
+        report("write to swapped af");
         rdd <= '1';
         for i in 6 to 7 loop
             reg_addr <= i;
@@ -153,7 +153,7 @@ begin
         swp <= none;
         wait for 250 ns;
 
-        -- read swapped dehl
+        report("read swapped dehl");
         wrd <= '1';
         reg_addr <= regD;
         wait for 125 ns;
@@ -169,7 +169,7 @@ begin
         assert data=x"3e";
         wrd <= '0';
 
-        -- write to a and f simultaneosly (swp reg)
+        report("write to a and f simultaneosly (swp reg)");
         rdf <= '1';
         rdd <= '1';
         reg_addr <= regA;
@@ -180,7 +180,7 @@ begin
         rdd <= '0';
         data <= (others => 'Z');
 
-        -- control a, f (swp reg)
+        report("control a, f (swp reg)");
         wrd <= '1';
         reg_addr <= regA;
         wait for 125 ns;
@@ -197,7 +197,7 @@ begin
         swp <= none;
         wait for 250 ns;
 
-        -- write to f and a simultaneosly (main reg)
+        report("write to f and a simultaneosly (main reg)");
         rdf <= '1';
         rdd <= '1';
         reg_addr <= regA;
@@ -208,7 +208,7 @@ begin
         rdd <= '0';
         data <= (others => 'Z');
 
-        -- control f, a (main reg)
+        report("control f, a (main reg)");
         wrd <= '1';
         reg_addr <= regA;
         wait for 125 ns;
@@ -221,7 +221,7 @@ begin
         wait for 125 ns;
         wrd <= '0';
 
-        -- write addresses to wz, sp, ix, iy
+        report("write addresses to wz, sp, ix, iy");
         rda <= '1';
         for i in 0 to 3 loop
             reg_addr <= 8+2*i;
@@ -231,7 +231,7 @@ begin
         rda <= '0';
         addr <= (others => 'Z');
 
-        -- control addressses
+        report("control addressses");
         wra <= '1';
         for i in 0 to 3 loop
             reg_addr <= 8+2*i;
