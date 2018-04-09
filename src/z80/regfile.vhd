@@ -37,7 +37,33 @@ end regfile;
 
 architecture arch of regfile is
     type rf_ram_t is array(0 to 11) of std_logic_vector(15 downto 0);
+    type rf_context_t is record
+        ram : rf_ram_t;
+        swp_reg, swp_dehl, swp_af : std_logic;
+    end record;
+        
+    -- get address to word from external reg addr (depends on swap state)
+    function waddr(reg_addr : integer; c : rf_context_t)
+    return integer
+    is
+        variable r, w_vec : std_logic_vector(3 downto 0);
+    begin
+        r := std_logic_vector(to_unsigned(reg_addr, 4));
+        if r(3) = '0' and r(2 downto 1) /= "11" and c.swp_dehl = '1' then
+            w_vec := '0' & r(1) & r(2) & c.swp_reg;
+        elsif r(3) = '0' and r(2 downto 1) /= "11" then
+            w_vec := r(3 downto 1) & c.swp_reg;
+        elsif r(3) = '0' then
+            w_vec := "011" & c.swp_af;
+        elsif r(3) = '1' then
+            w_vec := "10" & r(2 downto 1);
+        else
+            w_vec := "----";
+        end if;
+        return to_integer(unsigned(w_vec));
+    end waddr;
 
+    -- get byte at word w
     function get_byte(w : integer;      -- address to 16bit word where byte is
                       hl : std_logic;   -- hl = 0 => get higher byte
                       ram : rf_ram_t)   -- ram array
@@ -50,8 +76,8 @@ architecture arch of regfile is
         end if;
     end get_byte;
 
-    function next_ram(signal ram : rf_ram_t;
-                      signal w, wAF : integer;
+    function next_ram(signal c : rf_context_t;
+                      signal reg_addr : integer;
                       signal hl : std_logic;
                       signal rdd, rda, rdf : std_logic;
                       signal data, f : std_logic_vector(7 downto 0);
@@ -60,9 +86,9 @@ architecture arch of regfile is
         variable new_ram : rf_ram_t;
         variable new_word : std_logic_vector(15 downto 0);
     begin
-        new_ram := ram;
+        new_ram := c.ram;
 
-        new_word := ram(w);
+        new_word := new_ram(waddr(reg_addr, c));
         if rdd = '1' and hl = '0' then
             new_word(15 downto 8) := data;
         elsif rdd = '1' and hl = '1' then
@@ -70,34 +96,33 @@ architecture arch of regfile is
         elsif rda = '1' then
             new_word := addr;
         end if;
-        new_ram(w) := new_word;
+        new_ram(waddr(reg_addr, c)) := new_word;
 
         if rdf = '1' then
-            new_ram(wAF)(7 downto 0) := f;
+            new_ram(waddr(regAF, c))(7 downto 0) := f;
         end if;
 
         return new_ram;
     end next_ram;
 
-    signal ram : rf_ram_t := (others=> (others => '0'));
-    signal swp_reg, swp_af, swp_dehl : std_logic := '0';
+    signal c : rf_context_t :=
+        (ram => (others => (others => '0')), others => '0');
     signal ram_next : rf_ram_t;
-    signal r, w_vec : std_logic_vector(3 downto 0) := "0000";
-    signal w, wAF : integer := 0; -- address to word in ram
+    signal r : std_logic_vector(3 downto 0) := "0000";
     signal hl : std_logic;
 begin
     swap_proc : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                swp_reg <= '0';
-                swp_af <= '0';
-                swp_dehl <= '0';
+                c.swp_reg <= '0';
+                c.swp_af <= '0';
+                c.swp_dehl <= '0';
             else
                 case swp is
                 when none => null;
-                when reg  => swp_reg  <= not swp_reg;
-                when af   => swp_af   <= not swp_af;
-                when dehl => swp_dehl <= not swp_dehl;
+                when reg  => c.swp_reg  <= not c.swp_reg;
+                when af   => c.swp_af   <= not c.swp_af;
+                when dehl => c.swp_dehl <= not c.swp_dehl;
                 when others => null;
                 end case;
             end if;
@@ -107,35 +132,30 @@ begin
     ram_proc : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                ram <= (others => (others => '0'));
+                c.ram <= (others => (others => '0'));
             else 
-                ram <= ram_next;
+                c.ram <= ram_next;
             end if;
         end if;
     end process;
 
-    r <= std_logic_vector(to_unsigned(reg_addr, 4))
-         when reg_addr >= 0 else "0000"; -- int initializes to -229847923947
-    w_vec <= 
-        '0' & r(1) & r(2) & swp_reg when
-            r(3) = '0' and r(2 downto 1) /= "11" and swp_dehl = '1' else
-        r(3 downto 1) & swp_reg when
-            r(3) = '0' and r(2 downto 1) /= "11" else
-        "011" & swp_af
-            when r(3) = '0' else
-        "10" & r(2 downto 1)
-            when r(3) = '1' else
-        "----";
-    w <= to_integer(unsigned(w_vec));
-    wAF <= 7 when swp_af = '1' else 6;
-
     hl <= not r(0) when r(3 downto 1) = "011" else r(0); -- flip FA to AF
+    ram_next <= next_ram(c, reg_addr, hl, rdd, rda, rdf, data, f_in, addr);
 
-    ram_next <= next_ram(ram, w, wAF, hl, rdd, rda, rdf, data, f_in, addr);
+    a_out    <= get_byte(waddr(regAF, c), '0', c.ram);
+    f_out    <= get_byte(waddr(regAF, c), '1', c.ram);
+    addr_out_dis <= c.ram(waddr(reg_addr, c));
+    addr_out <= c.ram(waddr(reg_addr, c)) when wra = '1' else (others => 'Z');
+    data <= get_byte(waddr(reg_addr, c), hl, c.ram)
+            when wrd  = '1' else (others => 'Z');
 
-    a_out    <= get_byte(wAF, '0', ram);
-    f_out    <= get_byte(wAF, '1', ram);
-    addr_out_dis <= ram(w);
-    addr_out <= ram(w)               when wra  = '1' else (others => 'Z');
-    data     <= get_byte(w, hl, ram) when wrd  = '1' else (others => 'Z');
+    -- store current registers in debug record
+--    dbg_regs.AF <= c.ram(waddr(regAF, c));
+ --   dbg_regs.BC <= c.ram(waddr(regBC, c));
+  --  dbg_regs.DE <= c.ram(waddr(regDE, c));
+   -- dbg_regs.HL <= c.ram(waddr(regHL, c));
+    --dbg_regs.WZ <= c.ram(waddr(regWZ, c));
+    --dbg_regs.SP <= c.ram(waddr(regSP, c));
+    --dbg_regs.IX <= c.ram(waddr(regIX, c));
+    --dbg_regs.IY <= c.ram(waddr(regIY, c));
 end arch;
