@@ -9,7 +9,6 @@ package z80_comm is
                      rlc_i, rl_i, sla_i, sll_i,
                      rrc_i, rr_i, sra_i, srl_i,
                      daa_i, cpl_i, scf_i, ccf_i);
-    type instr_set_t is (main, ed, cb, dd, ddcb, fd, fdcb);
     type rf_swap_t is (none, af, reg, dehl);
     type cond_t is array(0 to 7) of boolean;
 
@@ -37,7 +36,6 @@ package z80_comm is
         f_rd : std_logic;
         -- alu
         alu_wr : std_logic;
-        alu_set : instr_set_t;
         alu_op : instr_t;
         alu_bs : integer range 0 to 7;
         act_rd : std_logic;

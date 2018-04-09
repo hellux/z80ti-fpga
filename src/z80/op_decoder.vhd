@@ -22,8 +22,8 @@ architecture Behavioral of op_decoder is
     type alu_table_t is array(0 to 7) of instr_t;
 
     signal split : id_split_t;
-    signal state : id_state_t := (set => main, cc => (others => false),
-                                  m => m1, t => t1, others => '0');
+    signal state : id_state_t := (mode => main, cc => (others => false),
+                                  m => m1, t => t1);
     signal ctrl : id_ctrl_t;
     signal f : id_frame_t;
 
@@ -48,7 +48,6 @@ architecture Behavioral of op_decoder is
         f.cb := (others => '0'); -- reset control bus out signals
         f.cw := (rf_addr => 0,
                  rf_swp => none,
-                 alu_set => state.set,
                  alu_op => unknown,
                  alu_bs => 0,
                  others => '0');
@@ -60,7 +59,7 @@ architecture Behavioral of op_decoder is
         end if;
 
         -- exec phase
-        case state.set is
+        case state.mode is
         when main =>
             case s.x is
             when 0 =>
@@ -224,8 +223,7 @@ architecture Behavioral of op_decoder is
                 when 6 => -- rot[y] (IX/Y+d)
                 when others => -- LD r[z], rot[y] (IX/Y+d)
                 end case;
-            when 1 =>
-                -- BIT y, (IX/Y+d)
+            when 1 => -- BIT y, (IX/Y+d)
             when 2 =>
                 case s.z is
                 when 6 => -- res y, (IX/Y+d)
@@ -238,6 +236,7 @@ architecture Behavioral of op_decoder is
                 end case;
             end case;
         when dd|fd => null; -- TODO
+        when wz => null;
         end case;
 
         return f;
@@ -274,40 +273,44 @@ begin
         if rising_edge(clk) then
             if ctrl.cycle_end = '1' then
                 state.t <= t1;
-                state.jump_cycle <= ctrl.jump;
             elsif cbi.wt /= '1' then
                 state.t <= state.t + 1;
             end if;
 
             if ctrl.instr_end = '1' then
                 state.m <= m1;
-                state.set <= main;
+                state.mode <= main;
             elsif ctrl.cycle_end = '1' then
                 state.m <= state.m + 1;
             end if;
 
-            if ctrl.set_end = '1' then
-                case state.set is
+            if ctrl.mode_end = '1' then
+                case state.mode is
                 when main =>
                     case instr is
-                    when x"ed" => state.set <= ed;
-                    when x"cb" => state.set <= cb;
-                    when x"dd" => state.set <= dd;
-                    when x"fd" => state.set <= fd;
+                    when x"ed" => state.mode <= ed;
+                    when x"cb" => state.mode <= cb;
+                    when x"dd" => state.mode <= dd;
+                    when x"fd" => state.mode <= fd;
                     when others => null; end case;
+                    if ctrl.jump = '1' then
+                        state.mode <= wz;
+                    end if;
                 when dd =>
                     case instr is
-                    when x"cb" => state.set <= ddcb;
+                    when x"cb" => state.mode <= ddcb;
                     when others => null; end case;
                 when fd =>
                     case instr is
-                    when x"cb" => state.set <= fdcb;
+                    when x"cb" => state.mode <= fdcb;
                     when others => null; end case;
+                when wz =>
+                    state.mode <= main;
                 when others => null; end case;
             end if;
 
             if cbi.reset = '1' then
-                state.set <= main;
+                state.mode <= main;
                 state.m <= m1;
                 state.t <= t1;
             end if;

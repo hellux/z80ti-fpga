@@ -5,19 +5,23 @@ use work.z80_comm.all;
 package z80_instr is
     -- control signals for id
     type id_ctrl_t is record
-        set_end : std_logic;        -- last state of current set
+        mode_end : std_logic;       -- last state of current mode
         cycle_end : std_logic;      -- last state of current cycle
         instr_end : std_logic;      -- last state of current instr
         jump : std_logic;           -- use wz when fetching on next cycle
     end record;
 
+    type id_mode_t is (
+        main, ed, cb, dd, ddcb, fd, fdcb, -- exec prefixes
+        wz                                -- use wz instead of pc on fetch
+    );
+
     -- current state/context of cpu
     type id_state_t is record
-        set : instr_set_t;
+        mode : id_mode_t;
         cc : cond_t;
         m : integer range 1 to 6;
         t : integer range 1 to 5;
-        jump_cycle : std_logic; -- use wz as pc if last instr was jp
     end record;
 
     -- container for out signals
@@ -135,16 +139,17 @@ package body z80_instr is
         fetch(state, f);
         case state.t is
         when t1 =>
-            if state.jump_cycle = '1' then
+            if state.mode = wz then
                 f.cw.rf_addr := regWZ;
                 f.cw.rf_wra := '1'; -- use wz instead of pc
             else 
                 f.cw.pc_wr := '1';  -- write pc to abus
             end if;
         when t2 =>
-            if state.jump_cycle = '1' then
+            if state.mode = wz then
                 f.cw.rf_addr := regWZ;
                 f.cw.rf_wra := '1'; -- keep wz on abus for incr
+                f.ct.mode_end := '1'; -- go back to main mode
             else 
                 f.cw.pc_wr := '1';  -- keep pc on abus
             end if;
@@ -164,7 +169,7 @@ package body z80_instr is
             fetch_instr(state, f);      -- fetch next byte
             case state.t is
             when t3 =>
-                f.ct.set_end := '1';    -- update set to prefix
+                f.ct.mode_end := '1';   -- update mode to prefix
                 f.ct.cycle_end := '1';  -- end mcycle
             when others => null; end case;
         end case;
@@ -201,6 +206,7 @@ package body z80_instr is
                 f.cw.rf_addr := regW;
                 f.ct.cycle_end := '1';
                 f.ct.jump := '1';
+                f.ct.mode_end := '1'; -- switch to wz mode
                 f.ct.instr_end := '1';
             when others => null; end case;
         when others => null; end case;
