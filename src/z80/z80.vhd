@@ -93,10 +93,12 @@ begin
                     cw.rf_wrd, cw.rf_wra, cw.rf_swp,
         dbus, addr_in, flags_out, abus, rf_disp_addr, acc, flags_in);
     pc : reg_16 port map(clk, cbi.reset, cw.pc_rd, '1', addr_in, pc_out);
-    addr_in <= std_logic_vector(unsigned(abus) + 1)
-                 when abus /= "ZZZZZZZZZZZZZZZZ" else (others => '-');
     abus <= pc_out when cw.pc_wr = '1' else (others => 'Z');
     disp_addr <= pc_out when cw.pc_disp = '1' else rf_disp_addr;
+    with cw.addr_in_op select addr_in <=
+        std_logic_vector(unsigned(abus) + 1) when inc,
+        abus                                 when none,
+        std_logic_vector(unsigned(abus) - 1) when dec;
     abus <=
         std_logic_vector(signed(disp_addr) + resize(signed(dbus), 16))
             when cw.dis_wr = '1' else

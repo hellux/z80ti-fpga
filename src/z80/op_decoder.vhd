@@ -50,6 +50,7 @@ architecture Behavioral of op_decoder is
                  rf_swp => none,
                  alu_op => unknown,
                  alu_bs => 0,
+                 addr_in_op => inc,
                  others => '0');
 
         -- fetch phase
@@ -129,7 +130,7 @@ architecture Behavioral of op_decoder is
                         case s.p is
                         when 0 => null; -- RET
                         when 1 => null; ex(state, f, reg); -- EXX
-                        when 2 => null; -- JP HL
+                        when 2 => null; jp_hl(state, f); -- JP HL
                         when 3 => null; -- LD SP, HL
                         end case;
                     end case;

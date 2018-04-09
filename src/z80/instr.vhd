@@ -51,6 +51,8 @@ package z80_instr is
     procedure jp_cc_nn(signal state : in id_state_t;
                        variable f : out id_frame_t;
                        cond : in integer);
+    procedure jp_hl(signal state : in id_state_t;
+                    variable f : out id_frame_t);
     procedure jr_d(signal state : in id_state_t;
                    variable f : out id_frame_t);
     procedure jr_cc_d(signal state : in id_state_t;
@@ -238,6 +240,23 @@ package body z80_instr is
             when others => null; end case;
         end case;
     end jp_cc_nn;
+
+    procedure jp_hl(signal state : in id_state_t;
+                    variable f : out id_frame_t)
+    is begin
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := regHL;   -- place hl on abus
+                f.cw.rf_wra := '1';
+                f.cw.addr_in_op := none; -- make sure no inc to addr
+                f.cw.pc_rd := '1';       -- store addr in pc
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => end case;
+        when others => end case;
+    end jp_hl;
 
     procedure jr_d(signal state : in id_state_t;
                    variable f : out id_frame_t)

@@ -10,6 +10,7 @@ package z80_comm is
                      rrc_i, rr_i, sra_i, srl_i,
                      daa_i, cpl_i, scf_i, ccf_i);
     type rf_swap_t is (none, af, reg, dehl);
+    type addr_in_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
 
     type ctrlbus_in is record
@@ -29,23 +30,22 @@ package z80_comm is
     end record;
 
     type ctrlword is record 
-        -- regfile
+        -- registers
         rf_addr : integer range 0 to 15;
         rf_rdd, rf_rda, rf_wrd, rf_wra : std_logic;
         rf_swp : rf_swap_t;
         f_rd : std_logic;
+        ir_rd : std_logic;
+        pc_rd, pc_wr : std_logic;
+        pc_disp : std_logic;
+        dis_wr : std_logic;
+        addr_in_op : addr_in_op_t;
         -- alu
         alu_wr : std_logic;
         alu_op : instr_t;
         alu_bs : integer range 0 to 7;
         act_rd : std_logic;
         tmp_rd, tmp_wr : std_logic;
-        -- displacement
-        dis_wr : std_logic;
-        pc_disp : std_logic;
-        -- control
-        ir_rd : std_logic;
-        pc_rd, pc_wr : std_logic;
         -- buffers
         data_rdi, data_wri, data_rdo, data_wro : std_logic;
         addr_rd, addr_wr : std_logic;
