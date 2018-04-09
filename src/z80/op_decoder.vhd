@@ -74,7 +74,7 @@ architecture Behavioral of op_decoder is
                     end case;
                 when 1 =>
                     case s.q is
-                    when 0 => null; -- LD rp[p], nn
+                    when 0 => ld_rp_nn(state, f, rp(s.p)); -- LD rp[p], nn
                     when 1 => null; -- ADD hl, rp[p]
                     end case;
                 when 2 =>
@@ -279,7 +279,11 @@ begin
 
             if ctrl.instr_end = '1' then
                 state.m <= m1;
-                state.mode <= main;
+                if ctrl.jump = '1' then
+                    state.mode <= wz;
+                else
+                    state.mode <= main;
+                end if;
             elsif ctrl.cycle_end = '1' then
                 state.m <= state.m + 1;
             end if;
@@ -293,9 +297,6 @@ begin
                     when x"dd" => state.mode <= dd;
                     when x"fd" => state.mode <= fd;
                     when others => null; end case;
-                    if ctrl.jump = '1' then
-                        state.mode <= wz;
-                    end if;
                 when dd =>
                     case instr is
                     when x"cb" => state.mode <= ddcb;

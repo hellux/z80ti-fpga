@@ -35,10 +35,10 @@ architecture arch of mem is
          x"00",
          x"00",
          x"00",
+         x"21", -- ld hl, nn
+         x"02",
+         x"00",
          x"46", -- ld b, (hl)
-         x"00",
-         x"00",
-         x"00",
          x"00",
          x"00",
          x"00",
