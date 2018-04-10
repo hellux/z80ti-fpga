@@ -24,17 +24,18 @@ architecture arch of alu is
     signal op2sn : signed(8 downto 0); -- shift/neg result
 
     -- calculation
-    signal with_carry : signed(8 downto 0); -- for add/sub with carry
+    signal with_carry, daa_v : signed(8 downto 0);
     signal result_sum : signed(8 downto 0);
     signal result_xor, result_and, result_or : signed(8 downto 0);
     signal calc_result : signed(8 downto 0);
     signal result_buf : signed(7 downto 0);
 
     -- flags
+    signal half_add, half_sub, half_daa : std_logic;
     signal overflow, overflow_neg, parity : std_logic;
 begin
     -- preprocess
-    process(bit_select) is
+    mask_gen : process(bit_select) is
         variable m : std_logic_vector(7 downto 0);
     begin
         m := x"01";
@@ -43,6 +44,27 @@ begin
         end loop;
         mask <= m;
     end process;
+
+    daa_logic : process(op2) is
+	variable res, v : signed(8 downto 0);
+    begin
+        v := (others => '0');
+        if (op2_ext(7 downto 4) > "1001" or flags_in(H_f) = '1') then
+            v := v + "000000110"; -- OBS!!! Half carry = 1????? 
+        end if;
+        res := op2_ext+v;
+        if (op2_ext(3 downto 0) > "1001" or 
+            res(8) = '1' or
+            flags_in(C_f) = '1')
+        then
+            v := v + "001100000";
+        end if;
+        if flags_in(N_f) = '1' then
+            v := -v;
+        end if;
+        daa_v <= v;
+    end process;
+
     with op select edge <=
         '0'             when sla_i|sll_i|srl_i,
         flags_in(C_f)   when rl_i|rr_i,
@@ -53,6 +75,7 @@ begin
         to_signed(1, 9)     when inc_i,
         to_signed(-1, 9)    when dec_i,
         to_signed(0, 9)     when neg_i,
+	    daa_v		        when daa_i,
         signed('0' & op1)   when others;
     op2_ext <= signed('0' & op2);
     with op select op2sn <=
@@ -76,7 +99,7 @@ begin
     result_or  <= op1_ext or  op2_ext;
     result_sum <= op1_ext + op2sn;
     with op select calc_result <=
-        result_sum when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i|neg_i,
+        result_sum when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i|neg_i|daa_i,
         result_and when and_i,
         result_xor when xor_i,
         result_or  when or_i,
@@ -87,7 +110,7 @@ begin
         std_logic_vector(result_buf) when others;
 
     -- flags
-    process(result_buf)
+    calc_parity : process(result_buf)
         variable p : std_logic;
     begin
         p := '0';
@@ -103,40 +126,47 @@ begin
             when sub_i|sbc_i|cp_i,
         '-' when others;
     overflow_neg <= '1' when op2 = x"80" else '0';
+    half_add <= result_buf(4) xor op1_ext(4) xor op2sn(4);
+    half_sub <= result_buf(4) xor op1_ext(4) xor op2_ext(4);
+    with flags_in(N_f) select half_daa <=
+        half_add when '0',
+        half_sub when '1',
+        '-'      when others;
 
     with op select flags_out(C_f) <=
     '0'             when and_i|or_i|xor_i,
-    calc_result(8)  when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i,
+    calc_result(8)  when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|daa_i,
     op2(7)          when rlc_i|rl_i|sla_i|sll_i,
     op2(0)          when rrc_i|rr_i|sra_i|srl_i,
     flags_in(C_f)   when others;
 
     with op select flags_out(N_f) <=
-        '1' when sub_i|sbc_i|cp_i|neg_i,
-        '0' when others;
+        '1'             when sub_i|sbc_i|cp_i|neg_i,
+        flags_in(N_f)   when daa_i,
+        '0'             when others;
 
     with op select flags_out(PV_f) <=
         overflow        when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i,
         overflow_neg    when neg_i,
         parity          when and_i|or_i|xor_i|bit_i|res_i|set_i|
                              rlc_i|rl_i|sla_i|sll_i|
-                             rrc_i|rr_i|sra_i|srl_i,
+                             rrc_i|rr_i|sra_i|srl_i|
+                             daa_i,
         flags_in(PV_f)  when others;
 
     flags_out(f3_f) <= result_buf(3);
 
     with op select flags_out(H_f) <=
-        result_buf(4) xor op1_ext(4) xor op2sn(4)
-            when add_i|adc_i|inc_i|dec_i,
-        result_buf(4) xor op1_ext(4) xor op2_ext(4)
-            when sub_i|sbc_i|cp_i|neg_i,
+        half_add when add_i|adc_i|inc_i|dec_i,
+        half_sub when sub_i|sbc_i|cp_i|neg_i,
+        half_daa when daa_i,
         '1' when others;
 
     flags_out(f5_f) <= result_buf(5);
 
     flags_out(Z_f) <=
         not result_buf(bit_select) when op = bit_i else
-        '1'                       when result_buf = 0 else
+        '1'                        when result_buf = 0 else
         '0';
 
     flags_out(S_f) <= result_buf(7);

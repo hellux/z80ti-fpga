@@ -230,7 +230,12 @@ begin
              x"f0", x"fd", bit_i, 3, "00000000", "-0-1--00", x"fd");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"f0", x"c8", bit_i, 4, "11111111", "-1-1--01", x"c8");
-
+        
+        report "daa";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"3C", daa_i, 0, "00000000", "00-1-100", x"42");
+             -- OBS!! Half carry or not??????
+ 
         assert false report "TB COMPLETE" severity failure;
      end process;
 
