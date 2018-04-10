@@ -27,5 +27,6 @@ begin
         rst <= '0';
         wait for 40 us;
         rst <= '1';
+        wait for 40 us;
     end process;
 end arch;
