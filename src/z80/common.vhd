@@ -112,6 +112,11 @@ package z80_comm is
     constant regIYl : integer := 15;
 
     type dbg_regs_t is record
-        AF, BC, DE, HL, WZ, SP, IX, IY : std_logic_vector(15 downto 0);
+        BC, DE, HL, AF, WZ, SP, IX, IY : std_logic_vector(15 downto 0);
+    end record;
+    type dbg_z80_t is record
+        regs : dbg_regs_t;
+        pc, abus : std_logic_vector(15 downto 0);
+        ir, tmp, act, dbus : std_logic_vector(7 downto 0);
     end record;
 end z80_comm;

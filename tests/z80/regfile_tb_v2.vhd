@@ -18,7 +18,8 @@ architecture arch of regfile_tb_v2 is
         addr : in std_logic_vector(15 downto 0);
         f_in : in std_logic_vector(7 downto 0);
         addr_out, addr_out_dis : out std_logic_vector(15 downto 0);
-        a_out, f_out : out std_logic_vector(7 downto 0));
+        a_out, f_out : out std_logic_vector(7 downto 0);
+        dbg_regs : out dbg_regs_t);
     end component;
 
     signal clk, rst, rdd, rda, rdf, wrd, wra, wrf : std_logic;
@@ -26,6 +27,7 @@ architecture arch of regfile_tb_v2 is
     signal swp : rf_swap_t;
     signal f_in, data, a_out, f_out : std_logic_vector(7 downto 0);
     signal addr, addr_out, addr_dis : std_logic_vector(15 downto 0);
+    signal dbg_regs : dbg_regs_t;
     
     type reg_hex_t is array(0 to 15) of std_logic_vector(3 downto 0);
     constant r : reg_hex_t := 
@@ -47,7 +49,8 @@ architecture arch of regfile_tb_v2 is
          x"7"); -- IY
 begin
     rf : regfile port map(clk, rst, reg_addr, rdd, rda, rdf, wrd, wra, swp,
-                          data, addr, f_in, addr_out, addr_dis, a_out, f_out);
+                          data, addr, f_in, addr_out, addr_dis, a_out, f_out,
+                          dbg_regs);
 
     process begin
         clk <= '1';

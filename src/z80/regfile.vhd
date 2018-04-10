@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
+use work.util.all;
 
 -- INTERNAL RAM LAYOUT
 --   addr       high    low      addr
@@ -67,12 +68,15 @@ architecture arch of regfile is
         return to_integer(unsigned(w_vec & hl));
     end baddr;
 
-    function get_word(reg_addr : integer range 0 to 15;
+    function get_word(reg : integer range 0 to 15;
                       signal ram : rf_ram_t;
                       signal s : rf_swap_state_t)
-    return std_logic_vector is begin
-        return ram(baddr(reg_addr, s) mod 2) &     -- high byte word
-               ram((baddr(reg_addr, s) mod 2)+1);  -- lower byte
+    return std_logic_vector is
+        variable b, w : integer;
+    begin
+        b := baddr(reg, s);
+        w := b - (b mod 2);
+        return ram(w) & ram(w + 1);
     end get_word;
 
     function next_ram(signal ram : rf_ram_t;
