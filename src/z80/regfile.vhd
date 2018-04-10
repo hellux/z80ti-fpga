@@ -31,7 +31,9 @@ entity regfile is port(
     addr : in std_logic_vector(15 downto 0);
     f_in : in std_logic_vector(7 downto 0);
     addr_out, addr_out_dis : out std_logic_vector(15 downto 0);
-    a_out, f_out : out std_logic_vector(7 downto 0));
+    a_out, f_out : out std_logic_vector(7 downto 0);
+    -- debug
+    dbg_regs : out dbg_regs_t);
 end regfile;
 
 architecture arch of regfile is
@@ -62,14 +64,20 @@ architecture arch of regfile is
         else
             hl := r(0);
         end if;
-        report "reg " & integer'image(reg_addr) & " --> " &
-        integer'image(to_integer(unsigned(w_vec & hl)));
         return to_integer(unsigned(w_vec & hl));
     end baddr;
 
+    function get_word(reg_addr : integer range 0 to 15;
+                      signal ram : rf_ram_t;
+                      signal s : rf_swap_state_t)
+    return std_logic_vector is begin
+        return ram(baddr(reg_addr, s) mod 2) &     -- high byte word
+               ram((baddr(reg_addr, s) mod 2)+1);  -- lower byte
+    end get_word;
+
     function next_ram(signal ram : rf_ram_t;
                       signal s : rf_swap_state_t;
-                      signal reg_addr : integer range 0 to 7;
+                      signal reg_addr : integer range 0 to 15;
                       signal rdd, rda, rdf : std_logic;
                       signal data, f : std_logic_vector(7 downto 0);
                       signal addr : std_logic_vector(15 downto 0))
@@ -91,7 +99,6 @@ architecture arch of regfile is
 
     signal ram, ram_next : rf_ram_t := (others => (others => '0'));
     signal s : rf_swap_state_t := (others => '0');
-    signal addr_out_tmp : std_logic_vector(15 downto 0);
 begin
     swap_proc : process(clk) begin
         if rising_edge(clk) then
@@ -123,9 +130,18 @@ begin
 
     a_out    <= ram(baddr(regA, s));
     f_out    <= ram(baddr(regF, s));
-    addr_out_tmp <= ram(baddr(reg_addr, s) mod 2) &     -- high byte word
-                    ram((baddr(reg_addr, s) mod 2)+1);  -- lower byte
-    addr_out_dis <= addr_out_tmp;
-    addr_out <= addr_out_tmp            when wra  = '1' else (others => 'Z');
-    data     <= ram(baddr(reg_addr, s)) when wrd  = '1' else (others => 'Z');
+    addr_out_dis <= get_word(reg_addr, ram, s);
+    addr_out <= get_word(reg_addr, ram, s)
+        when wra  = '1' else (others => 'Z');
+    data <= ram(baddr(reg_addr, s)) when wrd  = '1' else (others => 'Z');
+
+    -- output registers for debug
+    dbg_regs.BC <= get_word(regBC, ram, s);
+    dbg_regs.DE <= get_word(regDE, ram, s);
+    dbg_regs.HL <= get_word(regHL, ram, s);
+    dbg_regs.AF <= get_word(regAF, ram, s);
+    dbg_regs.WZ <= get_word(regWZ, ram, s);
+    dbg_regs.SP <= get_word(regSP, ram, s);
+    dbg_regs.IX <= get_word(regIX, ram, s);
+    dbg_regs.IY <= get_word(regIY, ram, s);
 end arch;

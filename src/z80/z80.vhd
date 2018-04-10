@@ -59,7 +59,8 @@ architecture arch of z80 is
         addr : in std_logic_vector(15 downto 0);
         f_in : in std_logic_vector(7 downto 0);
         addr_out, addr_out_dis : out std_logic_vector(15 downto 0);
-        a_out, f_out : out std_logic_vector(7 downto 0));
+        a_out, f_out : out std_logic_vector(7 downto 0);
+        dbg_regs : out dbg_regs_t);
     end component;
 
     component op_decoder port(
@@ -82,6 +83,9 @@ architecture arch of z80 is
 
     signal dbus : std_logic_vector(7 downto 0) := "ZZZZZZZZ";
     signal abus : std_logic_vector(15 downto 0);
+
+    -- debug
+    signal dbg_regs : dbg_regs_t;
 begin
     -- -- CONTROL SECTION -- --
     ir : reg_8 port map(clk, cbi.reset, cw.ir_rd, '1', dbus, instr);
@@ -91,7 +95,8 @@ begin
     rf : regfile port map(clk, cbi.reset,
         cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd,
                     cw.rf_wrd, cw.rf_wra, cw.rf_swp,
-        dbus, addr_in, flags_out, abus, rf_disp_addr, acc, flags_in);
+        dbus, addr_in, flags_out, abus, rf_disp_addr, acc, flags_in,
+        dbg_regs);
     pc : reg_16 port map(clk, cbi.reset, cw.pc_rd, '1', addr_in, pc_out);
     abus <= pc_out when cw.pc_wr = '1' else (others => 'Z');
     disp_addr <= pc_out when cw.pc_disp = '1' else rf_disp_addr;
