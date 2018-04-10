@@ -123,8 +123,8 @@ begin
 
     a_out    <= ram(baddr(regA, s));
     f_out    <= ram(baddr(regF, s));
-    addr_out_tmp <= ram(baddr(reg_addr, s)) & ram(baddr(reg_addr, s)+1)
-                    when reg_addr /= 15 else (others => 'Z');
+    addr_out_tmp <= ram(baddr(reg_addr, s) mod 2) &     -- high byte word
+                    ram((baddr(reg_addr, s) mod 2)+1);  -- lower byte
     addr_out_dis <= addr_out_tmp;
     addr_out <= addr_out_tmp            when wra  = '1' else (others => 'Z');
     data     <= ram(baddr(reg_addr, s)) when wrd  = '1' else (others => 'Z');

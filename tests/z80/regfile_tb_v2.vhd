@@ -75,6 +75,7 @@ begin
         report("write to all reg");
         rdd <= '1';
         for i in 0 to 15 loop
+            report "reg " & integer'image(i);
             reg_addr <= i;
             data <= x"9" & r(i);
             wait for 250 ns;
