@@ -3,8 +3,10 @@ use ieee.std_logic_1164.all;
 use work.z80_comm.all;
 
 entity comp is port(
-    signal clk, rst : in std_logic;
-    signal seg : out std_logic_vector(7 downto 0));
+    clk, rst : in std_logic;
+    btns : in std_logic;
+    seg : out std_logic_vector(7 downto 0);
+    an : out std_logic_vector(3 downto 0));
 end comp;
 
 architecture arch of comp is
@@ -26,16 +28,37 @@ architecture arch of comp is
         data : inout std_logic_vector(7 downto 0));
     end component;
 
+    component segment is port(
+        clk, rst : in std_logic;
+        seg : out std_logic_vector(7 downto 0);
+        an : out std_logic_vector(3 downto 0);
+        value : in std_logic_vector(15 downto 0));
+    end component;
+
     signal cbi : ctrlbus_in;
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
     signal data : std_logic_vector(7 downto 0);
     signal dbg_z80 : dbg_z80_t;
+    signal clk_z80 : std_logic;
+    signal clk_div : integer range 0 to 25;
 begin
-    cbi.reset <= rst;
-    cpu : z80 port map(clk, cbi, cbo, addr, data, dbg_z80);
-    ram : mem port map(clk, cbi, cbo, addr, data);
+    process(clk) begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                clk_div <= 0;
+            elsif clk_div = 25 then
+                clk_div <= 0;
+            else
+                clk_div <= clk_div + 1;
+            end if;
+        end if;
+    end process;
 
-    -- debug
-    seg <= dbg_z80.regs.AF(15 downto 8);
+    clk_z80 <= '1' when clk_div = 0 else '0'; -- 4 MHz
+
+    --cbi.reset <= rst;
+    cpu : z80 port map(btns, cbi, cbo, addr, data, dbg_z80);
+    ram : mem port map(btns, cbi, cbo, addr, data);
+    smt : segment port map(clk, rst, seg, an, dbg_z80.regs.AF);
 end arch;

@@ -2,7 +2,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
-use work.util.all;
 
 -- INTERNAL RAM LAYOUT
 --   addr       high    low      addr
