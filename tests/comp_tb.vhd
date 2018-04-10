@@ -11,15 +11,21 @@ architecture arch of comp_tb is
         seg : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
-    signal clk : std_logic;
+    signal clk, rst : std_logic;
     signal seg : std_logic_vector(7 downto 0);
     signal an : std_logic_vector(3 downto 0);
 begin
-    c : comp port map(clk, '0', clk, seg, an);
+    c : comp port map(clk, rst, clk, seg, an);
     process begin
         clk <= '1';
-        wait for 125 ns;
+        wait for 5 ns;
         clk <= '0';
-        wait for 125 ns;
+        wait for 5 ns;
+    end process;
+
+    process begin
+        rst <= '0';
+        wait for 40 us;
+        rst <= '1';
     end process;
 end arch;

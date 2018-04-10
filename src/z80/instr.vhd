@@ -3,27 +3,6 @@ use ieee.std_logic_1164.all;
 use work.z80_comm.all;
 
 package z80_instr is
-    -- control signals for id
-    type id_ctrl_t is record
-        mode_end : std_logic;       -- last state of current mode
-        cycle_end : std_logic;      -- last state of current cycle
-        instr_end : std_logic;      -- last state of current instr
-        jump : std_logic;           -- use wz when fetching on next cycle
-    end record;
-
-    type id_mode_t is (
-        main, ed, cb, dd, ddcb, fd, fdcb, -- exec prefixes
-        wz                                -- use wz instead of pc on fetch
-    );
-
-    -- current state/context of cpu
-    type id_state_t is record
-        mode : id_mode_t;
-        cc : cond_t;
-        m : integer range 1 to 6;
-        t : integer range 1 to 6;
-    end record;
-
     -- container for out signals
     type id_frame_t is record
         ct : id_ctrl_t;

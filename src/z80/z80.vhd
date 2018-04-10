@@ -10,7 +10,7 @@ entity z80 is port(
     addr : out std_logic_vector(15 downto 0);
     data : inout std_logic_vector(7 downto 0);
 -- debug
-    dbg_z80 : out dbg_z80_t);
+    dbg : out dbg_z80_t);
 end z80;
 
 architecture arch of z80 is
@@ -70,7 +70,8 @@ architecture arch of z80 is
         cbi : in ctrlbus_in;
         cbo : out ctrlbus_out;
         instr, flags : in std_logic_vector(7 downto 0);
-        cw : out ctrlword);
+        cw : out ctrlword;
+        dbg_id : out dbg_id_t);
     end component;
 
     signal ir_do : std_logic_vector(7 downto 0);
@@ -90,15 +91,16 @@ architecture arch of z80 is
 begin
     -- -- CONTROL SECTION -- --
     ir : reg_8 port map(clk, cbi.reset, cw.ir_rd, '1', dbus, ir_do);
-    id : op_decoder port map(clk, cbi, cbo, ir_do, flags_in, cw);
+    id : op_decoder port map(clk, cbi, cbo, ir_do, flags_in, cw, dbg.id);
 
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset,
         cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd,
                     cw.rf_wrd, cw.rf_wra, cw.rf_swp,
         dbus, addr_in, flags_out, abus, rf_disp_addr, acc, flags_in,
-        dbg_z80.regs);
+        dbg.regs);
     pc : reg_16 port map(clk, cbi.reset, cw.pc_rd, '1', addr_in, pc_out);
+    tmpa : reg_16 port map(clk, cbi.reset, cw.tmpa_rd, cw.tmpa_wr, abus, abus);
     abus <= pc_out when cw.pc_wr = '1' else (others => 'Z');
     disp_addr <= pc_out when cw.pc_disp = '1' else rf_disp_addr;
     with cw.addr_in_op select addr_in <=
@@ -133,10 +135,11 @@ begin
                               abus, addr);
 
     -- debug
-    dbg_z80.pc <= pc_out;
-    dbg_z80.abus <= abus;
-    dbg_z80.ir <= ir_do;
-    dbg_z80.tmp <= tmp_do;
-    dbg_z80.act <= act_do;
-    dbg_z80.dbus <= dbus;
+    dbg.pc <= pc_out;
+    dbg.cw <= cw;
+    dbg.abus <= abus;
+    dbg.ir <= ir_do;
+    dbg.tmp <= tmp_do;
+    dbg.act <= act_do;
+    dbg.dbus <= dbus;
 end arch;

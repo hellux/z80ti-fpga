@@ -9,7 +9,9 @@ entity op_decoder is port(
     cbi : in ctrlbus_in;
     cbo : out ctrlbus_out;
     instr, flags : in std_logic_vector(7 downto 0);
-    cw : out ctrlword);
+    cw : out ctrlword;
+    -- debug
+    dbg_id : out dbg_id_t);
 end op_decoder;
 
 architecture Behavioral of op_decoder is
@@ -318,4 +320,7 @@ begin
             end if;
         end if;
     end process;
+
+    dbg_id.state <= state;
+    dbg_id.ctrl <= ctrl;
  end Behavioral;

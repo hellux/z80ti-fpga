@@ -17,11 +17,11 @@ architecture arch of comp is
         addr : out std_logic_vector(15 downto 0);
         data : inout std_logic_vector(7 downto 0);
     -- debug
-        dbg_z80 : out dbg_z80_t);
+        dbg : out dbg_z80_t);
     end component;
 
     component mem port(
-        clk : in std_logic;
+        clk, rst : in std_logic;
         cbi : out ctrlbus_in;
         cbo : in ctrlbus_out;
         addr : in std_logic_vector(15 downto 0);
@@ -57,8 +57,8 @@ begin
 
     clk_z80 <= '1' when clk_div = 0 else '0'; -- 4 MHz
 
-    --cbi.reset <= rst;
-    cpu : z80 port map(btns, cbi, cbo, addr, data, dbg_z80);
-    ram : mem port map(btns, cbi, cbo, addr, data);
+    cbi.reset <= rst;
+    cpu : z80 port map(clk_z80, cbi, cbo, addr, data, dbg_z80);
+    ram : mem port map(clk_z80, rst, cbi, cbo, addr, data);
     smt : segment port map(clk, rst, seg, an, dbg_z80.regs.AF);
 end arch;
