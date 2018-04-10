@@ -100,6 +100,7 @@ package z80_comm is
     constant regE   : integer := 3;
     constant regH   : integer := 4;
     constant regL   : integer := 5;
+    constant regF   : integer := 6;
     constant regA   : integer := 7;
     constant regW   : integer := 8;
     constant regZ   : integer := 9;
@@ -109,4 +110,13 @@ package z80_comm is
     constant regIXl : integer := 13;
     constant regIYh : integer := 14;
     constant regIYl : integer := 15;
+
+    type dbg_regs_t is record
+        BC, DE, HL, AF, WZ, SP, IX, IY : std_logic_vector(15 downto 0);
+    end record;
+    type dbg_z80_t is record
+        regs : dbg_regs_t;
+        pc, abus : std_logic_vector(15 downto 0);
+        ir, tmp, act, dbus : std_logic_vector(7 downto 0);
+    end record;
 end z80_comm;

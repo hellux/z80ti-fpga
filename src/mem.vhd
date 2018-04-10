@@ -12,7 +12,7 @@ entity mem is port(
 end mem;
 
 architecture arch of mem is
-    type mem_t is array(0 to 31) of std_logic_vector(7 downto 0);
+    type mem_t is array(0 to 65535) of std_logic_vector(7 downto 0);
     signal mem_s : mem_t :=
         (x"b1", -- or b
          x"cb", -- bit instr
@@ -40,12 +40,7 @@ architecture arch of mem is
          x"00",
          x"46", -- ld b, (hl)
          x"e9", -- jp (hl)
-         x"00",
-         x"00",
-         x"00",
-         x"00",
-         x"00",
-         x"00");
+         others => x"00");
 begin
     data <= mem_s(to_integer(unsigned(addr))) when cbo.rd = '1'
         else (others => 'Z');
