@@ -71,6 +71,8 @@ package z80_instr is
     procedure ld_rp_nn(signal state : in id_state_t;
                        variable f : out id_frame_t;
                        reg: in integer range 0 to 7);
+    procedure ld_sp_hl(signal state : in id_state_t;
+                       variable f : out id_frame_t);
 end z80_instr;
 
 package body z80_instr is
@@ -539,4 +541,26 @@ package body z80_instr is
             when others => null; end case;
         when others => null; end case;
     end ld_rp_nn;
+
+    procedure ld_sp_hl(signal state : in id_state_t;
+                       variable f : out id_frame_t)
+    is begin
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := regHL;
+                f.cw.rf_wra := '1';
+                f.cw.tmpa_rd := '1';
+            when t5 =>
+                f.cw.tmpa_wr := '1';
+                f.cw.addr_in_op := none;
+                f.cw.rf_addr := regSP;
+                f.cw.rf_rda := '1';
+            when t6 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+    end ld_sp_hl;
 end z80_instr;

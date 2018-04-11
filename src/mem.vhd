@@ -12,7 +12,7 @@ entity mem is port(
 end mem;
 
 architecture arch of mem is
-    -- instructions
+    -- main instr
     constant nop        : std_logic_vector(7 downto 0) := x"00";
     constant djnz_n     : std_logic_vector(7 downto 0) := x"10";
     constant jr_nz_n    : std_logic_vector(7 downto 0) := x"20";
@@ -265,35 +265,37 @@ architecture arch of mem is
     constant rst_18h    : std_logic_vector(7 downto 0) := x"df";
     constant rst_28h    : std_logic_vector(7 downto 0) := x"ef";
     constant rst_38h    : std_logic_vector(7 downto 0) := x"ff";
+    -- bit instructions
+    constant set_6_a    : std_logic_vector(7 downto 0) := x"f7";
 
     type mem_t is array(0 to 32) of std_logic_vector(7 downto 0);
     constant mem_c : mem_t :=
-        (or_b, -- or b
+        (or_b,
          cb,
-         x"f7", -- set 6, a
-         nop, -- nop
-         ld_b_a, -- ld b, a
-         add_a, -- add a
-         ex_af_af, -- ex af, af'
-         ld_a_n, -- ld a, n
-         x"05", -- n
-         dec_a, -- dec a
-         jp_nz_nn, -- jp nz, nn
-         x"09", -- n
-         x"00", -- n
-         exx, -- exx
-         or_b, -- or b
-         nop, -- nop
-         jr_z_n, -- jr z, d
-         x"03", -- d
+         set_6_a,
+         nop,
+         ld_b_a,
+         add_a,
+         ex_af_af,
+         ld_a_n,
+         x"05",
+         dec_a,
+         jp_nz_nn,
+         x"09",
+         x"00",
+         exx,
+         or_b,
+         nop,
+         jr_z_n,
+         x"03",
          nop,
          nop,
          nop,
-         ld_hl_nn, -- ld hl, nn
+         ld_hl_nn,
          x"15",
          x"00",
-         ld_b_hlx, -- ld b, (hl)
-         jp_hl, -- jp (hl)
+         ld_b_hlx,
+         ld_sp_hl,
          others => nop);
 
     signal mem : mem_t := mem_c;

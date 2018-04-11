@@ -133,7 +133,7 @@ architecture Behavioral of op_decoder is
                         when 0 => null; -- RET
                         when 1 => null; ex(state, f, reg); -- EXX
                         when 2 => null; jp_hl(state, f); -- JP HL
-                        when 3 => null; -- LD SP, HL
+                        when 3 => null; ld_sp_hl(state, f); -- LD SP, HL
                         end case;
                     end case;
                 when 2 => jp_cc_nn(state, f, s.y); -- JP cc[y], nn

@@ -103,6 +103,7 @@ package z80_comm is
     constant t3 : integer := 3;
     constant t4 : integer := 4;
     constant t5 : integer := 5;
+    constant t6 : integer := 6;
 
     -- reg16
     constant regBC : integer := 0;
