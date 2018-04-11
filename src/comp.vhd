@@ -6,6 +6,7 @@ use work.z80_comm.all;
 entity comp is port(
     clk : in std_logic;
     btns : in std_logic_vector(4 downto 0);
+    sw : in std_logic_vector(7 downto 0);
     seg, led : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
 end comp;
@@ -29,51 +30,60 @@ architecture arch of comp is
         data : inout std_logic_vector(7 downto 0));
     end component;
 
-    component segment is port(
+    component monitor port(
         clk, rst : in std_logic;
-        seg : out std_logic_vector(7 downto 0);
-        an : out std_logic_vector(3 downto 0);
-        value : in std_logic_vector(15 downto 0));
+        btns : in std_logic_vector(4 downto 0);
+        sw : in std_logic_vector(7 downto 0);
+        dbg : in dbg_z80_t;
+        seg, led : out std_logic_vector(7 downto 0);
+        an : out std_logic_vector(3 downto 0));
     end component;
 
-    signal cbi : ctrlbus_in;
+    signal cbi, cbi_mem, cbi_ext : ctrlbus_in;
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
     signal data : std_logic_vector(7 downto 0);
     signal dbg_z80 : dbg_z80_t;
+    
+    signal rst : std_logic;
+
     signal clk_z80 : std_logic;
     signal clk_div : integer range 0 to 100000000;
-    signal btns_op, btns_s, btns_q : std_logic_vector(4 downto 0);
+
+    signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
 begin
+    op_btns : process(clk) begin
+        if rising_edge(clk) then
+            btns_sync <= btns;
+            btns_q <= btns_sync;
+        end if;
+    end process;
+    btns_op <= btns_sync and not btns_q;
+
     process(clk) begin
         if rising_edge(clk) then
             if btns(1) = '1' then
                 clk_div <= 0;
-            elsif clk_div = 100000000 then
+            elsif clk_div = 25 then
                 clk_div <= 0;
             else
                 clk_div <= clk_div + 1;
             end if;
         end if;
     end process;
-
-    op_btns : process(clk_z80) begin
-        if rising_edge(clk_z80) then
-            btns_s <= btns;
-            btns_q <= btns_s;
-        end if;
-    end process;
-
-    btns_op <= btns_s and not btns_q;
-
     clk_z80 <= '1' when clk_div = 0 else '0'; -- 4 MHz
 
-    cbi.reset <= btns(1);
-    cpu : z80 port map(clk_z80, cbi, cbo, addr, data, dbg_z80);
-    ram : mem port map(clk_z80, btns(1), cbi, cbo, addr, data);
-    smt : segment port map(clk, btns(1), seg, an, dbg_z80.regs.AF);
+    rst <= btns(1);
 
-    led(7 downto 5) <= std_logic_vector(to_unsigned(dbg_z80.id.state.m, 3));
-    led(4 downto 3) <= "00";
-    led(2 downto 0) <= std_logic_vector(to_unsigned(dbg_z80.id.state.t, 3));
+    cpu : z80 port map(clk_z80, cbi, cbo, addr, data, dbg_z80);
+    ram : mem port map(clk_z80, rst, cbi_mem, cbo, addr, data);
+    mon : monitor port map(clk, rst, btns_op, sw, dbg_z80, seg, led, an);
+
+    cbi_ext <= (reset => rst, others => '0');
+
+    cbi.wt    <= cbi_mem.wt    and cbi_ext.wt;
+    cbi.int   <= cbi_mem.int   and cbi_ext.int;
+    cbi.nmi   <= cbi_mem.nmi   and cbi_ext.nmi;
+    cbi.reset <= cbi_mem.reset and cbi_ext.reset;
+    cbi.busrq <= cbi_mem.busrq and cbi_ext.busrq;
 end arch;

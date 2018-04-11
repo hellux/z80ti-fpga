@@ -313,9 +313,9 @@ begin
     word_next <= data when cbo.mreq = '1' and cbo.wr = '1' else mem(a);
     data <= mem(a) when cbo.mreq = '1' and cbo.rd = '1' else (others => 'Z');
 
-    cbi.reset <= 'Z';
+    cbi.reset <= '0';
     cbi.wt <= '0';
-    cbi.int <= 'Z';
-    cbi.nmi <= 'Z';
-    cbi.busrq <= 'Z';
+    cbi.int <= '0';
+    cbi.nmi <= '0';
+    cbi.busrq <= '0';
 end arch;

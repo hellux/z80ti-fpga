@@ -8,5 +8,6 @@ src/z80/z80.vhd
 src/z80/op_decoder.vhd
 src/segment.vhd
 src/mem.vhd
+src/monitor.vhd
 src/comp.vhd
 tests/comp_tb.vhd
