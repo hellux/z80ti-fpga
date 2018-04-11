@@ -11,14 +11,14 @@ end segment;
 
 architecture arch of segment is
 	signal segments : std_logic_vector (6 downto 0);
-	signal counter_r : unsigned(1 downto 0) := "00";
+	signal counter_r : unsigned(17 downto 0) := (others => '0');
 	signal v : std_logic_vector (3 downto 0);
     signal dp : std_logic;
 begin
     dp <= '1';
     seg <= (dp & segments);
      
-    with counter_r select
+    with counter_r(17 downto 16) select
         v <= value(15 downto 12) when "00",
              value(11 downto 8)  when "01",	
              value(7 downto 4)   when "10",
@@ -29,7 +29,7 @@ begin
         if rising_edge(clk) then 
             counter_r <= counter_r + 1;
 
-            case v is
+            case v is               --ABCDEFG
             when x"0" => segments <= "0000001";
             when x"1" => segments <= "1001111";
             when x"2" => segments <= "0010010";
@@ -49,7 +49,7 @@ begin
             when others => null;
             end case;
 
-            case counter_r is
+            case counter_r(17 downto 16) is
             when "00" => an <= "0111";
             when "01" => an <= "1011";
             when "10" => an <= "1101";

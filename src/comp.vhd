@@ -58,7 +58,7 @@ begin
     clk_z80 <= '1' when clk_div = 0 else '0'; -- 4 MHz
 
     cbi.reset <= rst;
-    cpu : z80 port map(clk_z80, cbi, cbo, addr, data, dbg_z80);
-    ram : mem port map(clk_z80, rst, cbi, cbo, addr, data);
+    cpu : z80 port map(btns, cbi, cbo, addr, data, dbg_z80);
+    ram : mem port map(btns, rst, cbi, cbo, addr, data);
     smt : segment port map(clk, rst, seg, an, dbg_z80.regs.AF);
 end arch;
