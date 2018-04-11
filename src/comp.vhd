@@ -1,11 +1,12 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 use work.z80_comm.all;
 
 entity comp is port(
     clk, rst : in std_logic;
     btns : in std_logic;
-    seg : out std_logic_vector(7 downto 0);
+    seg, led : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
 end comp;
 
@@ -61,4 +62,8 @@ begin
     cpu : z80 port map(btns, cbi, cbo, addr, data, dbg_z80);
     ram : mem port map(btns, rst, cbi, cbo, addr, data);
     smt : segment port map(clk, rst, seg, an, dbg_z80.regs.AF);
+
+    led(7 downto 5) <= std_logic_vector(to_unsigned(dbg_z80.id.state.m, 3));
+    led(4 downto 3) <= "00";
+    led(2 downto 0) <= std_logic_vector(to_unsigned(dbg_z80.id.state.t, 3));
 end arch;
