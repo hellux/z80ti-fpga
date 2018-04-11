@@ -55,10 +55,10 @@ architecture Behavioral of op_decoder is
                  addr_in_op => inc,
                  others => '0');
 
-        -- fetch phase
+        -- mem_rd phase
          if state.m = m1 then
             f.cb.m1 := '1';
-            fetch_instr(state, f);
+            mem_rd_instr(state, f);
         end if;
 
         -- exec phase
@@ -72,7 +72,7 @@ architecture Behavioral of op_decoder is
                     when 0 => nop(state, f); -- NOP
                     when 1 => ex(state, f, af); -- EX AF, AF'
                     when 2 => null; -- DJNZ d
-                    when 3 => null; jr_d(state, f);
+                    when 3 => jr_d(state, f);
                     when 4|5|6|7 => jr_cc_d(state, f, s.y-4); -- JR cc[y-4] d
                     end case;
                 when 1 =>
@@ -84,8 +84,8 @@ architecture Behavioral of op_decoder is
                     case s.q is
                     when 0 => 
                         case s.p is
-                        when 0 => null; -- LD (BC), A
-                        when 1 => null; -- LD (DE), A
+                        when 0 => ld_rpx_a(state, f, regBC); -- LD (BC), A
+                        when 1 => ld_rpx_a(state, f, regDE); -- LD (DE), A
                         when 2 => null; -- LD (nn), HL
                         when 3 => null; -- LD (nn), A
                         end case;
@@ -140,7 +140,7 @@ architecture Behavioral of op_decoder is
                 when 3 =>
                     case s.y is
                     when 0 => jp_nn(state, f);
-                    when 1 => fetch_multi(state, f); -- (CB/DDCD/FDCB)
+                    when 1 => mem_rd_multi(state, f); -- (CB/DDCD/FDCB)
                     when 2 => null; -- OUT (n), A
                     when 3 => null; -- IN A, (n)
                     when 4 => null; -- EX (SP), HL
@@ -155,9 +155,9 @@ architecture Behavioral of op_decoder is
                     when 1 =>
                         case s.p is
                         when 0 => null; -- CALL nn
-                        when 1 => fetch_multi(state, f); -- (DD)
-                        when 2 => fetch_multi(state, f); -- (ED)
-                        when 3 => fetch_multi(state, f); -- (FD)
+                        when 1 => mem_rd_multi(state, f); -- (DD)
+                        when 2 => mem_rd_multi(state, f); -- (ED)
+                        when 3 => mem_rd_multi(state, f); -- (FD)
                         end case;
                     end case;
                 when 6 => null; alu_a_n(state, f, alu(s.y)); -- alu[y] n

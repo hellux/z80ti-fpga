@@ -126,9 +126,9 @@ begin
     -- -- BUSES -- --
     -- data bus, buffer both ways
     dbufi : buf8 port map(clk, cbi.reset, cw.data_rdi, cw.data_wri,
-                             data, dbus);
+                          data, dbus);
     dbufo : buf8 port map(clk, cbi.reset, cw.data_rdo, cw.data_wro,
-                             dbus, data);
+                          dbus, data);
 
     -- addr bus, buffer outgoing
     abuf : buf16 port map(clk, cbi.reset, cw.addr_rd, cw.addr_wr,

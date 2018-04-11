@@ -268,7 +268,7 @@ architecture arch of mem is
     -- bit instructions
     constant set_6_a    : std_logic_vector(7 downto 0) := x"f7";
 
-    type mem_t is array(0 to 32) of std_logic_vector(7 downto 0);
+    type mem_t is array(0 to 63) of std_logic_vector(7 downto 0);
     constant mem_c : mem_t :=
         (or_b,
          cb,
@@ -296,6 +296,12 @@ architecture arch of mem is
          x"00",
          ld_b_hlx,
          ld_sp_hl,
+         ld_bc_nn,
+         x"1f",
+         x"00",
+         ld_a_n,
+         x"cc",
+         ld_bcx_a,
          others => nop);
 
     signal mem : mem_t := mem_c;
