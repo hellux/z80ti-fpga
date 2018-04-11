@@ -4,8 +4,8 @@ use ieee.numeric_std.all;
 use work.z80_comm.all;
 
 entity comp is port(
-    clk, rst : in std_logic;
-    btns : in std_logic;
+    clk : in std_logic;
+    btns : in std_logic_vector(4 downto 0);
     seg, led : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
 end comp;
@@ -42,13 +42,14 @@ architecture arch of comp is
     signal data : std_logic_vector(7 downto 0);
     signal dbg_z80 : dbg_z80_t;
     signal clk_z80 : std_logic;
-    signal clk_div : integer range 0 to 25;
+    signal clk_div : integer range 0 to 100000000;
+    signal btns_op, btns_s, btns_q : std_logic_vector(4 downto 0);
 begin
     process(clk) begin
         if rising_edge(clk) then
-            if rst = '1' then
+            if btns(1) = '1' then
                 clk_div <= 0;
-            elsif clk_div = 25 then
+            elsif clk_div = 100000000 then
                 clk_div <= 0;
             else
                 clk_div <= clk_div + 1;
@@ -56,12 +57,21 @@ begin
         end if;
     end process;
 
+    op_btns : process(clk_z80) begin
+        if rising_edge(clk_z80) then
+            btns_s <= btns;
+            btns_q <= btns_s;
+        end if;
+    end process;
+
+    btns_op <= btns_s and not btns_q;
+
     clk_z80 <= '1' when clk_div = 0 else '0'; -- 4 MHz
 
-    cbi.reset <= rst;
-    cpu : z80 port map(btns, cbi, cbo, addr, data, dbg_z80);
-    ram : mem port map(btns, rst, cbi, cbo, addr, data);
-    smt : segment port map(clk, rst, seg, an, dbg_z80.regs.AF);
+    cbi.reset <= btns(1);
+    cpu : z80 port map(clk_z80, cbi, cbo, addr, data, dbg_z80);
+    ram : mem port map(clk_z80, btns(1), cbi, cbo, addr, data);
+    smt : segment port map(clk, btns(1), seg, an, dbg_z80.regs.AF);
 
     led(7 downto 5) <= std_logic_vector(to_unsigned(dbg_z80.id.state.m, 3));
     led(4 downto 3) <= "00";

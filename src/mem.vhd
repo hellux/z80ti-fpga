@@ -267,7 +267,7 @@ architecture arch of mem is
     constant rst_38h    : std_logic_vector(7 downto 0) := x"ff";
 
     type mem_t is array(0 to 32) of std_logic_vector(7 downto 0);
-    signal mem : mem_t :=
+    constant mem_c : mem_t :=
         (or_b, -- or b
          cb,
          x"f7", -- set 6, a
@@ -295,13 +295,15 @@ architecture arch of mem is
          ld_b_hlx, -- ld b, (hl)
          jp_hl, -- jp (hl)
          others => nop);
+
+    signal mem : mem_t := mem_c;
     signal word_next : std_logic_vector(7 downto 0);
     signal a : integer := 0;
 begin
     write : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                mem <= (others => (x"00"));
+                mem <= mem_c;
             else
                 mem(a) <= word_next;
             end if;
