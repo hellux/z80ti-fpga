@@ -17,11 +17,15 @@ architecture arch of segment is
 begin
     process(clk) begin
         if rising_edge(clk) then 
-            index <= index + 1;
+            if rst <= '1' then
+                index <= (others => '0');
+            else
+                index <= index + 1;
+            end if;
         end if;
     end process;
      
-    seg <= (dp_num(to_integer(index)) & segments);
+    seg <= (not dp_num(to_integer(index)) & segments);
 
     with index select
         digit <= value(15 downto 12) when "00",
