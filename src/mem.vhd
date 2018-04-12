@@ -269,7 +269,10 @@ architecture arch of mem is
     constant set_6_a    : std_logic_vector(7 downto 0) := x"f7";
 
     type mem_t is array(0 to 63) of std_logic_vector(7 downto 0);
-    constant mem_c : mem_t :=
+    constant prgm_fpga : mem_t :=
+        (nop,
+         others => nop);
+    constant prgm_test : mem_t :=
         (or_b,
          cb,
          set_6_a,
@@ -304,14 +307,14 @@ architecture arch of mem is
          ld_bcx_a,
          others => nop);
 
-    signal mem : mem_t := mem_c;
+    signal mem : mem_t := prgm_fpga;
     signal word_next : std_logic_vector(7 downto 0);
-    signal a : integer := 0;
+    signal a : integer range 0 to 65535 := 0;
 begin
     write : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                mem <= mem_c;
+                mem <= prgm_test;
             else
                 mem(a) <= word_next;
             end if;

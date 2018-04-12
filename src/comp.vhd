@@ -80,21 +80,22 @@ begin
     end process;
     clk_z80 <= '1' when clk_div = 0 else '0'; -- 4 MHz
 
-    rst <= btns(1);
+    rst <= btns_op(1);
 
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, dbg_z80);
     ram : mem port map(clk_z80, rst, cbi_mem, cbo, addr, data);
     --mon : monitor port map(clk, rst, btns_op, sw, dbg_z80, seg, led, an);
-    smt : segment port map(clk, rst, dbg_z80.regs.AF, "1101", seg, an);
+    smt : segment port map(clk, rst, dbg_z80.ir & dbg_z80.dbus, "0000", seg, an);
     led(7 downto 5) <= std_logic_vector(to_unsigned(dbg_z80.id.state.m, 3));
-    led(4 downto 3) <= "00";
+    led(4) <= dbg_z80.id.ctrl.cycle_end;
+    led(3) <= dbg_z80.id.ctrl.instr_end;
     led(2 downto 0) <= std_logic_vector(to_unsigned(dbg_z80.id.state.t, 3));
 
     cbi_ext <= (reset => rst, others => '0');
 
-    cbi.wt    <= cbi_mem.wt    and cbi_ext.wt;
-    cbi.int   <= cbi_mem.int   and cbi_ext.int;
-    cbi.nmi   <= cbi_mem.nmi   and cbi_ext.nmi;
-    cbi.reset <= cbi_mem.reset and cbi_ext.reset;
-    cbi.busrq <= cbi_mem.busrq and cbi_ext.busrq;
+    cbi.wt    <= cbi_mem.wt    or cbi_ext.wt;
+    cbi.int   <= cbi_mem.int   or cbi_ext.int;
+    cbi.nmi   <= cbi_mem.nmi   or cbi_ext.nmi;
+    cbi.reset <= cbi_mem.reset or cbi_ext.reset;
+    cbi.busrq <= cbi_mem.busrq or cbi_ext.busrq;
 end arch;

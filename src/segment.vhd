@@ -12,27 +12,29 @@ end segment;
 
 architecture arch of segment is
 	signal segments : std_logic_vector (6 downto 0);
+    signal index_cntr : unsigned(17 downto 0) := (others => '0');
 	signal index : unsigned(1 downto 0) := (others => '0');
 	signal digit : std_logic_vector (3 downto 0);
 begin
     process(clk) begin
         if rising_edge(clk) then 
-            if rst <= '1' then
-                index <= (others => '0');
+            if rst = '1' then
+                index_cntr <= (others => '0');
             else
-                index <= index + 1;
+                index_cntr <= index_cntr + 1;
             end if;
         end if;
     end process;
      
+    index <= index_cntr(17 downto 16);
     seg <= (not dp_num(to_integer(index)) & segments);
 
-    with index select
-        digit <= value(15 downto 12) when "00",
-                 value(11 downto 8)  when "01",	
-                 value(7 downto 4)   when "10",
-                 value(3 downto 0)   when "11",
-                 "----"              when others;
+    with index select digit <=
+        value(15 downto 12) when "00",
+        value(11 downto 8)  when "01",	
+        value(7 downto 4)   when "10",
+        value(3 downto 0)   when "11",
+        "----"              when others;
 
     with index select an <=
         "0111" when "00",
@@ -42,6 +44,7 @@ begin
         "----" when others;
 
     with digit select segments <=
+    --   ABCDEFG
         "0000001" when x"0",
         "1001111" when x"1",
         "0010010" when x"2",
@@ -58,6 +61,5 @@ begin
         "1000010" when x"d",
         "0110000" when x"e",
         "0111000" when x"f",
-        "-------" when others;
+        "1111110" when others;
 end arch;
-
