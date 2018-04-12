@@ -26,11 +26,13 @@ begin
         wait for 5 ns;
     end process;
 
+    btns <= (1 => rst, others => '0');
     process begin
-        btns <= "00000";
-        wait for 15940 ns;
-        btns <= "00100";
-        wait for 123 ns;
-        btns <= "00000";
+        rst <= '0';
+        wait for 20 us;
+        rst <= '1';
+        wait for 348 ns;
+        rst <= '0';
+        wait for 100 us;
     end process;
 end arch;
