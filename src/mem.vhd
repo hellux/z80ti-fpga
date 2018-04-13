@@ -24,7 +24,7 @@ architecture arch of mem is
     constant ld_bcx_a   : std_logic_vector(7 downto 0) := x"02";
     constant ld_dex_a   : std_logic_vector(7 downto 0) := x"12";
     constant ld_nnx_hl  : std_logic_vector(7 downto 0) := x"22";
-    constant ld_nnx_al  : std_logic_vector(7 downto 0) := x"32";
+    constant ld_nnx_a   : std_logic_vector(7 downto 0) := x"32";
     constant inc_bc     : std_logic_vector(7 downto 0) := x"03";
     constant inc_de     : std_logic_vector(7 downto 0) := x"13";
     constant inc_hl     : std_logic_vector(7 downto 0) := x"23";
@@ -305,6 +305,9 @@ architecture arch of mem is
          ld_a_n,
          x"cc",
          ld_bcx_a,
+         ld_nnx_a,
+         x"08",
+         x"00",
          others => nop);
 
     signal mem : mem_t := prgm_fpga;

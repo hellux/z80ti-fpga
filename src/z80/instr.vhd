@@ -79,6 +79,8 @@ package z80_instr is
     procedure ld_rpx_a(signal state : in id_state_t;
                        variable f : out id_frame_t;
                        reg : integer range 0 to 15);
+    procedure ld_nnx_a(signal state : in id_state_t;
+                       variable f : out id_frame_t);
 end z80_instr;
 
 package body z80_instr is
@@ -616,4 +618,40 @@ package body z80_instr is
                 when others => null; end case;
             when others => null; end case;
     end ld_rpx_a;
+
+    procedure ld_nnx_a(signal state : in id_state_t;
+                       variable f : out id_frame_t)
+    is begin
+        case state.m is
+            when m1 => f.ct.cycle_end := during_t(state, t4);
+            when m2 =>
+                mem_rd_pc(state, f);
+                case state.t is
+                when t3 =>
+                    f.cw.rf_addr := regZ;
+                    f.cw.rf_rdd := '1';
+                    f.ct.cycle_end := '1';
+                when others => null; end case;
+            when m3 =>
+                mem_rd_pc(state, f);
+                case state.t is
+                when t3 =>
+                    f.cw.rf_addr := regW;
+                    f.cw.rf_rdd := '1';
+                    f.ct.cycle_end := '1';
+                when others => null; end case;
+            when m4 =>
+                mem_rd(state, f);
+                case state.t is
+                when t1 =>
+                    f.cw.rf_addr := regWZ;
+                    f.cw.rf_wra := '1';
+                when t3 =>
+                    f.cw.rf_addr := regA;
+                    f.cw.rf_rdd := '1';
+                    f.ct.cycle_end := '1';
+                    f.ct.instr_end := '1';
+                when others => null; end case;
+            when others => null; end case;
+    end ld_nnx_a;
 end z80_instr;
