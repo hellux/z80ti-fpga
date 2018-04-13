@@ -107,7 +107,7 @@ package body z80_instr is
             f.cb.mreq := '1';       -- keep request until byte retrieved
             f.cb.rd := '1';         -- keep reading
         when t3 =>
-            f.cw.data_wri := '1';   -- write instr to inner dbus from buf
+            f.cw.dbus_src := ext_o; -- write instr to inner dbus from buf
         when others => null; end case;
     end mem_rd;
 
@@ -117,9 +117,9 @@ package body z80_instr is
         mem_rd(state, f);
         case state.t is
         when t1 =>
-            f.cw.pc_wr := '1';
+            f.cw.abus_src := pc_o;
         when t2 =>
-            f.cw.pc_wr := '1';
+            f.cw.abus_src := pc_o;
             f.cw.pc_rd := '1';
         when t3 =>
         when others => null; end case;
@@ -133,17 +133,17 @@ package body z80_instr is
         when t1 =>
             if state.mode = wz then
                 f.cw.rf_addr := regWZ;
-                f.cw.rf_wra := '1'; -- use wz instead of pc
+                f.cw.abus_src := rf_o; -- use wz instead of pc
             else 
-                f.cw.pc_wr := '1';  -- write pc to abus
+                f.cw.abus_src := pc_o; -- write pc to abus
             end if;
         when t2 =>
             if state.mode = wz then
                 f.cw.rf_addr := regWZ;
-                f.cw.rf_wra := '1'; -- keep wz on abus for incr
+                f.cw.abus_src := rf_o; -- keep wz on abus for incr
                 f.ct.mode_end := '1'; -- go back to main mode
             else 
-                f.cw.pc_wr := '1';  -- keep pc on abus
+                f.cw.abus_src := pc_o; -- keep pc on abus
             end if;
             f.cw.pc_rd := '1';      -- read incremented address to pc
         when t3 =>
@@ -257,8 +257,8 @@ package body z80_instr is
             case state.t is
             when t4 =>
                 f.cw.rf_addr := regHL;   -- place hl on abus
-                f.cw.rf_wra := '1';
-                f.cw.addr_in_op := none; -- make sure no inc to addr
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := none; -- make sure no inc to addr
                 f.cw.pc_rd := '1';       -- store addr in pc
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
@@ -275,13 +275,12 @@ package body z80_instr is
             mem_rd(state, f);
             case state.t is
             when t1 =>
-                f.cw.pc_wr := '1';
-            when t2 =>
-                f.cw.pc_wr := '1';
-                -- no pc increment
+                f.cw.abus_src := pc_o;
+            when t2 => -- parce pc without increment
+                f.cw.abus_src := pc_o;
             when t3 =>
-                f.cw.pc_disp := '1';    -- send pc to displacer
-                f.cw.dis_wr := '1';     -- write displaced addr (pc+z) to abus
+                f.cw.pc_dis := '1';    -- send pc to displacer
+                f.cw.abus_src := dis_o; -- write displaced addr (pc+z) to abus
                 f.cw.pc_rd := '1';      -- write displaced+1 to pc
                 f.ct.cycle_end := '1';
             when others => null; end case;
@@ -347,7 +346,7 @@ package body z80_instr is
             when t4 =>
                 f.cw.act_rd := '1';     -- read from a to tmp accumulator
                 f.cw.rf_addr := reg;    -- select reg
-                f.cw.rf_wrd := '1';     -- place reg on dbus
+                f.cw.dbus_src := rf_o;  -- place reg on dbus
                 f.cw.tmp_rd := '1';     -- read from dbus to tmp
                 f.ct.cycle_end := '1';  -- signal new cycle
             when others => null; end case;
@@ -356,7 +355,7 @@ package body z80_instr is
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;      -- tell alu operation
-                f.cw.alu_wr := '1';     -- place result on dbus
+                f.cw.dbus_src := alu_o; -- place result on dbus
                 f.cw.f_rd := '1';       -- read flags from alu
                 f.cw.rf_addr := regA;   -- select the A reg
                 f.cw.rf_rdd := '1';     -- read alu output from dbus
@@ -388,7 +387,7 @@ package body z80_instr is
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;      -- tell alu operation
-                f.cw.alu_wr := '1';     -- place result on dbus
+                f.cw.dbus_src := alu_o; -- place result on dbus
                 f.cw.f_rd := '1';       -- read flags from alu
                 f.cw.rf_addr := regA;   -- select the A reg
                 f.cw.rf_rdd := '1';     -- read alu output from dbus
@@ -407,7 +406,7 @@ package body z80_instr is
             case state.t is
             when t4 =>
                 f.cw.rf_addr := reg;
-                f.cw.rf_wrd := '1';
+                f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
@@ -416,7 +415,7 @@ package body z80_instr is
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;
-                f.cw.alu_wr := '1';
+                f.cw.dbus_src := alu_o;
                 f.cw.f_rd := '1';
                 f.cw.rf_addr := reg;
                 f.cw.rf_rdd := '1';
@@ -434,7 +433,7 @@ package body z80_instr is
             case state.t is
             when t4 =>
                 f.cw.rf_addr := regA;
-                f.cw.rf_wrd := '1';
+                f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
@@ -443,7 +442,7 @@ package body z80_instr is
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;
-                f.cw.alu_wr := '1';
+                f.cw.dbus_src := alu_o;
                 f.cw.f_rd := '1';
                 f.cw.rf_addr := regA;
                 f.cw.rf_rdd := '1';
@@ -463,7 +462,7 @@ package body z80_instr is
             case state.t is
             when t4 =>
                 f.cw.rf_addr := reg;
-                f.cw.rf_wrd := '1';
+                f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
@@ -473,7 +472,7 @@ package body z80_instr is
             when t2 =>
                 f.cw.alu_op := op;
                 f.cw.alu_bs := bs;
-                f.cw.alu_wr := '1';
+                f.cw.dbus_src := alu_o;
                 f.cw.f_rd := '1';
                 f.cw.rf_addr := reg;
                 f.cw.rf_rdd := '1';
@@ -491,11 +490,11 @@ package body z80_instr is
             case state.t is
             when t4 =>
                 f.cw.rf_addr := src;
-                f.cw.rf_wrd := '1';
+                f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';
             when t5 =>
                 f.cw.rf_addr := dst;
-                f.cw.tmp_wr := '1';
+                f.cw.dbus_src := tmp_o;
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
@@ -533,7 +532,7 @@ package body z80_instr is
             case state.t is
             when t1 =>
                 f.cw.rf_addr := regHL;
-                f.cw.rf_wra := '1';
+                f.cw.abus_src := rf_o;
             when t3 =>
                 f.cw.rf_addr := reg;
                 f.cw.rf_rdd := '1';
@@ -577,11 +576,11 @@ package body z80_instr is
             case state.t is
             when t4 =>
                 f.cw.rf_addr := regHL;
-                f.cw.rf_wra := '1';
+                f.cw.abus_src := rf_o;
                 f.cw.tmpa_rd := '1';
             when t5 =>
-                f.cw.tmpa_wr := '1';
-                f.cw.addr_in_op := none;
+                f.cw.abus_src := tmpa_o;
+                f.cw.addr_op := none;
                 f.cw.rf_addr := regSP;
                 f.cw.rf_rda := '1';
             when t6 =>
@@ -596,24 +595,24 @@ package body z80_instr is
                        reg : integer range 0 to 15)
     is begin
         case state.m is
-            when m1 =>
-                case state.t is
-                when t4 =>
-                    f.cw.rf_addr := regA;
-                    f.cw.rf_wrd := '1';
-                    f.cw.data_rdo := '1';   -- store reg A in data buffer
-                    f.ct.cycle_end := '1';
-                when others => null; end case;
-            when m2 =>
-                mem_wr(state, f);
-                case state.t is
-                when t1 =>
-                    f.cw.rf_addr := reg;
-                    f.cw.rf_wra := '1';
-                when t3 =>
-                    f.ct.cycle_end := '1';
-                    f.ct.instr_end := '1';
-                when others => null; end case;
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := regA;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';   -- store reg A in data buffer
+                f.ct.cycle_end := '1';
             when others => null; end case;
+        when m2 =>
+            mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := reg;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
     end ld_rpx_a;
 end z80_instr;

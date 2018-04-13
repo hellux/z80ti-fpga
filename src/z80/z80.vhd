@@ -8,38 +8,25 @@ entity z80 is port(
     cbi : in ctrlbus_in; -- samee
     cbo : out ctrlbus_out;
     addr : out std_logic_vector(15 downto 0);
-    data : inout std_logic_vector(7 downto 0);
+    data_in : in std_logic_vector(7 downto 0);
+    data_out : out std_logic_vector(7 downto 0);
 -- debug
     dbg : out dbg_z80_t);
 end z80;
 
 architecture arch of z80 is
-    component reg_8 port(
+    component reg generic(size : integer); port(
         clk, rst : in std_logic;
-        rd, wr : in std_logic;
-        di : in std_logic_vector(7 downto 0);
-        do : out std_logic_vector(7 downto 0));
+        rd : in std_logic;
+        di : in std_logic_vector(size-1 downto 0);
+        do : out std_logic_vector(size-1 downto 0));
     end component;
 
-    component reg_16 port(
+    component buf generic (size : integer); port(
         clk, rst : in std_logic;
-        rd, wr : in std_logic;
-        di : in std_logic_vector(15 downto 0);
-        do : out std_logic_vector(15 downto 0));
-    end component;
-
-    component buf8 port(
-        clk, rst : in std_logic;
-        rd, wr : in std_logic;
-        di : in std_logic_vector(7 downto 0);
-        do : out std_logic_vector(7 downto 0));
-    end component;
-
-    component buf16 port(
-        clk, rst : in std_logic;
-        rd, wr : in std_logic;
-        di : in std_logic_vector(15 downto 0);
-        do : out std_logic_vector(15 downto 0));
+        rd : in std_logic;
+        di : in std_logic_vector(size-1 downto 0);
+        do : out std_logic_vector(size-1 downto 0));
     end component;
 
     component alu port(
@@ -55,11 +42,11 @@ architecture arch of z80 is
         clk, rst : in std_logic;
         reg_addr : in integer range 0 to 15;
         rdd, rda, rdf : in std_logic;
-        wrd, wra: in std_logic;
         swp : in rf_swap_t;
-        data : inout std_logic_vector(7 downto 0);
-        addr : in std_logic_vector(15 downto 0);
+        data_in: in std_logic_vector(7 downto 0);
+        addr_in : in std_logic_vector(15 downto 0);
         f_in : in std_logic_vector(7 downto 0);
+        data_out: out std_logic_vector(7 downto 0);
         addr_out, addr_out_dis : out std_logic_vector(15 downto 0);
         a_out, f_out : out std_logic_vector(7 downto 0);
         dbg_regs : out dbg_regs_t);
@@ -74,72 +61,83 @@ architecture arch of z80 is
         dbg_id : out dbg_id_t);
     end component;
 
-    signal ir_do : std_logic_vector(7 downto 0);
-    signal addr_in, pc_out : std_logic_vector(15 downto 0);
+    signal ir_out : std_logic_vector(7 downto 0);
     signal cw : ctrlword;
 
-    signal rf_disp_addr, disp_addr : std_logic_vector(15 downto 0);
+    signal addr_in : std_logic_vector(15 downto 0);
+    signal rf_dis_out : std_logic_vector(15 downto 0);
 
-    signal alu_result : std_logic_vector(7 downto 0);
-    signal acc, act_do, tmp_do : std_logic_vector(7 downto 0);
+    signal acc, act_out : std_logic_vector(7 downto 0);
     signal flags_in, flags_out : std_logic_vector(7 downto 0); -- rel to alu
 
-    signal dbus : std_logic_vector(7 downto 0) := "ZZZZZZZZ";
-    signal abus : std_logic_vector(15 downto 0);
+    -- dbus/abus src
+    signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_out
+        : std_logic_vector(7 downto 0);
+    signal rf_ao, tmpa_out, pc_out, dis_out : std_logic_vector(15 downto 0);
 
-    -- debug
+    signal dbus : std_logic_vector(7 downto 0);
+    signal abus : std_logic_vector(15 downto 0);
 begin
     -- -- CONTROL SECTION -- --
-    ir : reg_8 port map(clk, cbi.reset, cw.ir_rd, '1', dbus, ir_do);
-    id : op_decoder port map(clk, cbi, cbo, ir_do, flags_in, cw, dbg.id);
+    ir : reg generic map(8)
+             port map(clk, cbi.reset, cw.ir_rd, dbus, ir_out);
+    id : op_decoder port map(clk, cbi, cbo, ir_out, flags_in, cw, dbg.id);
 
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset,
-        cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd,
-                    cw.rf_wrd, cw.rf_wra, cw.rf_swp,
-        dbus, addr_in, flags_out, abus, rf_disp_addr, acc, flags_in,
+        cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_swp,
+        dbus, addr_in, flags_out, rf_do, rf_ao, rf_dis_out, acc, flags_in,
         dbg.regs);
-    pc : reg_16 port map(clk, cbi.reset, cw.pc_rd, '1', addr_in, pc_out);
-    tmpa : reg_16 port map(clk, cbi.reset, cw.tmpa_rd, cw.tmpa_wr, abus, abus);
-    abus <= pc_out when cw.pc_wr = '1' else (others => 'Z');
-    disp_addr <= pc_out when cw.pc_disp = '1' else rf_disp_addr;
-    with cw.addr_in_op select addr_in <=
+    pc : reg generic map(16)
+             port map(clk, cbi.reset, cw.pc_rd, addr_in, pc_out);
+    tmpa : reg generic map(16)
+               port map(clk, cbi.reset, cw.tmpa_rd, abus, tmpa_out);
+    dis_out <= pc_out when cw.pc_dis = '1' else rf_dis_out;
+    with cw.addr_op select addr_in <=
         std_logic_vector(unsigned(abus) + 1) when inc,
         abus                                 when none,
         std_logic_vector(unsigned(abus) - 1) when dec;
-    abus <=
-        std_logic_vector(signed(disp_addr) + resize(signed(dbus), 16))
-            when cw.dis_wr = '1' else
-        (others => 'Z');
-
 
     -- -- ALU section -- --
-    alu_comp : alu port map(clk, act_do, tmp_do, flags_in,
+    alu_comp : alu port map(clk, act_out, tmp_out, flags_in,
                             cw.alu_op, cw.alu_bs,
-                            alu_result, flags_out);
-    act : reg_8 port map(clk, cbi.reset, cw.act_rd, '1', acc, act_do);
-    tmp : reg_8 port map(clk, cbi.reset, cw.tmp_rd, '1', dbus, tmp_do);
-    dbus <= tmp_do when cw.tmp_wr = '1' else (others => 'Z');
-    dbus <= alu_result when cw.alu_wr = '1' else (others => 'Z');
-
+                            alu_out, flags_out);
+    act : reg generic map(8)
+              port map(clk, cbi.reset, cw.act_rd, acc, act_out);
+    tmp : reg generic map(8)
+              port map(clk, cbi.reset, cw.tmp_rd, dbus, tmp_out);
 
     -- -- BUSES -- --
-    -- data bus, buffer both ways
-    dbufi : buf8 port map(clk, cbi.reset, cw.data_rdi, cw.data_wri,
-                          data, dbus);
-    dbufo : buf8 port map(clk, cbi.reset, cw.data_rdo, cw.data_wro,
-                          dbus, data);
+    -- mux bus input
+    with cw.dbus_src select
+        dbus <= x"22"       when none,
+                rf_do       when rf_o,
+                tmp_out     when tmp_o,
+                dbufi_out   when ext_o,
+                alu_out     when alu_o;
+    with cw.abus_src select
+        abus <= x"2222"     when none,
+                rf_ao       when rf_o,
+                tmpa_out    when tmpa_o,
+                pc_out      when pc_o,
+                dis_out     when dis_o;
+    -- buffer dbus both ways
+    dbufi : buf generic map(8)
+                port map(clk, cbi.reset, cw.data_rdi, data_in, dbufi_out);
+    dbufo : buf generic map(8)
+                port map(clk, cbi.reset, cw.data_rdo, dbus, dbufo_out);
+    data_out <= dbufo_out when cw.data_wro = '1' else x"00";
 
-    -- addr bus, buffer outgoing
-    abuf : buf16 port map(clk, cbi.reset, cw.addr_rd, cw.addr_wr,
-                              abus, addr);
+    -- buffer abus outgoing
+    abuf : buf generic map(16)
+               port map(clk, cbi.reset, cw.addr_rd, abus, addr);
 
     -- debug
     dbg.pc <= pc_out;
     dbg.cw <= cw;
     dbg.abus <= abus;
-    dbg.ir <= ir_do;
-    dbg.tmp <= tmp_do;
-    dbg.act <= act_do;
+    dbg.ir <= ir_out;
+    dbg.tmp <= tmp_out;
+    dbg.act <= act_out;
     dbg.dbus <= dbus;
 end arch;

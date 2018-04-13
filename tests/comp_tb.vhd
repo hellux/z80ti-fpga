@@ -29,7 +29,7 @@ begin
     btns <= (1 => rst, others => '0');
     process begin
         rst <= '0';
-        wait for 20 us;
+        wait for 1515 ns;
         rst <= '1';
         wait for 348 ns;
         rst <= '0';

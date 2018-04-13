@@ -10,7 +10,7 @@ package z80_comm is
                      rrc_i, rr_i, sra_i, srl_i,
                      daa_i, cpl_i, scf_i, ccf_i);
     type rf_swap_t is (none, af, reg, dehl);
-    type addr_in_op_t is (inc, none, dec);
+    type addr_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
 
     -- control signals for id
@@ -48,26 +48,29 @@ package z80_comm is
         busack : std_logic;
     end record;
 
+    type dbus_src_t is (none, rf_o, tmp_o, ext_o, alu_o);
+    type abus_src_t is (none, rf_o, tmpa_o, pc_o, dis_o);
+
     type ctrlword is record 
-        -- registers
+        -- buses / registers
+        dbus_src : dbus_src_t;
+        abus_src : abus_src_t;
         rf_addr : integer range 0 to 15;
-        rf_rdd, rf_rda, rf_wrd, rf_wra : std_logic;
+        rf_rdd, rf_rda : std_logic;
         rf_swp : rf_swap_t;
         f_rd : std_logic;
         ir_rd : std_logic;
-        tmpa_rd, tmpa_wr : std_logic;
-        pc_rd, pc_wr : std_logic;
-        pc_disp : std_logic;
-        dis_wr : std_logic;
-        addr_in_op : addr_in_op_t;
+        tmpa_rd : std_logic;
+        pc_rd : std_logic;
+        pc_dis : std_logic;
+        addr_op : addr_op_t;
         -- alu
-        alu_wr : std_logic;
         alu_op : instr_t;
         alu_bs : integer range 0 to 7;
         act_rd : std_logic;
-        tmp_rd, tmp_wr : std_logic;
+        tmp_rd : std_logic;
         -- buffers
-        data_rdi, data_wri, data_rdo, data_wro : std_logic;
+        data_rdi, data_rdo, data_wro : std_logic;
         addr_rd, addr_wr : std_logic;
     end record;
 

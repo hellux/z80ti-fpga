@@ -24,12 +24,12 @@ entity regfile is port(
     clk, rst : in std_logic;
     reg_addr : in integer range 0 to 15;
     rdd, rda, rdf : in std_logic;
-    wrd, wra : in std_logic;
     swp : in rf_swap_t;
     -- buses
-    data : inout std_logic_vector(7 downto 0);
-    addr : in std_logic_vector(15 downto 0);
+    data_in: in std_logic_vector(7 downto 0);
+    addr_in : in std_logic_vector(15 downto 0);
     f_in : in std_logic_vector(7 downto 0);
+    data_out: out std_logic_vector(7 downto 0);
     addr_out, addr_out_dis : out std_logic_vector(15 downto 0);
     a_out, f_out : out std_logic_vector(7 downto 0);
     -- debug
@@ -78,12 +78,12 @@ architecture arch of regfile is
         return ram(w) & ram(w + 1);
     end get_word;
 
-    function next_ram(signal ram : rf_ram_t;
-                      signal s : rf_swap_state_t;
-                      signal reg_addr : integer range 0 to 15;
-                      signal rdd, rda, rdf : std_logic;
-                      signal data, f : std_logic_vector(7 downto 0);
-                      signal addr : std_logic_vector(15 downto 0))
+    function next_ram(signal ram : in rf_ram_t;
+                      signal s : in rf_swap_state_t;
+                      signal reg_addr : in integer range 0 to 15;
+                      signal rdd, rda, rdf : in std_logic;
+                      signal data, f : in std_logic_vector(7 downto 0);
+                      signal addr : in std_logic_vector(15 downto 0))
     return rf_ram_t is
         variable new_ram : rf_ram_t;
     begin
@@ -129,14 +129,15 @@ begin
         end if;
     end process;
 
-    ram_next <= next_ram(ram, s, reg_addr, rdd, rda, rdf, data, f_in, addr);
+    ram_next <= next_ram(ram, s,
+                         reg_addr, rdd, rda, rdf,
+                         data_in, f_in, addr_in);
 
     a_out    <= ram(baddr(regA, s));
     f_out    <= ram(baddr(regF, s));
     addr_out_dis <= get_word(reg_addr, ram, s);
-    addr_out <= get_word(reg_addr, ram, s)
-        when wra  = '1' else (others => 'Z');
-    data <= ram(baddr(reg_addr, s)) when wrd  = '1' else (others => 'Z');
+    addr_out <= get_word(reg_addr, ram, s);
+    data_out <= ram(baddr(reg_addr, s));
 
     -- output registers for debug
     dbg_regs.BC <= get_word(regBC, ram, s);

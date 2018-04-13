@@ -42,11 +42,13 @@ architecture Behavioral of op_decoder is
         -- reset all signals to defaults (overwrite below)
         f.ct := (others => '0'); -- reset internal ctrl signals
         f.cb := (others => '0'); -- reset control bus out signals
-        f.cw := (rf_addr => 0,
+        f.cw := (dbus_src => none,
+                 abus_src => none,
+                 rf_addr => 0,
                  rf_swp => none,
                  alu_op => unknown,
                  alu_bs => 0,
-                 addr_in_op => inc,
+                 addr_op => inc,
                  others => '0');
 
         -- mem_rd phase

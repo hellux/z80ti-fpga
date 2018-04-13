@@ -17,7 +17,8 @@ architecture arch of comp is
         cbi : in ctrlbus_in;
         cbo : out ctrlbus_out;
         addr : out std_logic_vector(15 downto 0);
-        data : inout std_logic_vector(7 downto 0);
+        data_in : in std_logic_vector(7 downto 0);
+        data_out : out std_logic_vector(7 downto 0);
     -- debug
         dbg : out dbg_z80_t);
     end component;
@@ -27,35 +28,29 @@ architecture arch of comp is
         cbi : out ctrlbus_in;
         cbo : in ctrlbus_out;
         addr : in std_logic_vector(15 downto 0);
-        data : inout std_logic_vector(7 downto 0));
+        data_in : in std_logic_vector(7 downto 0);
+        data_out : out std_logic_vector(7 downto 0));
     end component;
 
-    --component monitor port(
-    --    clk, rst : in std_logic;
-    --    btns : in std_logic_vector(4 downto 0);
-    --    sw : in std_logic_vector(7 downto 0);
-    --    dbg : in dbg_z80_t;
-    --    seg, led : out std_logic_vector(7 downto 0);
-    --    an : out std_logic_vector(3 downto 0));
-    --end component;
-    component segment port(
+    component monitor port(
         clk, rst : in std_logic;
-        value : in std_logic_vector(15 downto 0);
-        dp_num : in unsigned(3 downto 0);
-        seg : out std_logic_vector(7 downto 0);
+        btns : in std_logic_vector(4 downto 0);
+        sw : in std_logic_vector(7 downto 0);
+        dbg : in dbg_z80_t;
+        seg, led : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
 
     signal cbi, cbi_mem, cbi_ext : ctrlbus_in;
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
-    signal data : std_logic_vector(7 downto 0);
+    signal data, data_z80, data_mem : std_logic_vector(7 downto 0);
     signal dbg_z80 : dbg_z80_t;
     
     signal rst : std_logic;
 
     signal clk_z80 : std_logic;
-    signal clk_div : integer range 0 to 100000000;
+    signal clk_div : integer range 0 to 25;
 
     signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
 begin
@@ -71,7 +66,7 @@ begin
         if rising_edge(clk) then
             if btns(1) = '1' then
                 clk_div <= 0;
-            elsif clk_div = 100000000 then
+            elsif clk_div = 25 then
                 clk_div <= 0;
             else
                 clk_div <= clk_div + 1;
@@ -80,16 +75,13 @@ begin
     end process;
     clk_z80 <= '1' when clk_div = 0 else '0'; -- 4 MHz
 
-    rst <= btns_op(1);
+    rst <= btns(1);
 
-    cpu : z80 port map(clk_z80, cbi, cbo, addr, data, dbg_z80);
-    ram : mem port map(clk_z80, rst, cbi_mem, cbo, addr, data);
-    --mon : monitor port map(clk, rst, btns_op, sw, dbg_z80, seg, led, an);
-    smt : segment port map(clk, rst, dbg_z80.ir & dbg_z80.dbus, "0000", seg, an);
-    led(7 downto 5) <= std_logic_vector(to_unsigned(dbg_z80.id.state.m, 3));
-    led(4) <= dbg_z80.id.ctrl.cycle_end;
-    led(3) <= dbg_z80.id.ctrl.instr_end;
-    led(2 downto 0) <= std_logic_vector(to_unsigned(dbg_z80.id.state.t, 3));
+    cpu : z80 port map(clk, cbi, cbo, addr, data, data_z80, dbg_z80);
+    ram : mem port map(clk, rst, cbi_mem, cbo, addr, data, data_mem);
+    mon : monitor port map(clk, rst, btns_op, sw, dbg_z80, seg, led, an);
+
+    data <= data_z80 or data_mem; -- or instead of tristate
 
     cbi_ext <= (reset => rst, others => '0');
 

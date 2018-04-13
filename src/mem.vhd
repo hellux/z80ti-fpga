@@ -8,7 +8,8 @@ entity mem is port(
     cbi : out ctrlbus_in;
     cbo : in ctrlbus_out;
     addr : in std_logic_vector(15 downto 0);
-    data : inout std_logic_vector(7 downto 0));
+    data_in : in std_logic_vector(7 downto 0);
+    data_out : out std_logic_vector(7 downto 0));
 end mem;
 
 architecture arch of mem is
@@ -320,9 +321,12 @@ begin
             end if;
         end if;
     end process;
-    a <= to_integer(unsigned(addr));
-    word_next <= data when cbo.mreq = '1' and cbo.wr = '1' else mem(a);
-    data <= mem(a) when cbo.mreq = '1' and cbo.rd = '1' else (others => 'Z');
+
+    a <= to_integer(unsigned(addr)) when cbo.mreq = '1' else 0;
+    word_next <= data_in 
+        when a > 63 or (cbo.mreq = '1' and cbo.wr = '1') else mem(a);
+    data_out <= mem(a)
+        when a < 64 and cbo.mreq = '1' and cbo.rd = '1' else x"00";
 
     cbi.reset <= '0';
     cbi.wt <= '0';
