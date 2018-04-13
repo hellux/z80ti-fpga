@@ -134,11 +134,13 @@ begin
         '-'      when others;
 
     with op select flags_out(C_f) <=
-    '0'             when and_i|or_i|xor_i,
-    calc_result(8)  when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|daa_i,
-    op2(7)          when rlc_i|rl_i|sla_i|sll_i,
-    op2(0)          when rrc_i|rr_i|sra_i|srl_i,
-    flags_in(C_f)   when others;
+    '0'                 when and_i|or_i|xor_i,
+    calc_result(8)      when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|daa_i,
+    op2(7)              when rlc_i|rl_i|sla_i|sll_i,
+    op2(0)              when rrc_i|rr_i|sra_i|srl_i,
+    '1'                 when scf_i,
+    not flags_in(C_f)   when ccf_i,
+    flags_in(C_f)       when others;
 
     with op select flags_out(N_f) <=
         '1'             when sub_i|sbc_i|cp_i|neg_i,
@@ -160,14 +162,18 @@ begin
         half_add when add_i|adc_i|inc_i|dec_i,
         half_sub when sub_i|sbc_i|cp_i|neg_i,
         half_daa when daa_i,
-        '1' when others;
+        '0'      when scf_i,
+        flags_in(C_f) when ccf_i,
+        '1'      when others;
 
     flags_out(f5_f) <= result_buf(5);
 
-    flags_out(Z_f) <=
-        not result_buf(bit_select) when op = bit_i else
-        '1'                        when result_buf = 0 else
-        '0';
+    with op select flags_out(Z_f) <=
+        not result_buf(bit_select)  when bit_i,
+        flags_in(Z_f)               when scf_i|ccf_i,
+        bool_sl(result_buf = 0)     when others;
 
-    flags_out(S_f) <= result_buf(7);
+    with op select flags_out(S_f) <= 
+        flags_in(S_f) when scf_i|ccf_i,
+        result_buf(7) when others;
 end arch;
