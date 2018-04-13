@@ -236,7 +236,32 @@ begin
              x"00", x"3C", daa_i, 0, "00000000", "00-1-100", x"42");
              -- OBS!! Half carry or not??????
  
-        assert false report "TB COMPLETE" severity failure;
+        report "scf";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"00", scf_i, 0, "00000000", "00-0-001", x"00"); 
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"3C", scf_i, 0, "00000000", "00-0-001", x"3C");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"1D", x"19", scf_i, 0, "00000000", "00-0-001", x"19");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"CD", x"AB", scf_i, 0, "11111110", "11-0-101", x"AB");
+       
+        report "ccf";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"00", ccf_i, 0, "00000000", "00-0-001", x"00");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"00", ccf_i, 0, "00000001", "00-1-000", x"00");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"AC", x"14", ccf_i, 0, "11000101", "11-1-100", x"14");
+
+        report "cpl";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"FF", cpl_i, 0, "00000000", "00-1-010", x"00");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"D2", x"B4", cpl_i, 0, "00000000", "00-1-010", x"4B");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"D2", x"B4", cpl_i, 0, "00000000", "00-1-010", x"4B");
+             assert false report "TB COMPLETE" severity failure;
      end process;
 
  end arch;

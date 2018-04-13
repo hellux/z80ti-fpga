@@ -47,7 +47,7 @@ architecture arch of comp is
     
     signal rst : std_logic;
 
-    signal clk_z80 : std_logic;
+    signal clk4 : std_logic;
     signal clk_div : integer range 0 to 100000000;
 
     signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
@@ -71,9 +71,9 @@ begin
             end if;
         end if;
     end process;
-    clk_z80 <= '1' when clk_div = 0 else '0'; -- 4 MHz
+    clk4 <= '1' when clk_div = 0 else '0'; -- 4 MHz
 
-    rst <= btns_op(1);
+    rst <= btns(1);
 
     cpu : z80 port map(clk, cbi, cbo, addr, data, dbg_z80);
     ram : mem port map(clk, rst, cbi_mem, cbo, addr, data);
