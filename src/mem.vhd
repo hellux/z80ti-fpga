@@ -308,6 +308,9 @@ architecture arch of mem is
          ld_nnx_a,
          x"08",
          x"00",
+         ld_nnx_hl,
+         x"0b",
+         x"00",
          others => nop);
 
     signal mem : mem_t := prgm_fpga;
