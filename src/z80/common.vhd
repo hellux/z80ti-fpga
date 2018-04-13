@@ -14,6 +14,25 @@ package z80_comm is
     type addr_in_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
 
+    -- control signals for id
+    type id_ctrl_t is record
+        mode_end : std_logic;       -- last state of current mode
+        cycle_end : std_logic;      -- last state of current cycle
+        instr_end : std_logic;      -- last state of current instr
+        jump : std_logic;           -- use wz when fetching on next cycle
+    end record;
+    type id_mode_t is (
+        main, ed, cb, dd, ddcb, fd, fdcb, -- exec prefixes
+        wz                                -- use wz instead of pc on fetch
+    );
+    -- current state/context of cpu
+    type id_state_t is record
+        mode : id_mode_t;
+        cc : cond_t;
+        m : integer range 1 to 6;
+        t : integer range 1 to 6;
+    end record;
+
     type ctrlbus_in is record
         -- cpu control
         wt, int, nmi, reset : std_logic;
@@ -37,6 +56,7 @@ package z80_comm is
         rf_swp : rf_swap_t;
         f_rd : std_logic;
         ir_rd : std_logic;
+        tmpa_rd, tmpa_wr : std_logic;
         pc_rd, pc_wr : std_logic;
         pc_disp : std_logic;
         dis_wr : std_logic;
@@ -84,6 +104,7 @@ package z80_comm is
     constant t3 : integer := 3;
     constant t4 : integer := 4;
     constant t5 : integer := 5;
+    constant t6 : integer := 6;
 
     -- reg16
     constant regBC : integer := 0;
@@ -112,13 +133,19 @@ package z80_comm is
     constant regIYh : integer := 14;
     constant regIYl : integer := 15;
 
+    type dbg_id_t is record
+        state : id_state_t;
+        ctrl : id_ctrl_t;
+    end record;
     type dbg_regs_t is record
         BC, DE, HL, AF, WZ, SP, IX, IY : std_logic_vector(15 downto 0);
     end record;
     type dbg_z80_t is record
         regs : dbg_regs_t;
+        cw : ctrlword;
         pc, abus : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
+        id : dbg_id_t;
     end record;
 end z80_comm;
 

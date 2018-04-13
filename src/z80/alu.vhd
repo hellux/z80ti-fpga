@@ -35,14 +35,9 @@ architecture arch of alu is
     signal overflow, overflow_neg, parity : std_logic;
 begin
     -- preprocess
-    mask_gen : process(bit_select) is
-        variable m : std_logic_vector(7 downto 0);
-    begin
-        m := x"01";
-        for i in 1 to bit_select loop
-            m := m(6 downto 0) & '0';
-        end loop;
-        mask <= m;
+    mask_gen : process(bit_select) is begin
+        mask <= x"00";
+        mask(bit_select) <= '1';
     end process;
 
     daa_logic : process(op2) is

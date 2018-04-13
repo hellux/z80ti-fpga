@@ -9,7 +9,9 @@ entity op_decoder is port(
     cbi : in ctrlbus_in;
     cbo : out ctrlbus_out;
     instr, flags : in std_logic_vector(7 downto 0);
-    cw : out ctrlword);
+    cw : out ctrlword;
+    -- debug
+    dbg_id : out dbg_id_t);
 end op_decoder;
 
 architecture Behavioral of op_decoder is
@@ -20,12 +22,6 @@ architecture Behavioral of op_decoder is
     end record;
     type rp_table_t is array(0 to 3) of integer range 0 to 15;
     type alu_table_t is array(0 to 7) of instr_t;
-
-    signal split : id_split_t;
-    signal state : id_state_t := (mode => main, cc => (others => false),
-                                  m => m1, t => t1);
-    signal ctrl : id_ctrl_t;
-    signal f : id_frame_t;
 
     constant rp  : rp_table_t := (regBC, regDE, regHL, regSP);
     constant rp2 : rp_table_t := (regBC, regDE, regHL, regAF);
@@ -53,10 +49,10 @@ architecture Behavioral of op_decoder is
                  addr_in_op => inc,
                  others => '0');
 
-        -- fetch phase
+        -- mem_rd phase
          if state.m = m1 then
             f.cb.m1 := '1';
-            fetch_instr(state, f);
+            mem_rd_instr(state, f);
         end if;
 
         -- exec phase
@@ -69,30 +65,30 @@ architecture Behavioral of op_decoder is
                     case s.y is
                     when 0 => nop(state, f); -- NOP
                     when 1 => ex(state, f, af); -- EX AF, AF'
-                    when 2 => null; -- DJNZ d
-                    when 3 => null; jr_d(state, f);
+                    when 2 => nop(state, f); -- DJNZ d
+                    when 3 => jr_d(state, f);
                     when 4|5|6|7 => jr_cc_d(state, f, s.y-4); -- JR cc[y-4] d
                     end case;
                 when 1 =>
                     case s.q is
                     when 0 => ld_rp_nn(state, f, rp(s.p)); -- LD rp[p], nn
-                    when 1 => null; -- ADD hl, rp[p]
+                    when 1 => nop(state, f); -- ADD hl, rp[p]
                     end case;
                 when 2 =>
                     case s.q is
                     when 0 => 
                         case s.p is
-                        when 0 => null; -- LD (BC), A
-                        when 1 => null; -- LD (DE), A
-                        when 2 => null; -- LD (nn), HL
-                        when 3 => null; -- LD (nn), A
+                        when 0 => ld_rpx_a(state, f, regBC); -- LD (BC), A
+                        when 1 => ld_rpx_a(state, f, regDE); -- LD (DE), A
+                        when 2 => nop(state, f); -- LD (nn), HL
+                        when 3 => nop(state, f); -- LD (nn), A
                         end case;
                     when 1 => 
                         case s.p is
-                        when 0 => null; -- LD A, (BC)
-                        when 1 => null; -- LD A, (DE)
-                        when 2 => null; -- LD HL, (nn)
-                        when 3 => null; -- LD A, (nn)
+                        when 0 => nop(state, f); -- LD A, (BC)
+                        when 1 => nop(state, f); -- LD A, (DE)
+                        when 2 => nop(state, f); -- LD HL, (nn)
+                        when 3 => nop(state, f); -- LD A, (nn)
                         end case;
                     end case;
                 when 3 => -- INC/DEC rp[y];
@@ -122,44 +118,44 @@ architecture Behavioral of op_decoder is
                 end case;
             when 3 =>
                 case s.z is
-                when 0 => null; -- RET cc[y]
-                when 1 => null;
+                when 0 => nop(state, f); -- RET cc[y]
+                when 1 => nop(state, f);
                     case s.q is
-                    when 0 => null; -- POP rp2[p]
+                    when 0 => nop(state, f); -- POP rp2[p]
                     when 1 =>
                         case s.p is
-                        when 0 => null; -- RET
-                        when 1 => null; ex(state, f, reg); -- EXX
-                        when 2 => null; jp_hl(state, f); -- JP HL
-                        when 3 => null; -- LD SP, HL
+                        when 0 => nop(state, f); -- RET
+                        when 1 => ex(state, f, reg); -- EXX
+                        when 2 => jp_hl(state, f); -- JP HL
+                        when 3 => ld_sp_hl(state, f); -- LD SP, HL
                         end case;
                     end case;
                 when 2 => jp_cc_nn(state, f, s.y); -- JP cc[y], nn
                 when 3 =>
                     case s.y is
                     when 0 => jp_nn(state, f);
-                    when 1 => fetch_multi(state, f); -- (CB/DDCD/FDCB)
-                    when 2 => null; -- OUT (n), A
-                    when 3 => null; -- IN A, (n)
-                    when 4 => null; -- EX (SP), HL
-                    when 5 => null; ex(state, f, dehl); -- EX DE, HL
-                    when 6 => null; -- DI
-                    when 7 => null; -- EI
+                    when 1 => mem_rd_multi(state, f); -- (CB/DDCD/FDCB)
+                    when 2 => nop(state, f); -- OUT (n), A
+                    when 3 => nop(state, f); -- IN A, (n)
+                    when 4 => nop(state, f); -- EX (SP), HL
+                    when 5 => ex(state, f, dehl); -- EX DE, HL
+                    when 6 => nop(state, f); -- DI
+                    when 7 => nop(state, f); -- EI
                     end case;
-                when 4 => null; -- CALL cc[y], nn
-                when 5 => null;
+                when 4 => nop(state, f); -- CALL cc[y], nn
+                when 5 =>
                     case s.q is
                     when 0 => null; -- PUSH rp2[p]
                     when 1 =>
                         case s.p is
-                        when 0 => null; -- CALL nn
-                        when 1 => fetch_multi(state, f); -- (DD)
-                        when 2 => fetch_multi(state, f); -- (ED)
-                        when 3 => fetch_multi(state, f); -- (FD)
+                        when 0 => nop(state, f); -- CALL nn
+                        when 1 => mem_rd_multi(state, f); -- (DD)
+                        when 2 => mem_rd_multi(state, f); -- (ED)
+                        when 3 => mem_rd_multi(state, f); -- (FD)
                         end case;
                     end case;
-                when 6 => null; alu_a_n(state, f, alu(s.y)); -- alu[y] n
-                when 7 => null; -- RST y*8
+                when 6 => alu_a_n(state, f, alu(s.y)); -- alu[y] n
+                when 7 => nop(state, f); -- RST y*8
                 end case;
             end case;
         when ed =>
@@ -168,48 +164,48 @@ architecture Behavioral of op_decoder is
                 case s.z is
                 when 0 =>
                     case s.y is
-                    when 6 => null; -- IN (C)
-                    when others => null; -- IN r[y], (C)
+                    when 6 => nop(state, f); -- IN (C)
+                    when others => nop(state, f); -- IN r[y], (C)
                     end case;
                 when 1 =>
                     case s.y is
-                    when 6 => null; -- OUT (C), 0
-                    when others => null; -- OUT r[y], (C)
+                    when 6 => nop(state, f); -- OUT (C), 0
+                    when others => nop(state, f); -- OUT r[y], (C)
                     end case;
                 when 2 =>
                     case s.q is
-                    when 0 => null; -- SBC HL, rp[p]
-                    when 1 => null; -- ADC HL, rp[p]
+                    when 0 => nop(state, f); -- SBC HL, rp[p]
+                    when 1 => nop(state, f); -- ADC HL, rp[p]
                     end case;
                 when 3 =>
                     case s.q is
-                    when 0 => null; -- LD (nn), rp[p]
-                    when 1 => null; -- LD rp[p], (nn)
+                    when 0 => nop(state, f); -- LD (nn), rp[p]
+                    when 1 => nop(state, f); -- LD rp[p], (nn)
                     end case;
                 when 4 => alu_af(state, f, neg_i) ; -- NEG;
                 when 5 =>
                     case s.y is
-                    when 1 => null; -- RETI
-                    when others => null; -- RETN
+                    when 1 => nop(state, f); -- RETI
+                    when others => nop(state, f); -- RETN
                     end case;
-                when 6 => null; -- IM im[y]
+                when 6 => nop(state, f); -- IM im[y]
                 when 7 =>
                     case s.y is
-                    when 0 => null; -- LD I, A
-                    when 1 => null; -- LD R, A
-                    when 2 => null; -- LD A, I
-                    when 3 => null; -- LD A, R
-                    when 4 => null; -- RRD
-                    when 5 => null; -- RLD
+                    when 0 => nop(state, f); -- LD I, A
+                    when 1 => nop(state, f); -- LD R, A
+                    when 2 => nop(state, f); -- LD A, I
+                    when 3 => nop(state, f); -- LD A, R
+                    when 4 => nop(state, f); -- RRD
+                    when 5 => nop(state, f); -- RLD
                     when 6|7 => nop(state, f);
                     end case;
                 end case;
             when 2 =>
                 case s.y is
-                when 4|5|6|7 => null; -- bli[y,z]
-                when others => null; -- NONI
+                when 4|5|6|7 => nop(state, f); -- bli[y,z]
+                when others => nop(state, f); -- NONI
                 end case;
-            when 0|3 => null; end case; -- NONI
+            when 0|3 => nop(state, f); end case; -- NONI
         when cb =>
             case s.x is
             when 0 => bit_r(state, f, rot(s.y), 0, s.z);
@@ -221,27 +217,33 @@ architecture Behavioral of op_decoder is
             case s.x is
             when 0 =>
                 case s.z is
-                when 6 => -- rot[y] (IX/Y+d)
-                when others => -- LD r[z], rot[y] (IX/Y+d)
+                when 6 => nop(state, f); -- rot[y] (IX/Y+d)
+                when others => nop(state, f); -- LD r[z], rot[y] (IX/Y+d)
                 end case;
-            when 1 => -- BIT y, (IX/Y+d)
+            when 1 => nop(state, f); -- BIT y, (IX/Y+d)
             when 2 =>
                 case s.z is
-                when 6 => -- res y, (IX/Y+d)
-                when others => -- LD r[z], res y, (IX/Y+d)
+                when 6 => nop(state, f); -- res y, (IX/Y+d)
+                when others => nop(state, f); -- LD r[z], res y, (IX/Y+d)
                 end case;
             when 3 =>
                 case s.z is
-                when 6 => -- set y, (IX/Y+d)
-                when others => -- LD r[z], set y, (IX/Y+d)
+                when 6 => nop(state, f); -- set y, (IX/Y+d)
+                when others => nop(state, f); -- LD r[z], set y, (IX/Y+d)
                 end case;
             end case;
-        when dd|fd => null; -- TODO
+        when dd|fd => nop(state, f); -- TODO
         when wz => null;
         end case;
 
         return f;
     end decode;
+
+    signal split : id_split_t;
+    signal state : id_state_t := (mode => main, cc => (others => false),
+                                  m => m1, t => t1);
+    signal ctrl : id_ctrl_t := (others => '0');
+    signal f : id_frame_t;
 begin
     -- split instruction as
     --     | p | |q|
@@ -318,4 +320,7 @@ begin
             end if;
         end if;
     end process;
+
+    dbg_id.state <= state;
+    dbg_id.ctrl <= ctrl;
  end Behavioral;

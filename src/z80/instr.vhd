@@ -3,27 +3,6 @@ use ieee.std_logic_1164.all;
 use work.z80_comm.all;
 
 package z80_instr is
-    -- control signals for id
-    type id_ctrl_t is record
-        mode_end : std_logic;       -- last state of current mode
-        cycle_end : std_logic;      -- last state of current cycle
-        instr_end : std_logic;      -- last state of current instr
-        jump : std_logic;           -- use wz when fetching on next cycle
-    end record;
-
-    type id_mode_t is (
-        main, ed, cb, dd, ddcb, fd, fdcb, -- exec prefixes
-        wz                                -- use wz instead of pc on fetch
-    );
-
-    -- current state/context of cpu
-    type id_state_t is record
-        mode : id_mode_t;
-        cc : cond_t;
-        m : integer range 1 to 6;
-        t : integer range 1 to 6;
-    end record;
-
     -- container for out signals
     type id_frame_t is record
         ct : id_ctrl_t;
@@ -34,15 +13,18 @@ package z80_instr is
     function during_t(signal state : in id_state_t; constant t : in integer)
     return std_logic;
     -- t1: abus:addr -> t3: dbus:data
-    procedure fetch(signal state : in id_state_t;
-                    variable f : out id_frame_t);
+    procedure mem_rd(signal state : in id_state_t;
+                     variable f : out id_frame_t);
     -- -> t3: dbus:data, pc++
-    procedure fetch_pc(signal state : in id_state_t;
-                       variable f : out id_frame_t);
-    procedure fetch_instr(signal state : in id_state_t;
-                          variable f : out id_frame_t);
-    procedure fetch_multi(signal state : in id_state_t;
-                          variable f : out id_frame_t);
+    procedure mem_rd_pc(signal state : in id_state_t;
+                        variable f : out id_frame_t);
+    procedure mem_rd_instr(signal state : in id_state_t;
+                           variable f : out id_frame_t);
+    procedure mem_rd_multi(signal state : in id_state_t;
+                           variable f : out id_frame_t);
+    procedure mem_wr(signal state : in id_state_t;
+                     variable f : out id_frame_t);
+
     -- INSTRUCTIONS
     procedure nop(signal state : in id_state_t;
                   variable f : out id_frame_t);
@@ -92,6 +74,11 @@ package z80_instr is
     procedure ld_rp_nn(signal state : in id_state_t;
                        variable f : out id_frame_t;
                        reg: in integer range 0 to 7);
+    procedure ld_sp_hl(signal state : in id_state_t;
+                       variable f : out id_frame_t);
+    procedure ld_rpx_a(signal state : in id_state_t;
+                       variable f : out id_frame_t;
+                       reg : integer range 0 to 15);
 end z80_instr;
 
 package body z80_instr is
@@ -105,8 +92,8 @@ package body z80_instr is
         end if;
     end during_t;
 
-    procedure fetch(signal state : in id_state_t;
-                    variable f : out id_frame_t)
+    procedure mem_rd(signal state : in id_state_t;
+                     variable f : out id_frame_t)
     is begin
         case state.t is
         when t1 =>
@@ -122,12 +109,12 @@ package body z80_instr is
         when t3 =>
             f.cw.data_wri := '1';   -- write instr to inner dbus from buf
         when others => null; end case;
-    end fetch;
+    end mem_rd;
 
-    procedure fetch_pc(signal state : in id_state_t;
-                       variable f : out id_frame_t)
+    procedure mem_rd_pc(signal state : in id_state_t;
+                        variable f : out id_frame_t)
     is begin
-        fetch(state, f);
+        mem_rd(state, f);
         case state.t is
         when t1 =>
             f.cw.pc_wr := '1';
@@ -136,12 +123,12 @@ package body z80_instr is
             f.cw.pc_rd := '1';
         when t3 =>
         when others => null; end case;
-    end fetch_pc;
+    end mem_rd_pc;
 
-    procedure fetch_instr(signal state : in id_state_t;
-                          variable f : out id_frame_t)
+    procedure mem_rd_instr(signal state : in id_state_t;
+                           variable f : out id_frame_t)
     is begin
-        fetch(state, f);
+        mem_rd(state, f);
         case state.t is
         when t1 =>
             if state.mode = wz then
@@ -162,23 +149,44 @@ package body z80_instr is
         when t3 =>
             f.cw.ir_rd := '1';      -- read instr from dbus to ir
         when others => null; end case;
-    end fetch_instr;
+    end mem_rd_instr;
 
-    procedure fetch_multi(
+    procedure mem_rd_multi(
         signal state : in id_state_t;
         variable f : out id_frame_t)
     is begin
         case state.m is
         when m1 => f.ct.cycle_end := during_t(state, t4); -- end m1
         when others =>
-            fetch_instr(state, f);      -- fetch next byte
+            mem_rd_instr(state, f);     -- mem_rd next byte
             case state.t is
             when t3 =>
                 f.ct.mode_end := '1';   -- update mode to prefix
                 f.ct.cycle_end := '1';  -- end mcycle
             when others => null; end case;
         end case;
-    end fetch_multi;
+    end mem_rd_multi;
+
+    procedure mem_wr(signal state : in id_state_t;
+                     variable f : out id_frame_t)
+    is begin
+        case state.t is
+        when t1 =>
+            f.cw.data_wro := '1';   -- send data to memory
+            f.cw.addr_rd := '1';    -- read from abus to buffer
+            f.cw.addr_wr := '1';    -- write from buffer to outside abus
+            f.cb.mreq := '1';       -- signal addr is ready on abus
+            f.cb.wr := '1';         -- signal addr is ready on abus
+        when t2 =>
+            f.cw.data_wro := '1';   -- keep sending data
+            f.cw.addr_wr := '1';    -- keep writing addr to mem
+            f.cb.mreq := '1';       -- keep request until byte read
+            f.cb.wr := '1';         -- keep reading
+        when t3 =>
+            f.cw.addr_wr := '1';    -- keep writing addr
+            f.cw.data_wro := '1';   -- keep sending data
+        when others => null; end case;
+    end mem_wr;
 
     procedure nop(
         signal state : in id_state_t;
@@ -197,7 +205,7 @@ package body z80_instr is
         case state.m is
         when m1 => f.ct.cycle_end := during_t(state, t4);
         when m2 =>
-            fetch_pc(state, f);
+            mem_rd_pc(state, f);
             case state.t is
             when t3 =>
                 f.cw.rf_addr := regZ;
@@ -205,7 +213,7 @@ package body z80_instr is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            fetch_pc(state, f);
+            mem_rd_pc(state, f);
             case state.t is
             when t3 =>
                 f.cw.rf_addr := regW;
@@ -228,10 +236,10 @@ package body z80_instr is
             when m1 =>
                 f.ct.cycle_end := during_t(state, t4);
             when m2 =>
-                fetch_pc(state, f); -- increment pc to skip nn
+                mem_rd_pc(state, f); -- increment pc to skip nn
                 f.ct.cycle_end := during_t(state, t3);
             when m3 =>
-                fetch_pc(state, f);
+                mem_rd_pc(state, f);
                 case state.t is
                 when t3 =>
                     f.ct.cycle_end := '1';
@@ -264,7 +272,7 @@ package body z80_instr is
         case state.m is
         when m1 => f.ct.cycle_end := during_t(state, t4);
         when m2 =>
-            fetch(state, f);
+            mem_rd(state, f);
             case state.t is
             when t1 =>
                 f.cw.pc_wr := '1';
@@ -302,7 +310,7 @@ package body z80_instr is
             when m1 =>
                 f.ct.cycle_end := during_t(state, t4);
             when m2 =>
-                fetch_pc(state, f); -- increment pc to skip nn
+                mem_rd_pc(state, f); -- increment pc to skip nn
                 case state.t is
                 when t3 =>
                     f.ct.cycle_end := '1';
@@ -344,7 +352,7 @@ package body z80_instr is
                 f.ct.cycle_end := '1';  -- signal new cycle
             when others => null; end case;
         when m2 =>
-            fetch_instr(state, f);      -- fetch next instr simultaneously
+            mem_rd_instr(state, f);      -- mem_rd next instr simultaneously
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;      -- tell alu operation
@@ -369,14 +377,14 @@ package body z80_instr is
                 f.ct.cycle_end := '1';  -- signal new cycle
             when others => null; end case;
         when m2 =>
-            fetch(state, f);
+            mem_rd(state, f);
             case state.t is
             when t3 => 
                 f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            fetch_instr(state, f);      -- fetch next instr simultaneously
+            mem_rd_instr(state, f);      -- mem_rd next instr simultaneously
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;      -- tell alu operation
@@ -404,7 +412,7 @@ package body z80_instr is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 =>
-            fetch_instr(state, f);
+            mem_rd_instr(state, f);
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;
@@ -431,7 +439,7 @@ package body z80_instr is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 =>
-            fetch_instr(state, f);
+            mem_rd_instr(state, f);
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;
@@ -460,7 +468,7 @@ package body z80_instr is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            fetch_instr(state, f);
+            mem_rd_instr(state, f);
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;
@@ -502,7 +510,7 @@ package body z80_instr is
         case state.m is
         when m1 => f.ct.cycle_end := during_t(state, t4);
         when m2 =>
-            fetch_pc(state, f);
+            mem_rd_pc(state, f);
             case state.t is
             when t3 =>
                 f.cw.rf_addr := reg;
@@ -521,7 +529,7 @@ package body z80_instr is
         when m1 =>
             f.ct.cycle_end := during_t(state, t4);
         when m2 => 
-            fetch(state, f);
+            mem_rd(state, f);
             case state.t is
             when t1 =>
                 f.cw.rf_addr := regHL;
@@ -542,7 +550,7 @@ package body z80_instr is
         case state.m is
         when m1 => f.ct.cycle_end := during_t(state, t4);
         when m2 =>
-            fetch_pc(state, f);
+            mem_rd_pc(state, f);
             case state.t is
             when t3 =>
                 f.cw.rf_addr := reg + 1; -- store to low byte
@@ -550,7 +558,7 @@ package body z80_instr is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            fetch_pc(state, f);
+            mem_rd_pc(state, f);
             case state.t is
             when t3 =>
                 f.cw.rf_addr := reg; -- store to high byte
@@ -560,4 +568,52 @@ package body z80_instr is
             when others => null; end case;
         when others => null; end case;
     end ld_rp_nn;
+
+    procedure ld_sp_hl(signal state : in id_state_t;
+                       variable f : out id_frame_t)
+    is begin
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := regHL;
+                f.cw.rf_wra := '1';
+                f.cw.tmpa_rd := '1';
+            when t5 =>
+                f.cw.tmpa_wr := '1';
+                f.cw.addr_in_op := none;
+                f.cw.rf_addr := regSP;
+                f.cw.rf_rda := '1';
+            when t6 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+    end ld_sp_hl;
+
+    procedure ld_rpx_a(signal state : in id_state_t;
+                       variable f : out id_frame_t;
+                       reg : integer range 0 to 15)
+    is begin
+        case state.m is
+            when m1 =>
+                case state.t is
+                when t4 =>
+                    f.cw.rf_addr := regA;
+                    f.cw.rf_wrd := '1';
+                    f.cw.data_rdo := '1';   -- store reg A in data buffer
+                    f.ct.cycle_end := '1';
+                when others => null; end case;
+            when m2 =>
+                mem_wr(state, f);
+                case state.t is
+                when t1 =>
+                    f.cw.rf_addr := reg;
+                    f.cw.rf_wra := '1';
+                when t3 =>
+                    f.ct.cycle_end := '1';
+                    f.ct.instr_end := '1';
+                when others => null; end case;
+            when others => null; end case;
+    end ld_rpx_a;
 end z80_instr;
