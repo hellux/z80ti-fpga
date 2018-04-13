@@ -15,10 +15,10 @@ architecture arch of comp_tb is
     signal clk, rst : std_logic;
     signal seg, led : std_logic_vector(7 downto 0);
     signal an : std_logic_vector(3 downto 0);
-    signal sw : std_logic_vector(7 downto 0);
+    signal sw : std_logic_vector(7 downto 0) := x"00";
     signal btns : std_logic_vector(4 downto 0);
 begin
-    c : comp port map(clk, btns, "00000000", seg, led, an);
+    c : comp port map(clk, btns, sw, seg, led, an);
     process begin
         clk <= '1';
         wait for 5 ns;

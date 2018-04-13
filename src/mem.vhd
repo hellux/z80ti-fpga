@@ -269,7 +269,9 @@ architecture arch of mem is
     -- bit instructions
     constant set_6_a    : std_logic_vector(7 downto 0) := x"f7";
 
-    type mem_t is array(0 to 63) of std_logic_vector(7 downto 0);
+    constant MEMSIZE : integer := 64;
+
+    type mem_t is array(0 to MEMSIZE-1) of std_logic_vector(7 downto 0);
     constant prgm_fpga : mem_t :=
         (nop,
          others => nop);
@@ -322,7 +324,7 @@ begin
         if rising_edge(clk) then
             if rst = '1' then
                 mem <= prgm_test;
-            else
+            elsif a < MEMSIZE then
                 mem(a) <= word_next;
             end if;
         end if;
@@ -330,9 +332,9 @@ begin
 
     a <= to_integer(unsigned(addr)) when cbo.mreq = '1' else 0;
     word_next <= data_in 
-        when a > 63 or (cbo.mreq = '1' and cbo.wr = '1') else mem(a);
+        when a >= MEMSIZE or (cbo.mreq = '1' and cbo.wr = '1') else mem(a);
     data_out <= mem(a)
-        when a < 64 and cbo.mreq = '1' and cbo.rd = '1' else x"00";
+        when a < MEMSIZE and cbo.mreq = '1' and cbo.rd = '1' else x"00";
 
     cbi.reset <= '0';
     cbi.wt <= '0';
