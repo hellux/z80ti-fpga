@@ -82,8 +82,8 @@ architecture Behavioral of op_decoder is
                         case s.p is
                         when 0 => ld_rpx_a(state, f, regBC); -- LD (BC), A
                         when 1 => ld_rpx_a(state, f, regDE); -- LD (DE), A
-                        when 2 => nop(state, f); -- LD (nn), HL
-                        when 3 => nop(state, f); -- LD (nn), A
+                        when 2 => ld_nnx_hl(state, f); -- LD (nn), HL
+                        when 3 => ld_nnx_a(state, f); -- LD (nn), A
                         end case;
                     when 1 => 
                         case s.p is

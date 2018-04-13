@@ -73,7 +73,7 @@ begin
             end if;
         end if;
     end process;
-    clk_z80 <= '1' when clk_div = 0 else '0'; -- 4 MHz
+    clk_z80 <= '1' when clk_div = 0 else '0';
 
     rst <= btns(1);
 

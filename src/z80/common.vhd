@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 package z80_comm is
+    function bool_sl(b : boolean) return std_logic;
     type instr_t is (unknown, 
                      add_i, adc_i, sub_i, sbc_i, cp_i, inc_i, dec_i, neg_i,
                      and_i, or_i, xor_i,
@@ -149,4 +150,15 @@ package z80_comm is
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
         id : dbg_id_t;
     end record;
+end z80_comm;
+
+package body z80_comm is
+    function bool_sl(b : boolean) return std_logic is 
+    begin
+        if b then
+            return '1';
+        else
+            return '0';
+        end if;
+    end bool_sl;
 end z80_comm;

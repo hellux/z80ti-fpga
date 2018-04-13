@@ -53,12 +53,13 @@ begin
         dbg.regs.ix             when "0110",
         dbg.regs.iy             when "0111",
         dbg.act & dbg.tmp       when "1000",
-        dbg.dbus & dbg.ir       when "1001",
+        dbg.ir & dbg.dbus       when "1001",
         dbg.abus                when "1010",
         dbg.pc                  when "1011",
         x"0123"                 when others;
 
     led(7 downto 5) <= std_logic_vector(to_unsigned(dbg.id.state.m, 3));
-    led(4 downto 3) <= "00";
+    led(4) <= dbg.id.ctrl.cycle_end;
+    led(3) <= dbg.id.ctrl.instr_end;
     led(2 downto 0) <= std_logic_vector(to_unsigned(dbg.id.state.t, 3));
 end arch;
