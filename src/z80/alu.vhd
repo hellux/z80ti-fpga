@@ -40,14 +40,14 @@ begin
         mask(bit_select) <= '1';
     end process;
 
-    daa_logic : process(op2) is
-	variable res, v : signed(8 downto 0);
+    daa_logic : process(op2, op2_ext, flags_in) is
+	    variable res, v : signed(8 downto 0);
     begin
         v := (others => '0');
         if (op2_ext(7 downto 4) > "1001" or flags_in(H_f) = '1') then
-            v := v + "000000110"; -- OBS!!! Half carry = 1????? 
+            v := v + "000000110";
         end if;
-        res := op2_ext+v;
+        res := op2_ext + v;
         if (op2_ext(3 downto 0) > "1001" or 
             res(8) = '1' or
             flags_in(C_f) = '1')

@@ -14,7 +14,7 @@ architecture arch of segment is
 	signal segments : std_logic_vector (6 downto 0);
     signal index_cntr : unsigned(17 downto 0) := (others => '0');
 	signal index : unsigned(1 downto 0) := (others => '0');
-	signal digit : std_logic_vector (3 downto 0);
+	signal digit : std_logic_vector(3 downto 0);
 begin
     process(clk) begin
         if rising_edge(clk) then 
@@ -27,7 +27,7 @@ begin
     end process;
      
     index <= index_cntr(17 downto 16);
-    seg <= (not dp_num(to_integer(index)) & segments);
+    seg <= (not dp_num(3-to_integer(index)) & segments);
 
     with index select digit <=
         value(15 downto 12) when "00",
