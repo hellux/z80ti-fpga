@@ -35,9 +35,14 @@ architecture arch of alu is
     signal overflow, overflow_neg, parity : std_logic;
 begin
     -- preprocess
-    mask_gen : process(bit_select) is begin
-        mask <= x"00";
-        mask(bit_select) <= '1';
+    mask_gen : process(bit_select) is
+        variable m : std_logic_vector(7 downto 0);
+    begin
+        m := x"01";
+        for i in 1 to bit_select loop
+            m := m(6 downto 0) & '0';
+        end loop;
+        mask <= m;
     end process;
 
     daa_logic : process(op2) is
@@ -101,6 +106,7 @@ begin
         op2sn      when others;
     result_buf <= calc_result(7 downto 0);
     with op select result <=
+        not(op2)                     when cpl_i,
         op1                          when cp_i,
         std_logic_vector(result_buf) when others;
 
@@ -138,7 +144,7 @@ begin
     flags_in(C_f)       when others;
 
     with op select flags_out(N_f) <=
-        '1'             when sub_i|sbc_i|cp_i|neg_i,
+        '1'             when sub_i|sbc_i|cp_i|neg_i|cpl_i,
         flags_in(N_f)   when daa_i,
         '0'             when others;
 
@@ -165,10 +171,10 @@ begin
 
     with op select flags_out(Z_f) <=
         not result_buf(bit_select)  when bit_i,
-        flags_in(Z_f)               when scf_i|ccf_i,
+        flags_in(Z_f)               when scf_i|ccf_i|cpl_i,
         bool_sl(result_buf = 0)     when others;
 
     with op select flags_out(S_f) <= 
-        flags_in(S_f) when scf_i|ccf_i,
+        flags_in(S_f) when scf_i|ccf_i|cpl_i,
         result_buf(7) when others;
 end arch;
