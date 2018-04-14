@@ -1,2 +1,6 @@
 src/z80/common.vhd
+src/segment.vhd
+tests/z80/id_fb_tb.vhd
+tests/z80/id_fb.vhd
+src/z80/instr.vhd
 src/z80/op_decoder.vhd
