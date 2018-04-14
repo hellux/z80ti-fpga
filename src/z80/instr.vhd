@@ -10,83 +10,83 @@ package z80_instr is
         cw : ctrlword;
     end record;
 
-    function during_t(signal state : in id_state_t; constant t : in integer)
+    function during_t(signal state : in state_t; constant t : in integer)
     return std_logic;
     -- t1: abus:addr -> t3: dbus:data
-    procedure mem_rd(signal state : in id_state_t;
+    procedure mem_rd(signal state : in state_t;
                      variable f : out id_frame_t);
     -- -> t3: dbus:data, pc++
-    procedure mem_rd_pc(signal state : in id_state_t;
+    procedure mem_rd_pc(signal state : in state_t;
                         variable f : out id_frame_t);
-    procedure mem_rd_instr(signal state : in id_state_t;
+    procedure mem_rd_instr(signal state : in state_t;
                            variable f : out id_frame_t);
-    procedure mem_rd_multi(signal state : in id_state_t;
+    procedure mem_rd_multi(signal state : in state_t;
                            variable f : out id_frame_t);
-    procedure mem_wr(signal state : in id_state_t;
+    procedure mem_wr(signal state : in state_t;
                      variable f : out id_frame_t);
 
     -- INSTRUCTIONS
-    procedure nop(signal state : in id_state_t;
+    procedure nop(signal state : in state_t;
                   variable f : out id_frame_t);
-    procedure jp_nn(signal state : in id_state_t;
+    procedure jp_nn(signal state : in state_t;
                     variable f : out id_frame_t);
-    procedure jp_cc_nn(signal state : in id_state_t;
+    procedure jp_cc_nn(signal state : in state_t;
                        variable f : out id_frame_t;
                        signal cond : in integer range 0 to 7);
-    procedure jp_hl(signal state : in id_state_t;
+    procedure jp_hl(signal state : in state_t;
                     variable f : out id_frame_t);
-    procedure jr_d(signal state : in id_state_t;
+    procedure jr_d(signal state : in state_t;
                    variable f : out id_frame_t);
-    procedure jr_cc_d(signal state : in id_state_t;
+    procedure jr_cc_d(signal state : in state_t;
                        variable f : out id_frame_t;
                        constant cond : in integer range 0 to 7);
-    procedure ex(signal state : in id_state_t;
+    procedure ex(signal state : in state_t;
                  variable f : out id_frame_t;
                  constant swp : rf_swap_t);
-    procedure alu_a_r(signal state : in id_state_t;
+    procedure alu_a_r(signal state : in state_t;
                       variable f : out id_frame_t;
                       constant op : in instr_t;
                       signal reg : in integer range 0 to 7);
-    procedure alu_a_n(signal state : in id_state_t;
+    procedure alu_a_n(signal state : in state_t;
                       variable f : out id_frame_t;
                       constant op : in instr_t);
-    procedure alu_r(signal state : in id_state_t;
+    procedure alu_r(signal state : in state_t;
                     variable f : out id_frame_t;
                     constant op : in instr_t;
                     signal reg : in integer range 0 to 7);
-    procedure alu_af(signal state : in id_state_t;
+    procedure alu_af(signal state : in state_t;
                      variable f : out id_frame_t;
                      constant op : in instr_t);
-    procedure bit_r(signal state : in id_state_t;
+    procedure bit_r(signal state : in state_t;
                     variable f : out id_frame_t;
                     constant op : in instr_t;
                     constant bs : in integer range 0 to 7;
                     signal reg : in integer range 0 to 7);
-    procedure ld_r_r(signal state : in id_state_t;
+    procedure ld_r_r(signal state : in state_t;
                      variable f : out id_frame_t;
                      signal src, dst : in integer range 0 to 7);
-    procedure ld_r_n(signal state : in id_state_t;
+    procedure ld_r_n(signal state : in state_t;
                      variable f : out id_frame_t;
                      signal reg: in integer range 0 to 7);
-    procedure ld_r_hlx(signal state : in id_state_t;
+    procedure ld_r_hlx(signal state : in state_t;
                        variable f : out id_frame_t;
                        signal reg : in integer range 0 to 7);
-    procedure ld_rp_nn(signal state : in id_state_t;
+    procedure ld_rp_nn(signal state : in state_t;
                        variable f : out id_frame_t;
                        constant reg: in integer range 0 to 7);
-    procedure ld_sp_hl(signal state : in id_state_t;
+    procedure ld_sp_hl(signal state : in state_t;
                        variable f : out id_frame_t);
-    procedure ld_rpx_a(signal state : in id_state_t;
+    procedure ld_rpx_a(signal state : in state_t;
                        variable f : out id_frame_t;
                        constant reg : integer range 0 to 15);
-    procedure ld_nnx_a(signal state : in id_state_t;
+    procedure ld_nnx_a(signal state : in state_t;
                        variable f : out id_frame_t);
-    procedure ld_nnx_hl(signal state : in id_state_t;
+    procedure ld_nnx_hl(signal state : in state_t;
                         variable f : out id_frame_t);
 end z80_instr;
 
 package body z80_instr is
-    function during_t(signal state : in id_state_t; constant t : in integer)
+    function during_t(signal state : in state_t; constant t : in integer)
     return std_logic is
     begin
         if state.t = t then
@@ -96,7 +96,7 @@ package body z80_instr is
         end if;
     end during_t;
 
-    procedure mem_rd(signal state : in id_state_t;
+    procedure mem_rd(signal state : in state_t;
                      variable f : out id_frame_t)
     is begin
         case state.t is
@@ -115,7 +115,7 @@ package body z80_instr is
         when others => null; end case;
     end mem_rd;
 
-    procedure mem_rd_pc(signal state : in id_state_t;
+    procedure mem_rd_pc(signal state : in state_t;
                         variable f : out id_frame_t)
     is begin
         mem_rd(state, f);
@@ -129,7 +129,7 @@ package body z80_instr is
         when others => null; end case;
     end mem_rd_pc;
 
-    procedure mem_rd_instr(signal state : in id_state_t;
+    procedure mem_rd_instr(signal state : in state_t;
                            variable f : out id_frame_t)
     is begin
         mem_rd(state, f);
@@ -156,7 +156,7 @@ package body z80_instr is
     end mem_rd_instr;
 
     procedure mem_rd_multi(
-        signal state : in id_state_t;
+        signal state : in state_t;
         variable f : out id_frame_t)
     is begin
         case state.m is
@@ -171,7 +171,7 @@ package body z80_instr is
         end case;
     end mem_rd_multi;
 
-    procedure mem_wr(signal state : in id_state_t;
+    procedure mem_wr(signal state : in state_t;
                      variable f : out id_frame_t)
     is begin
         case state.t is
@@ -193,7 +193,7 @@ package body z80_instr is
     end mem_wr;
 
     procedure nop(
-        signal state : in id_state_t;
+        signal state : in state_t;
         variable f : out id_frame_t)
     is begin
         case state.t is
@@ -203,7 +203,7 @@ package body z80_instr is
         when others => null; end case;
     end nop;
 
-    procedure jp_nn(signal state : in id_state_t;
+    procedure jp_nn(signal state : in state_t;
                     variable f : out id_frame_t)
     is begin
         case state.m is
@@ -229,7 +229,7 @@ package body z80_instr is
         when others => null; end case;
     end jp_nn;
 
-    procedure jp_cc_nn(signal state : in id_state_t;
+    procedure jp_cc_nn(signal state : in state_t;
                        variable f : out id_frame_t;
                        signal cond : in integer range 0 to 7)
     is begin
@@ -253,7 +253,7 @@ package body z80_instr is
         end case;
     end jp_cc_nn;
 
-    procedure jp_hl(signal state : in id_state_t;
+    procedure jp_hl(signal state : in state_t;
                     variable f : out id_frame_t)
     is begin
         case state.m is
@@ -270,7 +270,7 @@ package body z80_instr is
         when others => end case;
     end jp_hl;
 
-    procedure jr_d(signal state : in id_state_t;
+    procedure jr_d(signal state : in state_t;
                    variable f : out id_frame_t)
     is begin
         case state.m is
@@ -302,7 +302,7 @@ package body z80_instr is
         when others => null; end case;
     end jr_d;
 
-    procedure jr_cc_d(signal state : in id_state_t;
+    procedure jr_cc_d(signal state : in state_t;
                       variable f : out id_frame_t;
                       constant cond : in integer range 0 to 7)
     is begin
@@ -323,7 +323,7 @@ package body z80_instr is
         end case;
     end jr_cc_d;
 
-    procedure ex(signal state : in id_state_t;
+    procedure ex(signal state : in state_t;
                  variable f : out id_frame_t;
                  constant swp : rf_swap_t)
     is begin
@@ -339,7 +339,7 @@ package body z80_instr is
     end ex;
 
     procedure alu_a_r(
-        signal state : in id_state_t;
+        signal state : in state_t;
         variable f : out id_frame_t;
         constant op : in instr_t;
         signal reg : in integer range 0 to 7)
@@ -368,7 +368,7 @@ package body z80_instr is
         when others => null; end case;
     end alu_a_r;
 
-    procedure alu_a_n(signal state : in id_state_t;
+    procedure alu_a_n(signal state : in state_t;
                       variable f : out id_frame_t;
                       constant op : in instr_t)
     is begin
@@ -400,7 +400,7 @@ package body z80_instr is
         when others => null; end case;
     end alu_a_n;
 
-    procedure alu_r(signal state : in id_state_t;
+    procedure alu_r(signal state : in state_t;
                     variable f : out id_frame_t;
                     constant op : in instr_t;
                     signal reg : in integer range 0 to 7)
@@ -428,7 +428,7 @@ package body z80_instr is
         when others => null; end case;
     end alu_r;
 
-    procedure alu_af(signal state : in id_state_t;
+    procedure alu_af(signal state : in state_t;
                      variable f : out id_frame_t;
                      constant op : in instr_t)
     is begin
@@ -455,7 +455,7 @@ package body z80_instr is
         when others => null; end case;
     end alu_af;
 
-    procedure bit_r(signal state : in id_state_t;
+    procedure bit_r(signal state : in state_t;
                     variable f : out id_frame_t;
                     constant op : in instr_t;
                     constant bs : in integer range 0 to 7;
@@ -485,7 +485,7 @@ package body z80_instr is
         when others => null; end case;
     end bit_r;
 
-    procedure ld_r_r(signal state : in id_state_t;
+    procedure ld_r_r(signal state : in state_t;
                      variable f : out id_frame_t;
                      signal src, dst : in integer range 0 to 7)
     is begin
@@ -506,7 +506,7 @@ package body z80_instr is
         when others => null; end case;
     end ld_r_r;
 
-    procedure ld_r_n(signal state : in id_state_t;
+    procedure ld_r_n(signal state : in state_t;
                      variable f : out id_frame_t;
                      signal reg: in integer range 0 to 7)
     is begin
@@ -524,7 +524,7 @@ package body z80_instr is
         when others => null; end case;
     end ld_r_n;
 
-    procedure ld_r_hlx(signal state : in id_state_t;
+    procedure ld_r_hlx(signal state : in state_t;
                        variable f : out id_frame_t;
                        signal reg: in integer range 0 to 7)
     is begin
@@ -546,7 +546,7 @@ package body z80_instr is
         when others => null; end case;
     end ld_r_hlx;
 
-    procedure ld_rp_nn(signal state : in id_state_t;
+    procedure ld_rp_nn(signal state : in state_t;
                        variable f : out id_frame_t;
                        constant reg: in integer range 0 to 7)
     is begin
@@ -572,7 +572,7 @@ package body z80_instr is
         when others => null; end case;
     end ld_rp_nn;
 
-    procedure ld_sp_hl(signal state : in id_state_t;
+    procedure ld_sp_hl(signal state : in state_t;
                        variable f : out id_frame_t)
     is begin
         case state.m is
@@ -594,7 +594,7 @@ package body z80_instr is
         when others => null; end case;
     end ld_sp_hl;
 
-    procedure ld_rpx_a(signal state : in id_state_t;
+    procedure ld_rpx_a(signal state : in state_t;
                        variable f : out id_frame_t;
                        constant reg : integer range 0 to 15)
     is begin
@@ -620,7 +620,7 @@ package body z80_instr is
         when others => null; end case;
     end ld_rpx_a;
 
-    procedure ld_nnx_a(signal state : in id_state_t;
+    procedure ld_nnx_a(signal state : in state_t;
                        variable f : out id_frame_t)
     is begin
         case state.m is
@@ -656,7 +656,7 @@ package body z80_instr is
             when others => null; end case;
     end ld_nnx_a;
 
-    procedure ld_nnx_hl(signal state : in id_state_t;
+    procedure ld_nnx_hl(signal state : in state_t;
                         variable f : out id_frame_t)
     is begin
         case state.m is

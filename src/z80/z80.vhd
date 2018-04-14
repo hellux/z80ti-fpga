@@ -4,8 +4,8 @@ use ieee.numeric_std.all;
 use work.z80_comm.all;
 
 entity z80 is port(
-    clk : in std_logic; --(buffer only for testing)
-    cbi : in ctrlbus_in; -- samee
+    clk : in std_logic;
+    cbi : in ctrlbus_in;
     cbo : out ctrlbus_out;
     addr : out std_logic_vector(15 downto 0);
     data_in : in std_logic_vector(7 downto 0);
@@ -56,12 +56,23 @@ architecture arch of z80 is
         clk : in std_logic;
         cbi : in ctrlbus_in;
         cbo : out ctrlbus_out;
-        instr, flags : in std_logic_vector(7 downto 0);
+        state : in state_t;
+        instr : in std_logic_vector(7 downto 0);
         cw : out ctrlword;
-        dbg_id : out dbg_id_t);
+        ctrl : out id_ctrl_t);
+    end component;
+
+    component state_machine port(
+        clk : in std_logic;
+        cbi : in ctrlbus_in;
+        instr, flags : in std_logic_vector(7 downto 0);
+        ctrl : in id_ctrl_t;
+        state_out : out state_t);
     end component;
 
     signal ir_out : std_logic_vector(7 downto 0);
+    signal state : state_t;
+    signal ctrl : id_ctrl_t;
     signal cw : ctrlword;
 
     signal addr_in : std_logic_vector(15 downto 0);
@@ -81,7 +92,8 @@ begin
     -- -- CONTROL SECTION -- --
     ir : reg generic map(8)
              port map(clk, cbi.reset, cw.ir_rd, dbus, ir_out);
-    id : op_decoder port map(clk, cbi, cbo, ir_out, flags_in, cw, dbg.id);
+    id : op_decoder port map(clk, cbi, cbo, state, ir_out, cw, ctrl);
+    sm : state_machine port map(clk, cbi, ir_out, flags_in, ctrl, state);
 
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset,
@@ -110,10 +122,9 @@ begin
     -- -- BUSES -- --
     -- mux bus input
     with cw.dbus_src select
-        dbus <= x"22"       when none,
+        dbus <= dbufi_out   when ext_o,
                 rf_do       when rf_o,
                 tmp_out     when tmp_o,
-                dbufi_out   when ext_o,
                 alu_out     when alu_o;
     with cw.abus_src select
         abus <= x"2222"     when none,
@@ -133,6 +144,8 @@ begin
                port map(clk, cbi.reset, cw.addr_rd, abus, addr);
 
     -- debug
+    dbg.state <= state;
+    dbg.ct <= ctrl;
     dbg.pc <= pc_out;
     dbg.cw <= cw;
     dbg.abus <= abus;

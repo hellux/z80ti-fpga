@@ -51,11 +51,10 @@ begin
         x"3" when pc_o,
         x"4" when dis_o;
     with dbg.cw.dbus_src select dbus_src <= 
-        x"f" when none,
+        x"0" when ext_o,
         x"1" when rf_o,
         x"2" when tmp_o,
-        x"3" when ext_o,
-        x"4" when alu_o;
+        x"3" when alu_o;
 
     with selected select seg_value <=
         dbg.regs.bc                 when "0000",
@@ -73,8 +72,8 @@ begin
         dbus_src & abus_src & x"00" when "1100",
         x"0123"                     when others;
 
-    led(7 downto 5) <= std_logic_vector(to_unsigned(dbg.id.state.m, 3));
-    led(4) <= dbg.id.ctrl.cycle_end;
-    led(3) <= dbg.id.ctrl.instr_end;
-    led(2 downto 0) <= std_logic_vector(to_unsigned(dbg.id.state.t, 3));
+    led(7 downto 5) <= std_logic_vector(to_unsigned(dbg.state.m, 3));
+    led(4) <= dbg.ct.cycle_end;
+    led(3) <= dbg.ct.instr_end;
+    led(2 downto 0) <= std_logic_vector(to_unsigned(dbg.state.t, 3));
 end arch;

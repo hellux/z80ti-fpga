@@ -26,7 +26,7 @@ package z80_comm is
         wz                                -- use wz instead of pc on fetch
     );
     -- current state/context of cpu
-    type id_state_t is record
+    type state_t is record
         mode : id_mode_t;
         cc : cond_t;
         m : integer range 1 to 6;
@@ -49,7 +49,7 @@ package z80_comm is
         busack : std_logic;
     end record;
 
-    type dbus_src_t is (none, rf_o, tmp_o, ext_o, alu_o);
+    type dbus_src_t is (ext_o, rf_o, tmp_o, alu_o);
     type abus_src_t is (none, rf_o, tmpa_o, pc_o, dis_o);
 
     type ctrlword is record 
@@ -136,19 +136,16 @@ package z80_comm is
     constant regIYh : integer := 14;
     constant regIYl : integer := 15;
 
-    type dbg_id_t is record
-        state : id_state_t;
-        ctrl : id_ctrl_t;
-    end record;
     type dbg_regs_t is record
         BC, DE, HL, AF, WZ, SP, IX, IY : std_logic_vector(15 downto 0);
     end record;
     type dbg_z80_t is record
         regs : dbg_regs_t;
+        state : state_t;
+        ct : id_ctrl_t;
         cw : ctrlword;
         pc, abus : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
-        id : dbg_id_t;
     end record;
 end z80_comm;
 
