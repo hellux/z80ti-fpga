@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 use work.z80_comm.all;
 
 entity id_fb is port(
-    clk, rst : in std_logic;
+    clk, clk_btn, rst : in std_logic;
     seg, led : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
 end id_fb;
@@ -45,9 +45,10 @@ architecture arch of id_fb is
     signal cw : ctrlword;
     signal dbg : dbg_id_t;
     signal pc : integer := 0;
+    signal ab_src, db_src : std_logic_vector(3 downto 0);
 begin
-    process(clk) begin
-        if rising_edge(clk) then
+    process(clk_btn) begin
+        if rising_edge(clk_btn) then
             if rst = '1' then
                 pc <= 0;
             elsif pc = LENGTH then
@@ -60,12 +61,27 @@ begin
 
     ir <= ir_c(pc);
     cbi <= (reset => rst, others => '0');
-    seg_value <= ir & x"00";
+    seg_value <= ir & db_src & ab_src;
+
+    with cw.abus_src select ab_src <= 
+        x"f" when none,
+        x"1" when rf_o,
+        x"2" when tmpa_o,
+        x"3" when pc_o,
+        x"4" when dis_o;
+    with cw.dbus_src select db_src <= 
+        x"f" when none,
+        x"1" when rf_o,
+        x"2" when tmp_o,
+        x"3" when ext_o,
+        x"4" when alu_o;
 
     id : op_decoder port map(clk, cbi, cbo, ir, x"00", cw, dbg);
     smt : segment port map(clk, rst, seg_value, x"0", seg, an);
 
-    led(7 downto 5) <= std_logic_vector(to_unsigned(dbg.state.m, 3));
+    led(7) <= cw.pc_rd;
+    led(6) <= cw.ir_rd;
+    led(5) <= cw.addr_rd;
     led(4) <= dbg.ctrl.cycle_end;
     led(3) <= dbg.ctrl.instr_end;
     led(2 downto 0) <= std_logic_vector(to_unsigned(dbg.state.t, 3));
