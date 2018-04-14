@@ -4,10 +4,10 @@ use ieee.numeric_std.all;
 use work.z80_comm.all;
 
 entity asic is port(
-    clk, rst : in std_logic;
+    clk : in std_logic;
     cbi : out ctrlbus_in;
     cbo : in ctrlbus_out;
-    addr : in std_logic_vector(15 downto 0);
+    addr : in std_logic_vector(7 downto 0);
     data_in : in std_logic_vector(7 downto 0);
     data_out : out std_logic_vector(7 downto 0));
 end asic;
@@ -16,7 +16,7 @@ architecture arch of asic is
     signal port_rd_data : std_logic_vector(7 downto 0);
 begin
     data_out <= port_rd_data when cbo.iorq = '1' and cbo.rd = '1' else x"00";
-    with addr(7 downto 0) select port_rd_data <= 
+    with addr select port_rd_data <= 
         x"00"       when x"00",         -- lines
         x"00"       when x"01",         -- TODO keypad read keys
         x"e1"       when x"02",         -- battery level
