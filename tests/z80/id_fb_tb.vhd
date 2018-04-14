@@ -6,7 +6,7 @@ end id_fb_tb;
 
 architecture arch of id_fb_tb is
     component id_fb port(
-        clk, rst : in std_logic;
+        clk, clk_btn, rst : in std_logic;
         seg, led : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
@@ -15,7 +15,7 @@ architecture arch of id_fb_tb is
     signal seg, led : std_logic_vector(7 downto 0);
     signal an : std_logic_vector(3 downto 0);
 begin
-    id : id_fb port map(clk, rst, seg, led, an);
+    id : id_fb port map(clk, clk, rst, seg, led, an);
     process begin
         clk <= '1';
         wait for 5 ns;

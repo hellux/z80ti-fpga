@@ -50,7 +50,7 @@ package z80_comm is
     end record;
 
     type dbus_src_t is (ext_o, rf_o, tmp_o, alu_o);
-    type abus_src_t is (none, rf_o, tmpa_o, pc_o, dis_o);
+    type abus_src_t is (pc_o, rf_o, tmpa_o, dis_o);
 
     type ctrlword is record 
         -- buses / registers

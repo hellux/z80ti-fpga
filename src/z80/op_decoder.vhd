@@ -52,7 +52,7 @@ begin
         f.ct := (others => '0'); -- reset internal ctrl signals
         f.cb := (others => '0'); -- reset control bus out signals
         f.cw := (dbus_src => ext_o,
-                 abus_src => none,
+                 abus_src => pc_o,
                  rf_addr => 0,
                  rf_swp => none,
                  alu_op => unknown,

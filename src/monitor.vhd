@@ -30,7 +30,7 @@ architecture arch of monitor is
     signal seg_value : std_logic_vector(15 downto 0);
     signal abus_src, dbus_src : std_logic_vector(3 downto 0);
 begin
-    smt : segment port map(clk, btns(1), seg_value, selected, seg, an);
+    smt : segment port map(clk, rst, seg_value, selected, seg, an);
 
     process(clk) begin
         if rising_edge(clk) then
@@ -45,16 +45,15 @@ begin
     end process;
 
     with dbg.cw.abus_src select abus_src <= 
-        x"f" when none,
-        x"1" when rf_o,
-        x"2" when tmpa_o,
-        x"3" when pc_o,
+        x"1" when pc_o,
+        x"2" when rf_o,
+        x"3" when tmpa_o,
         x"4" when dis_o;
     with dbg.cw.dbus_src select dbus_src <= 
-        x"0" when ext_o,
-        x"1" when rf_o,
-        x"2" when tmp_o,
-        x"3" when alu_o;
+        x"1" when ext_o,
+        x"2" when rf_o,
+        x"3" when tmp_o,
+        x"4" when alu_o;
 
     with selected select seg_value <=
         dbg.regs.bc                 when "0000",
