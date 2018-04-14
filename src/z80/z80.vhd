@@ -127,10 +127,9 @@ begin
                 tmp_out     when tmp_o,
                 alu_out     when alu_o;
     with cw.abus_src select
-        abus <= x"2222"     when none,
+        abus <= pc_out      when pc_o,
                 rf_ao       when rf_o,
                 tmpa_out    when tmpa_o,
-                pc_out      when pc_o,
                 dis_out     when dis_o;
     -- buffer dbus both ways
     dbufi : reg generic map(8)

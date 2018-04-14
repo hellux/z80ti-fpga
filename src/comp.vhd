@@ -32,6 +32,15 @@ architecture arch of comp is
         data_out : out std_logic_vector(7 downto 0));
     end component;
 
+    component asic port(
+        clk, rst : in std_logic;
+        cbi : out ctrlbus_in;
+        cbo : in ctrlbus_out;
+        addr : in std_logic_vector(15 downto 0);
+        data_in : in std_logic_vector(7 downto 0);
+        data_out : out std_logic_vector(7 downto 0));
+    end component;
+
     component monitor port(
         clk, rst : in std_logic;
         btns : in std_logic_vector(4 downto 0);
@@ -41,18 +50,18 @@ architecture arch of comp is
         an : out std_logic_vector(3 downto 0));
     end component;
 
-    signal cbi, cbi_mem, cbi_ext : ctrlbus_in;
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
-    signal data, data_z80, data_mem : std_logic_vector(7 downto 0);
-    signal dbg_z80 : dbg_z80_t;
-    
-    signal rst : std_logic;
+    signal cbi, cbi_mem, cbi_ext, cbi_asic : ctrlbus_in;
+    signal data, data_z80, data_mem, data_asic : std_logic_vector(7 downto 0);
 
+    signal rst : std_logic;
     signal clk_z80 : std_logic;
     signal clk_div : integer range 0 to 25;
 
     signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
+
+    signal dbg_z80 : dbg_z80_t;
 begin
     op_btns : process(clk) begin
         if rising_edge(clk) then
@@ -79,15 +88,17 @@ begin
 
     cpu : z80 port map(clk, cbi, cbo, addr, data, data_z80, dbg_z80);
     ram : mem port map(clk, rst, cbi_mem, cbo, addr, data, data_mem);
-    mon : monitor port map(clk, rst, btns_op, sw, dbg_z80, seg, led, an);
-
-    data <= data_z80 or data_mem; -- or instead of tristate
+    asic_c : asic port map(clk, rst, cbi_asic, cbo, addr, data, data_asic);
 
     cbi_ext <= (reset => rst, others => '0');
 
-    cbi.wt    <= cbi_mem.wt    or cbi_ext.wt;
-    cbi.int   <= cbi_mem.int   or cbi_ext.int;
-    cbi.nmi   <= cbi_mem.nmi   or cbi_ext.nmi;
-    cbi.reset <= cbi_mem.reset or cbi_ext.reset;
-    cbi.busrq <= cbi_mem.busrq or cbi_ext.busrq;
+    -- OR common buses instead of tristate
+    data <= data_z80 or data_mem or data_asic;
+    cbi.wt    <= cbi_mem.wt    or cbi_ext.wt    or cbi_asic.wt;
+    cbi.int   <= cbi_mem.int   or cbi_ext.int   or cbi_asic.int;
+    cbi.nmi   <= cbi_mem.nmi   or cbi_ext.nmi   or cbi_asic.nmi;
+    cbi.reset <= cbi_mem.reset or cbi_ext.reset or cbi_asic.reset;
+    cbi.busrq <= cbi_mem.busrq or cbi_ext.busrq or cbi_asic.busrq;
+
+    mon : monitor port map(clk, rst, btns_op, sw, dbg_z80, seg, led, an);
 end arch;
