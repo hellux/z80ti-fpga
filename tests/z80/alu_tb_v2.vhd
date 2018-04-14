@@ -116,6 +116,10 @@ begin
              x"23", x"33", add_i, 0, "00000000", "00-0-000", x"56");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"ff", x"7f", add_i, 0, "00000001", "00-1-001", x"7e");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"20", x"10", add_i, 0, x"20", x"20", x"30");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"30", x"04", add_i, 0, x"20", x"20", x"34");
 
         report "adc";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
@@ -207,6 +211,10 @@ begin
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"80", neg_i, 0, "00000000", "10-0-111", x"80");
 
+        report "cp";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"00", cp_i, 0, x"54", x"42", x"00");
+
         report "and";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"00", and_i, 0, "00000000", "01-1-100", x"00");
@@ -218,6 +226,50 @@ begin
              x"0f", x"fe", and_i, 0, "00000000", "00-1-000", x"0e");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"0f", x"01", and_i, 0, "00000000", "00-1-000", x"01");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"e0", x"1f", and_i, 0, x"a0", x"54", x"00");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"2c", x"03", and_i, 0, x"18", x"54", x"00");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"e3", x"80", and_i, 0, x"6c", x"90", x"80");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"02", and_i, 0, x"90", x"54", x"00");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"77", x"3f", and_i, 0, x"54", x"30", x"37");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"e3", x"80", and_i, 0, x"bb", x"90", x"80");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"e1", x"02", and_i, 0, x"a8", x"54", x"00");
+
+        report "xor";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"1f", x"ff", xor_i, 0, x"08", x"a0", x"e0");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"05", x"02", xor_i, 0, x"18", x"00", x"07");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"80", x"80", xor_i, 0, x"90", x"44", x"00");
+
+        report "or";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"4a", x"4a", or_i, 0, x"bb", x"08", x"4a");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"0f", x"ac", or_i, 0, x"ac", x"ac", x"af");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"0f", x"ab", or_i, 0, x"ac", x"ac", x"af");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"0f", x"aa", or_i, 0, x"ac", x"ac", x"af");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"37", x"40", or_i, 0, x"30", x"24", x"77");
+
+        report "sla";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"02", x"02", sla_i, 0, x"54", x"00", x"04");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"02", x"04", sla_i, 0, x"00", x"08", x"08");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"02", x"08", sla_i, 0, x"08", x"00", x"10");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"02", x"10", sla_i, 0, x"00", x"20", x"20");
 
         report "bit";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
@@ -230,11 +282,19 @@ begin
              x"f0", x"fd", bit_i, 3, "00000000", "-0-1--00", x"fd");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"f0", x"c8", bit_i, 4, "11111111", "-1-1--01", x"c8");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"0c", bit_i, 6, x"54", "-1-1--00", x"0c");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"0c", bit_i, 2, x"54", "-0-1--00", x"0c");
+
+        report "res";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"26", x"4d", res_i, 6, x"10", "00-1-000", x"0d");
         
         report "daa";
+        -- denna failar, 162 vs 66?
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"3C", daa_i, 0, "00000000", "00-1-100", x"42");
-             -- OBS!! Half carry or not??????
  
         report "scf";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
