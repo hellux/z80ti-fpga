@@ -4,8 +4,6 @@ use ieee.numeric_std.all;
 use work.z80_comm.all;
 
 -- TODO
---  * daa
---  * scf, ccf
 --  * rest of instructions
 
 entity alu is port(
@@ -38,10 +36,8 @@ begin
     mask_gen : process(bit_select) is
         variable m : std_logic_vector(7 downto 0);
     begin
-        m := x"01";
-        for i in 1 to bit_select loop
-            m := m(6 downto 0) & '0';
-        end loop;
+        m := x"00";
+        m(bit_select) := '1';
         mask <= m;
     end process;
 
