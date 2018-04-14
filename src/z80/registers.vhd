@@ -9,7 +9,7 @@ entity reg is generic(size : integer); port(
 end reg;
 
 architecture Behavioral of reg is
-    signal bits : std_logic_vector(size-1 downto 0) := (others => '0');
+    signal bits : std_logic_vector(size-1 downto 0);
     signal bits_next : std_logic_vector(size-1 downto 0);
 begin  
     process(clk) begin

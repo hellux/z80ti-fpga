@@ -28,7 +28,7 @@ architecture arch of monitor is
 
     signal selected : unsigned(3 downto 0) := (others => '0');
     signal seg_value : std_logic_vector(15 downto 0);
-    signal abus_src, dbus_src : std_logic_vector(7 downto 0);
+    signal abus_src, dbus_src : std_logic_vector(3 downto 0);
 begin
     smt : segment port map(clk, btns(1), seg_value, selected, seg, an);
 
@@ -44,13 +44,13 @@ begin
         end if;
     end process;
 
-    with dbg.abus_src select abus_src <= 
+    with dbg.cw.abus_src select abus_src <= 
         x"f" when none,
         x"1" when rf_o,
         x"2" when tmpa_o,
         x"3" when pc_o,
         x"4" when dis_o;
-    with dbg.dbus_src select dbus_src <= 
+    with dbg.cw.dbus_src select dbus_src <= 
         x"f" when none,
         x"1" when rf_o,
         x"2" when tmp_o,

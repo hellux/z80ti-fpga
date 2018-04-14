@@ -242,9 +242,8 @@ architecture Behavioral of op_decoder is
     end decode;
 
     signal split : id_split_t;
-    signal state : id_state_t := (mode => main, cc => (others => false),
-                                  m => m1, t => t1);
-    signal ctrl : id_ctrl_t := (others => '0');
+    signal state : id_state_t;
+    signal ctrl : id_ctrl_t;
     signal f : id_frame_t;
 begin
     -- split instruction as

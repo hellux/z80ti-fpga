@@ -77,8 +77,8 @@ begin
 
     rst <= btns(1);
 
-    cpu : z80 port map(btns_op(0), cbi, cbo, addr, data, data_z80, dbg_z80);
-    ram : mem port map(btns_op(0), rst, cbi_mem, cbo, addr, data, data_mem);
+    cpu : z80 port map(clk, cbi, cbo, addr, data, data_z80, dbg_z80);
+    ram : mem port map(clk, rst, cbi_mem, cbo, addr, data, data_mem);
     mon : monitor port map(clk, rst, btns_op, sw, dbg_z80, seg, led, an);
 
     data <= data_z80 or data_mem; -- or instead of tristate

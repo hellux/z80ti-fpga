@@ -29,10 +29,10 @@ begin
     btns <= (1 => rst, others => '0');
     process begin
         rst <= '0';
-        wait for 1515 ns;
+        wait for 10 ns;
         rst <= '1';
-        wait for 348 ns;
+        wait for 10 ns;
         rst <= '0';
-        wait for 100 us;
+        wait for 1000 us;
     end process;
 end arch;
