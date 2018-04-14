@@ -32,11 +32,23 @@ architecture Behavioral of op_decoder is
     constant afi : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
                                    daa_i, cpl_i, scf_i, ccf_i);
 
-    function decode(signal state : id_state_t;
-                    signal instr : std_logic_vector(7 downto 0);
-                    signal cbi : ctrlbus_in;
-                    signal s : id_split_t)
-    return id_frame_t is
+    signal s : id_split_t;
+    signal state : id_state_t;
+    signal ctrl : id_ctrl_t;
+    signal f_s : id_frame_t;
+begin
+    -- split instruction as
+    --     | p | |q|
+    -- |1 0|0 0| |0|1 1 1|
+    -- | x |   y   |  z  |
+    s.x <= to_integer(unsigned(instr(7 downto 6)));
+    s.y <= to_integer(unsigned(instr(5 downto 3)));
+    s.z <= to_integer(unsigned(instr(2 downto 0)));
+    s.p <= to_integer(unsigned(instr(5 downto 4)));
+    s.q <= 1 when instr(3) = '1' else 0;
+
+    -- decode and determine control word
+    process(state, s)
         variable f : id_frame_t;
     begin
         -- reset all signals to defaults (overwrite below)
@@ -238,29 +250,12 @@ architecture Behavioral of op_decoder is
         when wz => null;
         end case;
 
-        return f;
-    end decode;
+        f_s <= f;
+    end process;
 
-    signal split : id_split_t;
-    signal state : id_state_t;
-    signal ctrl : id_ctrl_t;
-    signal f : id_frame_t;
-begin
-    -- split instruction as
-    --     | p | |q|
-    -- |1 0|0 0| |0|1 1 1|
-    -- | x |   y   |  z  |
-    split.x <= to_integer(unsigned(instr(7 downto 6)));
-    split.y <= to_integer(unsigned(instr(5 downto 3)));
-    split.z <= to_integer(unsigned(instr(2 downto 0)));
-    split.p <= to_integer(unsigned(instr(5 downto 4)));
-    split.q <= 1 when instr(3) = '1' else 0;
-
-    -- decode and determine control word
-    f <= decode(state, instr, cbi, split);
-    cw <= f.cw;
-    cbo <= f.cb;
-    ctrl <= f.ct;
+    cw <= f_s.cw;
+    cbo <= f_s.cb;
+    ctrl <= f_s.ct;
 
     -- set conditions
     state.cc(NZ_c) <= flags(Z_F) = '0';
