@@ -58,6 +58,29 @@ architecture arch of op_decoder is
         return f;
     end mem_rd;
 
+    function mem_wr(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.t is
+        when t1 =>
+            f.cw.data_wro := '1';   -- send data to memory
+            f.cw.addr_rd := '1';    -- read from abus to buffer
+            f.cw.addr_wr := '1';    -- write from buffer to outside abus
+            f.cb.mreq := '1';       -- signal addr is ready on abus
+            -- TODO have to use buf instead of reg here (test with FPGA)
+            f.cb.wr := '1';         -- signal addr is ready on abus for wr
+        when t2 =>
+            f.cw.data_wro := '1';   -- keep sending data
+            f.cw.addr_wr := '1';    -- keep writing addr to mem
+            f.cb.mreq := '1';       -- keep request until byte read
+            f.cb.wr := '1';         -- keep reading
+        when t3 =>
+            f.cw.addr_wr := '1';    -- keep writing addr
+            f.cw.data_wro := '1';   -- keep sending data
+        when others => null; end case;
+        return f;
+    end mem_wr;
+
     function mem_rd_pc(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -568,15 +591,18 @@ architecture arch of op_decoder is
         when m1 =>
             case state.t is
             when t4 =>
-                f.cw.rf_addr := regHL;
+                f.cw.rf_addr := regA;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';   -- store reg A in data buffer
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := reg;
                 f.cw.abus_src := rf_o;
-                f.cw.tmpa_rd := '1';
-            when t5 =>
-                f.cw.abus_src := tmpa_o;
-                f.cw.addr_op := none;
-                f.cw.rf_addr := regSP;
-                f.cw.rf_rda := '1';
-            when t6 =>
+            when t3 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
             when others => null; end case;
@@ -610,14 +636,16 @@ architecture arch of op_decoder is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m4 =>
-            f := mem_rd(state, f);
+            f := mem_wr(state, f);
             case state.t is
             when t1 =>
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := rf_o;
-            when t3 =>
+            when t2 =>
                 f.cw.rf_addr := regA;
-                f.cw.rf_rdd := '1';
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
             when others => null; end case;
@@ -651,29 +679,32 @@ architecture arch of op_decoder is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m4 =>
-            f := mem_rd(state, f);
+            f := mem_wr(state, f);
             case state.t is
             when t1 =>
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := rf_o;
-            when t2 => -- increment WZ
+            when t2 =>
+                f.cw.rf_addr := regL;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 => -- increment WZ
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := rf_o;
                 f.cw.rf_rda := '1';
-            when t3 =>
-                f.cw.rf_addr := regL;
-                f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m5 =>
-            f := mem_rd(state, f);
+            f := mem_wr(state, f);
             case state.t is
             when t1 =>
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := rf_o;
-            when t3 =>
+            when t2 =>
                 f.cw.rf_addr := regH;
-                f.cw.rf_rdd := '1';
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
             when others => null; end case;

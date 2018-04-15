@@ -319,17 +319,19 @@ architecture arch of mem_rom is
          x"1f",
          x"00",
          ld_a_n,
-         x"cc",         -- 30
+         x"0a",         -- 30
          ld_bcx_a,
+         ld_a_n,
+         x"bc",
          ld_nnx_a,
-         x"08",
+         x"30",
          x"00",
          ld_nnx_hl,
-         x"0b",
+         x"31",
          x"00",
-         ld_c_n,
+         ld_c_n,        -- 40
          x"02",
-         ed,            -- 40
+         ed,
          in_c,
          ld_c_n,
          x"4c",
