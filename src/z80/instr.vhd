@@ -32,7 +32,7 @@ package z80_instr is
                     variable f : out id_frame_t);
     procedure jp_cc_nn(signal state : in state_t;
                        variable f : out id_frame_t;
-                       signal cond : in integer range 0 to 7);
+                       variable cond : in integer range 0 to 7);
     procedure jp_hl(signal state : in state_t;
                     variable f : out id_frame_t);
     procedure jr_d(signal state : in state_t;
@@ -46,14 +46,14 @@ package z80_instr is
     procedure alu_a_r(signal state : in state_t;
                       variable f : out id_frame_t;
                       constant op : in instr_t;
-                      signal reg : in integer range 0 to 7);
+                      variable reg : in integer range 0 to 7);
     procedure alu_a_n(signal state : in state_t;
                       variable f : out id_frame_t;
                       constant op : in instr_t);
     procedure alu_r(signal state : in state_t;
                     variable f : out id_frame_t;
                     constant op : in instr_t;
-                    signal reg : in integer range 0 to 7);
+                    variable reg : in integer range 0 to 7);
     procedure alu_af(signal state : in state_t;
                      variable f : out id_frame_t;
                      constant op : in instr_t);
@@ -61,16 +61,16 @@ package z80_instr is
                     variable f : out id_frame_t;
                     constant op : in instr_t;
                     constant bs : in integer range 0 to 7;
-                    signal reg : in integer range 0 to 7);
+                    variable reg : in integer range 0 to 7);
     procedure ld_r_r(signal state : in state_t;
                      variable f : out id_frame_t;
-                     signal src, dst : in integer range 0 to 7);
+                     variable src, dst : in integer range 0 to 7);
     procedure ld_r_n(signal state : in state_t;
                      variable f : out id_frame_t;
-                     signal reg: in integer range 0 to 7);
+                     variable reg: in integer range 0 to 7);
     procedure ld_r_hlx(signal state : in state_t;
                        variable f : out id_frame_t;
-                       signal reg : in integer range 0 to 7);
+                       variable reg : in integer range 0 to 7);
     procedure ld_rp_nn(signal state : in state_t;
                        variable f : out id_frame_t;
                        constant reg: in integer range 0 to 7);
@@ -231,7 +231,7 @@ package body z80_instr is
 
     procedure jp_cc_nn(signal state : in state_t;
                        variable f : out id_frame_t;
-                       signal cond : in integer range 0 to 7)
+                       variable cond : in integer range 0 to 7)
     is begin
         case state.cc(cond) is
         when true => jp_nn(state, f);
@@ -342,7 +342,7 @@ package body z80_instr is
         signal state : in state_t;
         variable f : out id_frame_t;
         constant op : in instr_t;
-        signal reg : in integer range 0 to 7)
+        variable reg : in integer range 0 to 7)
     is begin
         case state.m is
         when m1 =>
@@ -403,7 +403,7 @@ package body z80_instr is
     procedure alu_r(signal state : in state_t;
                     variable f : out id_frame_t;
                     constant op : in instr_t;
-                    signal reg : in integer range 0 to 7)
+                    variable reg : in integer range 0 to 7)
     is begin
         case state.m is
         when m1 => 
@@ -459,7 +459,7 @@ package body z80_instr is
                     variable f : out id_frame_t;
                     constant op : in instr_t;
                     constant bs : in integer range 0 to 7;
-                    signal reg : in integer range 0 to 7)
+                    variable reg : in integer range 0 to 7)
     is begin
         case state.m is 
         when m2 =>
@@ -487,7 +487,7 @@ package body z80_instr is
 
     procedure ld_r_r(signal state : in state_t;
                      variable f : out id_frame_t;
-                     signal src, dst : in integer range 0 to 7)
+                     variable src, dst : in integer range 0 to 7)
     is begin
         case state.m is
         when m1 =>
@@ -508,7 +508,7 @@ package body z80_instr is
 
     procedure ld_r_n(signal state : in state_t;
                      variable f : out id_frame_t;
-                     signal reg: in integer range 0 to 7)
+                     variable reg: in integer range 0 to 7)
     is begin
         case state.m is
         when m1 => f.ct.cycle_end := during_t(state, t4);
@@ -526,7 +526,7 @@ package body z80_instr is
 
     procedure ld_r_hlx(signal state : in state_t;
                        variable f : out id_frame_t;
-                       signal reg: in integer range 0 to 7)
+                       variable reg: in integer range 0 to 7)
     is begin
         case state.m is
         when m1 =>

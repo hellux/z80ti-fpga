@@ -5,16 +5,17 @@ use work.z80_comm.all;
 use work.z80_instr.all;
 
 entity op_decoder is port(
-    clk : in std_logic;
-    cbi : in ctrlbus_in;
-    cbo : out ctrlbus_out;
     state : in state_t;
     instr : in std_logic_vector(7 downto 0);
-    cw : out ctrlword;
-    ctrl : out id_ctrl_t);
+    ctrl : out id_ctrl_t;
+    cbo : out ctrlbus_out;
+    cw : out ctrlword);
 end op_decoder;
 
-architecture Behavioral of op_decoder is
+architecture arch of op_decoder is
+    --     | p | |q|
+    -- |1 0|0 0| |0|1 1 1|
+    -- | x |   y   |  z  |
     type id_split_t is record
         x, p : integer range 0 to 3;
         y, z : integer range 0 to 7;
@@ -22,7 +23,6 @@ architecture Behavioral of op_decoder is
     end record;
     type rp_table_t is array(0 to 3) of integer range 0 to 15;
     type alu_table_t is array(0 to 7) of instr_t;
-
     constant rp  : rp_table_t := (regBC, regDE, regHL, regSP);
     constant rp2 : rp_table_t := (regBC, regDE, regHL, regAF);
     constant alu : alu_table_t := (add_i, adc_i, sub_i, sbc_i,
@@ -31,23 +31,18 @@ architecture Behavioral of op_decoder is
                                    sla_i, sra_i, sll_i, srl_i);
     constant afi : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
                                    daa_i, cpl_i, scf_i, ccf_i);
-
-    signal s : id_split_t;
 begin
-    -- split instruction as
-    --     | p | |q|
-    -- |1 0|0 0| |0|1 1 1|
-    -- | x |   y   |  z  |
-    s.x <= to_integer(unsigned(instr(7 downto 6)));
-    s.y <= to_integer(unsigned(instr(5 downto 3)));
-    s.z <= to_integer(unsigned(instr(2 downto 0)));
-    s.p <= to_integer(unsigned(instr(5 downto 4)));
-    s.q <= 1 when instr(3) = '1' else 0;
-
-    -- decode and determine control word
-    process(state, s)
+    process(state, instr)
+        variable s : id_split_t;
         variable f : id_frame_t;
     begin
+        -- split for instruction
+        s.x := to_integer(unsigned(instr(7 downto 6)));
+        s.y := to_integer(unsigned(instr(5 downto 3)));
+        s.z := to_integer(unsigned(instr(2 downto 0)));
+        s.p := to_integer(unsigned(instr(5 downto 4)));
+        if instr(3) = '1' then s.q := 1; else s.q := 0; end if;
+
         -- reset all signals to defaults (overwrite below)
         f.ct := (others => '0'); -- reset internal ctrl signals
         f.cb := (others => '0'); -- reset control bus out signals
@@ -60,7 +55,7 @@ begin
                  addr_op => inc,
                  others => '0');
 
-        -- mem_rd phase
+        -- fetch phase
          if state.m = m1 then
             f.cb.m1 := '1';
             mem_rd_instr(state, f);
@@ -251,4 +246,4 @@ begin
         cbo <= f.cb;
         ctrl <= f.ct;
     end process;
- end Behavioral;
+ end arch;

@@ -11,13 +11,11 @@ end id_fb;
 
 architecture arch of id_fb is
     component op_decoder port(
-        clk : in std_logic;
-        cbi : in ctrlbus_in;
-        cbo : out ctrlbus_out;
         state : in state_t;
         instr : in std_logic_vector(7 downto 0);
-        cw : out ctrlword;
-        ctrl : out id_ctrl_t);
+        ctrl : out id_ctrl_t;
+        cbo : out ctrlbus_out;
+        cw : out ctrlword);
     end component;
 
     component segment is port(
@@ -41,7 +39,6 @@ architecture arch of id_fb is
     signal seg_value : std_logic_vector(15 downto 0);
     signal state : state_t;
     signal ctrl : id_ctrl_t;
-    signal cbi : ctrlbus_in;
     signal cbo : ctrlbus_out;
     signal cw : ctrlword;
     signal testnum : integer := 0;
@@ -59,10 +56,14 @@ begin
         end if;
     end process;
 
-    state <= (mode => main, cc => (others => false), m => 1, t => 4);
+    state <= (mode => main,
+              cc => (others => false),
+              m => 1,
+              t => 4);
     ir <= ir_c(testnum);
-    cbi <= (reset => rst, others => '0');
-    seg_value <= ir & db_src & ab_src;
+
+    id : op_decoder port map(state, ir, ctrl, cbo, cw);
+    smt : segment port map(clk, rst, seg_value, x"0", seg, an);
 
     with cw.abus_src select ab_src <= 
         x"1" when pc_o,
@@ -74,14 +75,14 @@ begin
         x"2" when rf_o,
         x"3" when tmp_o,
         x"4" when alu_o;
-
-    id : op_decoder port map(clk, cbi, cbo, state, ir, cw, ctrl);
-    smt : segment port map(clk, rst, seg_value, x"0", seg, an);
+    seg_value <= ir & db_src & ab_src;
 
     led(7) <= cw.pc_rd;
     led(6) <= cw.ir_rd;
     led(5) <= cw.addr_rd;
     led(4) <= ctrl.cycle_end;
     led(3) <= ctrl.instr_end;
-    led(2 downto 0) <= std_logic_vector(to_unsigned(state.t, 3));
+    led(2) <= cw.tmp_rd;
+    led(1) <= cw.act_rd;
+    led(0) <= cbo.m1;
 end arch;
