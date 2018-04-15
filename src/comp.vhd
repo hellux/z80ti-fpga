@@ -57,7 +57,7 @@ architecture arch of comp is
 
     signal rst : std_logic;
     signal clk_z80 : std_logic;
-    signal clk_div : integer range 0 to 100000000;
+    signal clk_div : integer range 0 to 25;
 
     signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
 
@@ -75,7 +75,7 @@ begin
         if rising_edge(clk) then
             if btns(1) = '1' then
                 clk_div <= 0;
-            elsif clk_div = 100000000 then
+            elsif clk_div = 25 then
                 clk_div <= 0;
             else
                 clk_div <= clk_div + 1;

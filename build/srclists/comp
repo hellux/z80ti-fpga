@@ -1,6 +1,5 @@
 tests/util.vhd
 src/z80/common.vhd
-src/z80/instr.vhd
 src/z80/registers.vhd
 src/z80/regfile.vhd
 src/z80/alu.vhd

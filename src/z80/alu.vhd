@@ -149,7 +149,7 @@ begin
         parity          when and_i|or_i|xor_i|bit_i|res_i|set_i|
                              rlc_i|rl_i|sla_i|sll_i|
                              rrc_i|rr_i|sra_i|srl_i|
-                             daa_i,
+                             daa_i|in_i,
         flags_in(PV_f)  when others;
 
     flags_out(f3_f) <= result_buf(3);
@@ -161,7 +161,8 @@ begin
         flags_in(C_f)   when ccf_i,
         '0'             when scf_i|xor_i|or_i|
                              rlc_i|rl_i|sla_i|sll_i|
-                             rrc_i|rr_i|sra_i|srl_i,
+                             rrc_i|rr_i|sra_i|srl_i|
+                             in_i,
         '1'             when and_i|bit_i|cpl_i,
         flags_in(H_f)   when res_i,
         '-'             when others;

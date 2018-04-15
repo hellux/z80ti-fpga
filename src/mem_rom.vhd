@@ -258,6 +258,10 @@ architecture arch of mem_rom is
     constant call_c_nn  : std_logic_vector(7 downto 0) := x"dc";
     constant call_pe_nn : std_logic_vector(7 downto 0) := x"ec";
     constant call_m_nn  : std_logic_vector(7 downto 0) := x"fc";
+    constant call_nn    : std_logic_vector(7 downto 0) := x"cd";
+    constant ix         : std_logic_vector(7 downto 0) := x"dd";
+    constant ed         : std_logic_vector(7 downto 0) := x"ed";
+    constant iy         : std_logic_vector(7 downto 0) := x"fd";
     constant adc_n      : std_logic_vector(7 downto 0) := x"ce";
     constant sbc_n      : std_logic_vector(7 downto 0) := x"de";
     constant xor_n      : std_logic_vector(7 downto 0) := x"ee";
@@ -266,6 +270,15 @@ architecture arch of mem_rom is
     constant rst_18h    : std_logic_vector(7 downto 0) := x"df";
     constant rst_28h    : std_logic_vector(7 downto 0) := x"ef";
     constant rst_38h    : std_logic_vector(7 downto 0) := x"ff";
+    -- extended
+    constant in_b_c     : std_logic_vector(7 downto 0) := x"40";
+    constant in_d_c     : std_logic_vector(7 downto 0) := x"50";
+    constant in_h_c     : std_logic_vector(7 downto 0) := x"60";
+    constant in_c       : std_logic_vector(7 downto 0) := x"70";
+    constant in_c_c     : std_logic_vector(7 downto 0) := x"48";
+    constant in_e_c     : std_logic_vector(7 downto 0) := x"58";
+    constant in_l_c     : std_logic_vector(7 downto 0) := x"68";
+    constant in_a_c     : std_logic_vector(7 downto 0) := x"78";
     -- bit instructions
     constant set_6_a    : std_logic_vector(7 downto 0) := x"f7";
 
@@ -286,7 +299,7 @@ architecture arch of mem_rom is
          ld_a_n,
          x"05",
          dec_a,
-         jp_nz_nn,
+         jp_nz_nn,      -- 10
          x"09",
          x"00",
          exx,
@@ -296,7 +309,7 @@ architecture arch of mem_rom is
          x"03",
          nop,
          nop,
-         nop,
+         nop,           -- 20
          ld_hl_nn,
          x"15",
          x"00",
@@ -306,7 +319,7 @@ architecture arch of mem_rom is
          x"1f",
          x"00",
          ld_a_n,
-         x"cc",
+         x"cc",         -- 30
          ld_bcx_a,
          ld_nnx_a,
          x"08",
@@ -314,11 +327,19 @@ architecture arch of mem_rom is
          ld_nnx_hl,
          x"0b",
          x"00",
+         ld_c_n,
+         x"02",
+         ed,            -- 40
+         in_c,
+         ld_c_n,
+         x"4c",
+         ed,
+         in_c_c,
          others => nop);
 
     signal mem : mem_t := prgm_fpga;
     signal word_next : std_logic_vector(7 downto 0);
-    signal a : integer range 0 to 65535 := 0;
+    signal a : integer range 0 to 16383 := 0;
 begin
     write : process(clk) begin
         if rising_edge(clk) then

@@ -18,6 +18,26 @@ architecture arch of op_decoder is
         cw : ctrlword;
     end record;
 
+    function io_rd(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.t is
+        when t1 =>
+            f.cw.addr_rd := '1';    -- read from abus to buffer
+            f.cw.addr_wr := '1';    -- write from buffer to outside abus
+            f.cb.iorq := '1';       -- signal addr is ready on abus
+            f.cb.rd := '1';         -- request reading from io
+        when t2 =>
+            f.cw.addr_wr := '1';    -- keep writing addr to mem
+            f.cw.data_rdi := '1';   -- store instr to data buf
+            f.cb.iorq := '1';       -- keep request until byte retrieved
+            f.cb.rd := '1';         -- keep reading
+        when t3 =>
+            f.cw.dbus_src := ext_o; -- write data to inner dbus from buf
+        when others => null; end case;
+        return f;
+    end io_rd;
+
     function mem_rd(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -33,7 +53,7 @@ architecture arch of op_decoder is
             f.cb.mreq := '1';       -- keep request until byte retrieved
             f.cb.rd := '1';         -- keep reading
         when t3 =>
-            f.cw.dbus_src := ext_o; -- write instr to inner dbus from buf
+            f.cw.dbus_src := ext_o; -- write byte to inner dbus from buf
         when others => null; end case;
         return f;
     end mem_rd;
@@ -661,6 +681,49 @@ architecture arch of op_decoder is
         return f;
     end ld_nnx_hl;
 
+    function in_c(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m2 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := io_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regBC;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.cw.tmp_rd := '1';
+            when t4 =>
+                f.cw.f_rd := '1';
+                f.cw.alu_op := in_i;
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end in_c;
+
+    function in_r_c(state : state_t; f_in : id_frame_t;
+                    reg : integer range 0 to 7)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        f := in_c(state, f);
+        case state.m is
+        when m3 =>
+            case state.t is
+            when t3 =>
+                f.cw.rf_addr := reg;
+                f.cw.rf_rdd := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end in_r_c;
+
     type rp_table_t is array(0 to 3) of integer range 0 to 15;
     type alu_table_t is array(0 to 7) of instr_t;
     constant rp  : rp_table_t := (regBC, regDE, regHL, regSP);
@@ -818,8 +881,8 @@ begin
                 case s.z is
                 when 0 =>
                     case s.y is
-                    when 6 => f := nop(state, f); -- IN (C)
-                    when others => f := nop(state, f); -- IN r[y], (C)
+                    when 6 => f := in_c(state, f); -- IN (C)
+                    when others => f := in_r_c(state, f, s.y); -- IN r[y], (C)
                     end case;
                 when 1 =>
                     case s.y is
