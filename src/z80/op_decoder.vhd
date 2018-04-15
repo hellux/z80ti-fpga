@@ -12,30 +12,11 @@ entity op_decoder is port(
 end op_decoder;
 
 architecture arch of op_decoder is
-    --     | p | |q|
-    -- |1 0|0 0| |0|1 1 1|
-    -- | x |   y   |  z  |
-    type id_split_t is record
-        x, p : integer range 0 to 3;
-        y, z : integer range 0 to 7;
-        q : integer range 0 to 1;
-    end record;
     type id_frame_t is record
         ct : id_ctrl_t;
         cb : ctrlbus_out;
         cw : ctrlword;
     end record;
-
-    type rp_table_t is array(0 to 3) of integer range 0 to 15;
-    type alu_table_t is array(0 to 7) of instr_t;
-    constant rp  : rp_table_t := (regBC, regDE, regHL, regSP);
-    constant rp2 : rp_table_t := (regBC, regDE, regHL, regAF);
-    constant alu : alu_table_t := (add_i, adc_i, sub_i, sbc_i,
-                                   and_i, xor_i, or_i, cp_i);
-    constant rot : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
-                                   sla_i, sra_i, sll_i, srl_i);
-    constant afi : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
-                                   daa_i, cpl_i, scf_i, ccf_i);
 
     function mem_rd(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
@@ -680,6 +661,24 @@ architecture arch of op_decoder is
         return f;
     end ld_nnx_hl;
 
+    type rp_table_t is array(0 to 3) of integer range 0 to 15;
+    type alu_table_t is array(0 to 7) of instr_t;
+    constant rp  : rp_table_t := (regBC, regDE, regHL, regSP);
+    constant rp2 : rp_table_t := (regBC, regDE, regHL, regAF);
+    constant alu : alu_table_t := (add_i, adc_i, sub_i, sbc_i,
+                                   and_i, xor_i, or_i, cp_i);
+    constant rot : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
+                                   sla_i, sra_i, sll_i, srl_i);
+    constant afi : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
+                                   daa_i, cpl_i, scf_i, ccf_i);
+    --     | p | |q|
+    -- |1 0|0 0| |0|1 1 1|
+    -- | x |   y   |  z  |
+    type id_split_t is record
+        x, p : integer range 0 to 3;
+        y, z : integer range 0 to 7;
+        q : integer range 0 to 1;
+    end record;
 begin
     process(state, instr)
         variable s : id_split_t;

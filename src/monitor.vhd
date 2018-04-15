@@ -9,9 +9,8 @@ use work.z80_comm.all;
 -- mstate leftmost bits of leds, tstate rightmost bits of leds
 
 entity monitor is port(
-    clk, rst : in std_logic;
+    clk : in std_logic;
     btns : in std_logic_vector(4 downto 0);
-    sw : in std_logic_vector(7 downto 0);
     dbg : in dbg_z80_t;
     seg, led : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
@@ -19,7 +18,7 @@ end monitor;
 
 architecture arch of monitor is
     component segment is port(
-        clk, rst : in std_logic;
+        clk : in std_logic;
         value : in std_logic_vector(15 downto 0);
         dp_num : in unsigned(3 downto 0);
         seg : out std_logic_vector(7 downto 0);
@@ -30,13 +29,11 @@ architecture arch of monitor is
     signal seg_value : std_logic_vector(15 downto 0);
     signal abus_src, dbus_src : std_logic_vector(3 downto 0);
 begin
-    smt : segment port map(clk, rst, seg_value, selected, seg, an);
+    smt : segment port map(clk, seg_value, selected, seg, an);
 
     process(clk) begin
         if rising_edge(clk) then
-            if rst = '1' then
-                selected <= (others => '0');
-            elsif btns(2) = '1' then
+            if btns(2) = '1' then
                 selected <= selected - 1;
             elsif btns(4) = '1' then
                 selected <= selected + 1;

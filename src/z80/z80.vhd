@@ -30,7 +30,6 @@ architecture arch of z80 is
     end component;
 
     component alu port(
-        clk : in std_logic;
         op1, op2 : in std_logic_vector(7 downto 0);
         flags_in : in std_logic_vector(7 downto 0);
         op : in instr_t;
@@ -109,7 +108,7 @@ begin
         std_logic_vector(unsigned(abus) - 1) when dec;
 
     -- -- ALU section -- --
-    alu_comp : alu port map(clk, act_out, tmp_out, flags_in,
+    alu_comp : alu port map(act_out, tmp_out, flags_in,
                             cw.alu_op, cw.alu_bs,
                             alu_out, flags_out);
     act : reg generic map(8)

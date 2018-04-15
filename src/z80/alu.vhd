@@ -7,7 +7,6 @@ use work.z80_comm.all;
 --  * rest of instructions
 
 entity alu is port(
-    clk : in std_logic;
     op1, op2, flags_in : in std_logic_vector(7 downto 0);
     op : in instr_t;
     bit_select : in integer range 0 to 7;

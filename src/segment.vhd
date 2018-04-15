@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity segment is port(
-    clk, rst : in std_logic;
+    clk : in std_logic;
     value : in std_logic_vector(15 downto 0);
     dp_num : in unsigned(3 downto 0);
     seg : out std_logic_vector(7 downto 0);
@@ -18,11 +18,7 @@ architecture arch of segment is
 begin
     process(clk) begin
         if rising_edge(clk) then 
-            if rst = '1' then
-                index_cntr <= (others => '0');
-            else
-                index_cntr <= index_cntr + 1;
-            end if;
+            index_cntr <= index_cntr + 1;
         end if;
     end process;
      
