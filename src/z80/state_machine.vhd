@@ -16,6 +16,8 @@ architecture arch of state_machine is
 begin 
     process(clk) begin
         if rising_edge(clk) then
+            state.mode <= ctrl.mode_next;
+
             if ctrl.cycle_end = '1' then
                 state.t <= t1;
             elsif cbi.wt /= '1' then
@@ -24,35 +26,12 @@ begin
 
             if ctrl.instr_end = '1' then
                 state.m <= m1;
-                if ctrl.jump = '1' then
-                    state.mode <= wz;
-                else
+                if ctrl.mode_next /= wz and
+                   ctrl.mode_next /= halt then
                     state.mode <= main;
                 end if;
             elsif ctrl.cycle_end = '1' then
                 state.m <= state.m + 1;
-            end if;
-
-            if ctrl.mode_end = '1' then
-                case state.mode is
-                when main =>
-                    case instr is
-                    when x"ed" => state.mode <= ed;
-                    when x"cb" => state.mode <= cb;
-                    when x"dd" => state.mode <= dd;
-                    when x"fd" => state.mode <= fd;
-                    when others => null; end case;
-                when dd =>
-                    case instr is
-                    when x"cb" => state.mode <= ddcb;
-                    when others => null; end case;
-                when fd =>
-                    case instr is
-                    when x"cb" => state.mode <= fdcb;
-                    when others => null; end case;
-                when wz =>
-                    state.mode <= main;
-                when others => null; end case;
             end if;
 
             if cbi.reset = '1' then
