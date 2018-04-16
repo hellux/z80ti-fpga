@@ -68,9 +68,8 @@ architecture arch of op_decoder is
             f.cw.addr_wr := '1';    -- write from buffer to outside abus
             f.cb.mreq := '1';       -- signal addr is ready on abus
             -- TODO have to use buf instead of reg here (test with FPGA)
-            f.cb.wr := '1';         -- signal addr is ready on abus for wr
         when t2 =>
-            f.cw.data_wro := '1';   -- keep sending data
+            f.cw.data_wro := '1';   -- send data
             f.cw.addr_wr := '1';    -- keep writing addr to mem
             f.cb.mreq := '1';       -- keep request until byte read
             f.cb.wr := '1';         -- keep reading
@@ -755,6 +754,53 @@ architecture arch of op_decoder is
         return f;
     end in_r_c;
 
+    function push_rp2(state : state_t; f_in : id_frame_t;
+                      reg : integer range 0 to 7)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        f := in_c(state, f);
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 => -- dec SP
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+            when others => null; end case;
+        when m2 => -- write high
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+            when t2 =>
+                f.cw.rf_addr := reg;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- write low
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+            when t2 =>
+                f.cw.rf_addr := reg+1;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end push_rp2;
+
     type rp_table_t is array(0 to 3) of integer range 0 to 15;
     type alu_table_t is array(0 to 7) of instr_t;
     constant rp  : rp_table_t := (regBC, regDE, regHL, regSP);
@@ -801,6 +847,13 @@ begin
         if state.m = m1 then
             f.cb.m1 := '1';
             f := mem_rd_instr(state, f);
+        end if;
+
+        if instr = x"f9" then
+            report "BEFORE CASE" & lf &
+                   "m: " & integer'image(state.m) &
+                   ", t: " & integer'image(state.t) & 
+                   ", instr_end: " & std_logic'image(f.ct.instr_end);
         end if;
 
         -- exec phase
@@ -867,7 +920,7 @@ begin
             when 3 =>
                 case s.z is
                 when 0 => f := nop(state, f); -- RET cc[y]
-                when 1 => f := nop(state, f);
+                when 1 =>
                     case s.q is
                     when 0 => f := nop(state, f); -- POP rp2[p]
                     when 1 =>
@@ -893,7 +946,7 @@ begin
                 when 4 => f := nop(state, f); -- CALL cc[y], nn
                 when 5 =>
                     case s.q is
-                    when 0 => null; -- PUSH rp2[p]
+                    when 0 => f := push_rp2(state, f, rp2(s.p)); -- PUSH rp2[p]
                     when 1 =>
                         case s.p is
                         when 0 => f := nop(state, f); -- CALL nn
