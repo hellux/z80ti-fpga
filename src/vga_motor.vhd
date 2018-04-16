@@ -21,17 +21,17 @@ end vga_motor;
 -- architecture
 architecture Behavioral of vga_motor is
 
-  signal	Xpixel	    : unsigned(9 downto 0);     -- Horizontal pixel counter
-  signal	Ypixel	    : unsigned(9 downto 0);		-- Vertical pixel counter
+    signal	Xpixel	    : unsigned(9 downto 0);     -- Horizontal pixel counter
+    signal	Ypixel	    : unsigned(9 downto 0);		-- Vertical pixel counter
 
     -- Background (10010110) 	Text(01001000) Bar(00000000)
-  signal 	pixel_colour	: std_logic_vector(1 downto 0);  	
-  signal    blank       : std_logic;
-  signal    pic_mem    : std_logic_vector(6143 downto 0);
+    signal 	pixel_colour	: std_logic_vector(1 downto 0);  	
+    signal    blank       : std_logic;
+    --signal    pic_mem    : std_logic_vector(6143 downto 0);
 	
 begin
 	
-  -- Horizontal pixel counter
+    -- Horizontal pixel counter
     process(clk) begin
         if rising_edge(clk) then
             if rst='1' then
@@ -61,15 +61,19 @@ begin
         end if;
     end process;
  
-  -- Vertical sync
-     Vsync <= '1' when Ypixel <= 490 and Ypixel >= 492 else '0';
+     -- Vertical sync
+    Vsync <= '1' when Ypixel <= 490 and Ypixel >= 492 else '0';
 
-  -- Blank signal
+     -- Blank signal
     blank <= '1' when Xpixel > 640 or Ypixel > 480 else '0'; 
              
+    -- get data at addr in pic mem
+    addr <= (pic_mem(96* to_integer(Ypixel)/6 + to_integer(Xpixel)/6)) when
+             Xpixel < 96*6 and Ypixel <= 64*6;
+             
     
-    pixel_colour <= '0' & (pic_mem(96* to_integer(Ypixel)/6 + to_integer(Xpixel)/6)) when
-                    Xpixel < 96*6 and Ypixel <= 64*6 else "11";
+    -- set colour depending on pos and data
+    pixel_colour <= '0' & data when Xpixel < 96*6 and Ypixel <= 64*6 else "11";
 
   -- Background: (00), (10010110) Text: (01), (01001000) Bar: (11),(00000000)
   -- VGA generation
