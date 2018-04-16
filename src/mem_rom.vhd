@@ -316,7 +316,7 @@ architecture arch of mem_rom is
          ld_b_hlx,
          ld_sp_hl,
          ld_bc_nn,
-         x"1f",
+         x"4f",
          x"00",
          ld_a_n,
          x"0a",         -- 30
@@ -340,6 +340,7 @@ architecture arch of mem_rom is
          push_hl,
          inc_hl,
          dec_sp,           -- 50
+         ld_hlx_c,
          others => nop);
 
     signal mem : mem_t := prgm_fpga;

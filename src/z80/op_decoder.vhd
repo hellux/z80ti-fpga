@@ -67,7 +67,6 @@ architecture arch of op_decoder is
             f.cw.addr_rd := '1';    -- read from abus to buffer
             f.cw.addr_wr := '1';    -- write from buffer to outside abus
             f.cb.mreq := '1';       -- signal addr is ready on abus
-            -- TODO have to use buf instead of reg here (test with FPGA)
         when t2 =>
             f.cw.data_wro := '1';   -- send data
             f.cw.addr_wr := '1';    -- keep writing addr to mem
@@ -524,7 +523,7 @@ architecture arch of op_decoder is
     end ld_r_n;
 
     function ld_r_hlx(state : state_t; f_in : id_frame_t;
-                   reg : integer range 0 to 7)
+                      reg : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -603,24 +602,24 @@ architecture arch of op_decoder is
         return f;
     end ld_sp_hl;
 
-    function ld_rpx_a(state : state_t; f_in : id_frame_t;
-                      reg : integer range 0 to 15)
+    function ld_rpx_r(state : state_t; f_in : id_frame_t;
+                      rp : integer range 0 to 15; r : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
         when m1 =>
             case state.t is
             when t4 =>
-                f.cw.rf_addr := regA;
+                f.cw.rf_addr := r;
                 f.cw.dbus_src := rf_o;
-                f.cw.data_rdo := '1';   -- store reg A in data buffer
+                f.cw.data_rdo := '1';   -- store reg in data buffer
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 =>
             f := mem_wr(state, f);
             case state.t is
             when t1 =>
-                f.cw.rf_addr := reg;
+                f.cw.rf_addr := rp;
                 f.cw.abus_src := rf_o;
             when t3 =>
                 f.ct.cycle_end := '1';
@@ -628,7 +627,7 @@ architecture arch of op_decoder is
             when others => null; end case;
         when others => null; end case;
         return f;
-    end ld_rpx_a;
+    end ld_rpx_r;
 
     function ld_nnx_a(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
@@ -893,8 +892,8 @@ begin
                     case s.q is
                     when 0 => 
                         case s.p is
-                        when 0 => f := ld_rpx_a(state, f, regBC);
-                        when 1 => f := ld_rpx_a(state, f, regDE);
+                        when 0 => f := ld_rpx_r(state, f, regBC, regA);
+                        when 1 => f := ld_rpx_r(state, f, regDE, regA);
                         when 2 => f := ld_nnx_hl(state, f); -- LD (nn), HL
                         when 3 => f := ld_nnx_a(state, f); -- LD (nn), A
                         end case;
@@ -920,11 +919,14 @@ begin
                 case s.z is
                 when 6 =>
                     case s.y is
-                    when 6 => null; -- HALT
-                    when others => f := ld_r_hlx(state, f, s.y); -- LD r[y], (hl)
+                    when 6 =>
+                        case s.z is
+                        when 6 => f := nop(state, f); -- HALT
+                        when others => f := ld_rpx_r(state, f, regHL, s.z);
+                        end case;
+                    when others => f := ld_r_hlx(state, f, s.y);
                     end case;
-                -- TODO LD (hl), r[z]
-                when others => f := ld_r_r(state, f, s.z, s.y); --LD r[y], r[z]
+                when others => f := ld_r_r(state, f, s.z, s.y);
                 end case;
             when 2 => 
                 case s.z is
