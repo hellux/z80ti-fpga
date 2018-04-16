@@ -457,6 +457,27 @@ architecture arch of op_decoder is
         return f;
     end bit_r;
 
+    function inc_dec_rp(state : state_t; f_in : id_frame_t;
+                        op : addr_op_t; reg : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is 
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := reg;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := op;
+                f.cw.rf_rda := '1';
+            when t5 =>
+            when t6 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end inc_dec_rp;
+
     function ld_r_r(state : state_t; f_in : id_frame_t;
                     src, dst : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
@@ -872,8 +893,8 @@ begin
                     case s.q is
                     when 0 => 
                         case s.p is
-                        when 0 => f := ld_rpx_a(state, f, regBC); -- LD (BC), A
-                        when 1 => f := ld_rpx_a(state, f, regDE); -- LD (DE), A
+                        when 0 => f := ld_rpx_a(state, f, regBC);
+                        when 1 => f := ld_rpx_a(state, f, regDE);
                         when 2 => f := ld_nnx_hl(state, f); -- LD (nn), HL
                         when 3 => f := ld_nnx_a(state, f); -- LD (nn), A
                         end case;
@@ -885,10 +906,10 @@ begin
                         when 3 => f := nop(state, f); -- LD A, (nn)
                         end case;
                     end case;
-                when 3 => -- INC/DEC rp[y];
+                when 3 =>
                     case s.q is
-                    when 0 => null; -- INC rp[y]
-                    when 1 => null; -- DEC rp[y]
+                    when 0 => f := inc_dec_rp(state, f, inc, rp(s.p));
+                    when 1 => f := inc_dec_rp(state, f, dec, rp(s.p));
                     end case;
                 when 4 => f := alu_r(state, f, inc_i, s.y); -- INC r[y]
                 when 5 => f := alu_r(state, f, dec_i, s.y); -- DEC r[y]

@@ -338,8 +338,8 @@ architecture arch of mem_rom is
          ed,
          in_c_c,
          push_hl,
-         nop,
-         nop,           -- 50
+         inc_hl,
+         dec_sp,           -- 50
          others => nop);
 
     signal mem : mem_t := prgm_fpga;
