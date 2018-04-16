@@ -282,7 +282,7 @@ architecture arch of mem_rom is
     -- bit instructions
     constant set_6_a    : std_logic_vector(7 downto 0) := x"f7";
 
-    constant MEMSIZE : integer := 64;
+    constant MEMSIZE : integer := 128;
 
     type mem_t is array(0 to MEMSIZE-1) of std_logic_vector(7 downto 0);
     constant prgm_fpga : mem_t :=
@@ -311,7 +311,7 @@ architecture arch of mem_rom is
          nop,
          nop,           -- 20
          ld_hl_nn,
-         x"15",
+         x"3e",
          x"00",
          ld_b_hlx,
          ld_sp_hl,
@@ -324,10 +324,10 @@ architecture arch of mem_rom is
          ld_a_n,
          x"bc",
          ld_nnx_a,
-         x"30",
+         x"70",
          x"00",
          ld_nnx_hl,
-         x"31",
+         x"72",
          x"00",
          ld_c_n,        -- 40
          x"02",
@@ -337,6 +337,9 @@ architecture arch of mem_rom is
          x"4c",
          ed,
          in_c_c,
+         push_hl,
+         nop,
+         nop,           -- 50
          others => nop);
 
     signal mem : mem_t := prgm_fpga;

@@ -758,7 +758,6 @@ architecture arch of op_decoder is
                       reg : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        f := in_c(state, f);
         case state.m is
         when m1 =>
             case state.t is
@@ -767,6 +766,7 @@ architecture arch of op_decoder is
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
+                f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 => -- write high
             f := mem_wr(state, f);
@@ -847,13 +847,6 @@ begin
         if state.m = m1 then
             f.cb.m1 := '1';
             f := mem_rd_instr(state, f);
-        end if;
-
-        if instr = x"f9" then
-            report "BEFORE CASE" & lf &
-                   "m: " & integer'image(state.m) &
-                   ", t: " & integer'image(state.t) & 
-                   ", instr_end: " & std_logic'image(f.ct.instr_end);
         end if;
 
         -- exec phase
@@ -946,7 +939,7 @@ begin
                 when 4 => f := nop(state, f); -- CALL cc[y], nn
                 when 5 =>
                     case s.q is
-                    when 0 => f := push_rp2(state, f, rp2(s.p)); -- PUSH rp2[p]
+                    when 0 => f := push_rp2(state, f, rp2(s.p));
                     when 1 =>
                         case s.p is
                         when 0 => f := nop(state, f); -- CALL nn
