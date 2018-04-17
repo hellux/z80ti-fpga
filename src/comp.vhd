@@ -42,6 +42,17 @@ architecture arch of comp is
         ports_out : out io_ports_t);
     end component;
 
+    component lcd_ctrl port(
+        clk : in std_logic;
+        gmem_data_in : in std_logic_vector(7 downto 0);
+        gmem_data_out : out std_logic_vector(7 downto 0);
+        gmem_addr : out std_logic_vector(12 downto 0);
+        status_rd, data_rd : in std_logic;
+        status_wr, data_wr : in std_logic;
+        status_in, data_in : in std_logic_vector(7 downto 0);
+        status_out, data_out : out std_logic_vector(7 downto 0));
+    end component;
+
     component monitor port(
         clk : in std_logic;
         btns : in std_logic_vector(4 downto 0);
@@ -56,6 +67,8 @@ architecture arch of comp is
     signal data, data_z80, data_rom, data_asic : std_logic_vector(7 downto 0);
     signal io_ports : io_ports_t;
     signal io_data : io_data_t;
+    signal lcd_gmem_data, gmem_lcd_data : std_logic_vector(7 downto 0);
+    signal lcd_gmem_addr : std_logic_vector(12 downto 0);
 
     signal rom_ce : std_logic;
 
@@ -67,6 +80,7 @@ architecture arch of comp is
 
     signal dbg_z80 : dbg_z80_t;
 begin
+    -- input sync
     op_btns : process(clk) begin
         if rising_edge(clk) then
             btns_sync <= btns;
@@ -75,6 +89,7 @@ begin
     end process;
     btns_op <= btns_sync and not btns_q;
 
+    -- clock sync
     process(clk) begin
         if rising_edge(clk) then
             if btns(1) = '1' then
@@ -88,18 +103,8 @@ begin
     end process;
     clk_z80 <= '1' when clk_div = 0 else '0';
 
+    -- buses
     rst <= btns(1);
-
-    -- memory map
-    rom_ce <= cbo.mreq and not addr(15) and not addr(14); -- 0-3fff
-
-    cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
-    rom : mem_rom port map(clk_z80, rst, cbo.wr, cbo.rd, rom_ce, cbi_rom,
-                           addr(13 downto 0), data, data_rom);
-    asic_c : asic port map(clk_z80, cbi_asic, cbo,
-                           addr(7 downto 0), data, data_asic,
-                           io_data, io_ports);
-
     cbi_ext <= (reset => rst, others => '0');
 
     -- OR common buses instead of tristate
@@ -110,5 +115,23 @@ begin
     cbi.reset <= cbi_rom.reset or cbi_ext.reset or cbi_asic.reset;
     cbi.busrq <= cbi_rom.busrq or cbi_ext.busrq or cbi_asic.busrq;
 
+    -- CPU / MEM
+    cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
+    rom_ce <= cbo.mreq and not addr(15) and not addr(14); -- 0-3fff
+    rom : mem_rom port map(clk_z80, rst, cbo.wr, cbo.rd, rom_ce, cbi_rom,
+                           addr(13 downto 0), data, data_rom);
+
+    -- IO
+    asic_c : asic port map(clk_z80, cbi_asic, cbo,
+                           addr(7 downto 0), data, data_asic,
+                           io_data, io_ports);
+    lcd : lcd_ctrl port map(clk_z80,
+                            gmem_lcd_data, lcd_gmem_data, lcd_gmem_addr,
+                            io_ports.lcd_status.rd, io_ports.lcd_data.rd,
+                            io_ports.lcd_status.wr, io_ports.lcd_data.wr,
+                            io_ports.lcd_status.data, io_ports.lcd_data.data,
+                            io_data.lcd_status, io_data.lcd_data);
+
+    -- DEBUG
     mon : monitor port map(clk, btns_op, dbg_z80, seg, led, an);
 end arch;

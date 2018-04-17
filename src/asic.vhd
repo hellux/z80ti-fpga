@@ -63,6 +63,7 @@ begin
     ports_out.lcd_data <= parr_out(17);
 
     darr_in <= (2   => x"e1",               -- battery level
+                -- TODO add static from legacy file
                 16  => ports_in.lcd_status,
                 17  => ports_in.lcd_data,
                 others => (x"00"));
