@@ -328,6 +328,18 @@ begin
              x"D2", x"B4", cpl_i, 0, "00000000", "00-1-010", x"4B");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"D2", x"B4", cpl_i, 0, "00000000", "00-1-010", x"4B");
+       
+        report "rld1";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"F8", x"61", rld1_i, 0, "00000000", "--------", x"18");
+            
+        report "rld2";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"DF", x"CB", rld2_i, 0, "00010000", "10-0----", x"DC");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"5F", x"6B", rld2_i, 0, "00010010", "00-0-100", x"56");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"06", x"0A", rld2_i, 0, "11010011", "01-0-101", x"00");
              assert false report "TB COMPLETE" severity failure;
      end process;
 

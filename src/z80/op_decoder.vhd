@@ -456,6 +456,36 @@ architecture arch of op_decoder is
         return f;
     end bit_r;
 
+    function rld_rrd(state : state_t; f_in : id_frame_t;
+                   op : instr_t; bs : integer range 0 to 7;
+                   reg : integer range 0 to 7)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is 
+        when m2 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := reg;
+                f.cw.dbus_src := rf_o;
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := mem_rd_instr(state, f); -- overlap
+            case state.t is
+            when t2 =>
+                f.cw.alu_op := op;
+                f.cw.alu_bs := bs;
+                f.cw.dbus_src := alu_o;
+                f.cw.f_rd := '1';
+                f.cw.rf_addr := reg;
+                f.cw.rf_rdd := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end rld_rrd;
+
     function inc_dec_rp(state : state_t; f_in : id_frame_t;
                         op : addr_op_t; reg : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin

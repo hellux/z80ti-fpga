@@ -26,8 +26,13 @@ architecture arch of alu is
     signal result_xor, result_and, result_or : signed(8 downto 0);
     signal calc_result : signed(8 downto 0);
     signal result_buf : signed(7 downto 0);
+    
+    --rld | rrd
     signal rld1_hl : std_logic_vector(7 downto 0);
     signal rld2_a : std_logic_vector(7 downto 0);
+    signal rrd1_hl : std_logic_vector(7 downto 0);
+    signal rrd2_a : std_logic_vector(7 downto 0);
+
     -- flags
     signal half_add, half_sub, half_daa : std_logic;
     signal overflow, overflow_neg, parity : std_logic;
@@ -77,10 +82,10 @@ begin
     with op select op2sn <=
         signed('0' & (not mask and op2))    when res_i,
         signed('0' & (mask or op2))         when set_i,
-        op2_ext                             when bit_i,
+         op2_ext                            when bit_i,
         -op2_ext                            when sub_i|cp_i|neg_i,
         -op2_ext - with_carry               when sbc_i,
-        op2_ext + with_carry                when adc_i,
+         op2_ext + with_carry               when adc_i,
         '0' & op2_ext(6 downto 0) & edge    when rlc_i|rl_i|sla_i|sll_i,
         '0' & edge & op2_ext(7 downto 1)    when rrc_i|rr_i|sra_i|srl_i,
         op2_ext                             when others;
@@ -94,9 +99,12 @@ begin
     result_xor <= op1_ext xor op2_ext;
     result_or  <= op1_ext or  op2_ext;
     result_sum <= op1_ext + op2sn;
- 
-    rld1_hl <=  op2(3 downto 0) & op1(7 downto 4); 
-    rld2_a <=  op1(7 downto 4) & op2(7 downto 4);
+    
+    -- rld,rrd 
+    rld1_hl <= op2(3 downto 0) & op1(3 downto 0); 
+    rld2_a  <= op1(7 downto 4) & op2(7 downto 4);
+    rrd1_hl <= op1(3 downto 0) & op2(7 downto 4);
+    rrd2_a  <= op1(7 downto 4) & op2(7 downto 4);
     with op select calc_result <=
         result_sum when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i|neg_i|daa_i,
         result_and when and_i,
@@ -104,8 +112,10 @@ begin
         result_or  when or_i,
         op2sn      when others;
     with op select result_buf <=
-        signed(rld1_hl)                            when rld1_i,
-        signed(rld2_a)                             when rld2_i,
+        signed(rld1_hl)                    when rld1_i,
+        signed(rld2_a)                     when rld2_i,
+        signed(rrd1_hl)                    when rrd1_i,
+        signed(rrd2_a)                     when rrd2_i,
         calc_result(7 downto 0)            when others;
     with op select result <=
         not(op2)                           when cpl_i,
@@ -156,7 +166,7 @@ begin
         parity          when and_i|or_i|xor_i|bit_i|res_i|set_i|
                              rlc_i|rl_i|sla_i|sll_i|
                              rrc_i|rr_i|sra_i|srl_i|
-                             daa_i|in_i,
+                             daa_i|in_i|rld2_i|rrd2_i,
         flags_in(PV_f)  when others;
 
     flags_out(f3_f) <= result_buf(3);
@@ -169,7 +179,7 @@ begin
         '0'             when scf_i|xor_i|or_i|
                              rlc_i|rl_i|sla_i|sll_i|
                              rrc_i|rr_i|sra_i|srl_i|
-                             in_i|rld2_i,
+                             in_i|rld2_i|rrd2_i,
         '1'             when and_i|bit_i|cpl_i,
         flags_in(H_f)   when res_i,
         '-'             when others;
