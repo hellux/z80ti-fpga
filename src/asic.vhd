@@ -16,11 +16,11 @@ entity asic is port(
 end asic;
 
 architecture arch of asic is
-    type io_ports_array_t is array(255 downto 0) of port_t;
-    type data_array_t is array(255 downto 0) of std_logic_vector(7 downto 0);
-    type rw_array_t is array(255 downto 0) of std_logic;
+    type io_ports_array_t is array(0 to 255) of port_t;
+    type data_array_t is array(0 to 255) of std_logic_vector(7 downto 0);
+    type rw_array_t is array(0 to 255) of std_logic;
 
-    signal a : integer range 0 to 255;
+    signal a : integer range 0 to 255 := 0;
     signal darr_in, darr_out : data_array_t;
     signal parr_out : io_ports_array_t;
     signal rd_arr, wr_arr : rw_array_t;
@@ -40,17 +40,17 @@ begin
 
     process(a, data_in) begin
         darr_out <= (others => (others => '-'));
-        darr_out <= (a => data_in);
+        darr_out(a) <= data_in;
     end process;
 
     process(a, cbo.rd) begin
         rd_arr <= (others => '-');
-        rd_arr <= (a => cbo.rd);
+        rd_arr(a) <= cbo.rd;
     end process;
 
     process(a, cbo.wr) begin
         wr_arr <= (others => '0');
-        wr_arr <= (a => cbo.wr);
+        wr_arr(a) <= cbo.wr;
     end process;
 
     cbi.reset <= '0';
@@ -62,8 +62,7 @@ begin
     ports_out.lcd_status <= parr_out(16);
     ports_out.lcd_data <= parr_out(17);
 
-    darr_in <= (0   => x"00",
-                2   => x"e1",
+    darr_in <= (2   => x"e1",               -- battery level
                 16  => ports_in.lcd_status,
                 17  => ports_in.lcd_data,
                 others => (x"00"));
