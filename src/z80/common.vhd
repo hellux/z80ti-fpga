@@ -10,7 +10,7 @@ package z80_comm is
                      rlc_i, rl_i, sla_i, sll_i,
                      rrc_i, rr_i, sra_i, srl_i,
                      daa_i, cpl_i, scf_i, ccf_i,
-                     in_i);
+                     in_i, rld1_i, rld2_i);
     type rf_swap_t is (none, af, reg, dehl);
     type addr_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;

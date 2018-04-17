@@ -26,7 +26,8 @@ architecture arch of alu is
     signal result_xor, result_and, result_or : signed(8 downto 0);
     signal calc_result : signed(8 downto 0);
     signal result_buf : signed(7 downto 0);
-
+    signal rld1_hl : std_logic_vector(7 downto 0);
+    signal rld2_a : std_logic_vector(7 downto 0);
     -- flags
     signal half_add, half_sub, half_daa : std_logic;
     signal overflow, overflow_neg, parity : std_logic;
@@ -40,17 +41,17 @@ begin
         mask <= m;
     end process;
 
-    daa_logic : process(op2, op2_ext, flags_in) is
+    daa_logic : process(op2_ext, flags_in) is
 	    variable res, v : signed(8 downto 0);
     begin
         v := (others => '0');
-        if (op2_ext(7 downto 4) > "1001" or flags_in(H_f) = '1') then
+        if (unsigned(op2_ext(3 downto 0)) > "1001" or flags_in(H_f) = '1') then
             v := v + "000000110";
         end if;
         res := op2_ext + v;
-        if (op2_ext(3 downto 0) > "1001" or 
-            res(8) = '1' or
-            flags_in(C_f) = '1')
+        if (unsigned(res(7 downto 4)) > "1001"
+            or res(8) = '1'
+            or flags_in(C_f) = '1')
         then
             v := v + "001100000";
         end if;
@@ -72,7 +73,7 @@ begin
         to_signed(0, 9)     when neg_i,
 	    daa_v		        when daa_i,
         signed('0' & op1)   when others;
-    op2_ext <= signed('0' & op2);
+        op2_ext <= signed('0' & op2);
     with op select op2sn <=
         signed('0' & (not mask and op2))    when res_i,
         signed('0' & (mask or op2))         when set_i,
@@ -93,17 +94,23 @@ begin
     result_xor <= op1_ext xor op2_ext;
     result_or  <= op1_ext or  op2_ext;
     result_sum <= op1_ext + op2sn;
+ 
+    rld1_hl <=  op2(3 downto 0) & op1(7 downto 4); 
+    rld2_a <=  op1(7 downto 4) & op2(7 downto 4);
     with op select calc_result <=
         result_sum when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i|neg_i|daa_i,
         result_and when and_i,
         result_xor when xor_i,
         result_or  when or_i,
         op2sn      when others;
-    result_buf <= calc_result(7 downto 0);
+    with op select result_buf <=
+        signed(rld1_hl)                            when rld1_i,
+        signed(rld2_a)                             when rld2_i,
+        calc_result(7 downto 0)            when others;
     with op select result <=
-        not(op2)                     when cpl_i,
-        op1                          when cp_i,
-        std_logic_vector(result_buf) when others;
+        not(op2)                           when cpl_i,
+        op1                                when cp_i,
+        std_logic_vector(result_buf)       when others;
 
     -- flags
     calc_parity : process(result_buf)
@@ -162,7 +169,7 @@ begin
         '0'             when scf_i|xor_i|or_i|
                              rlc_i|rl_i|sla_i|sll_i|
                              rrc_i|rr_i|sra_i|srl_i|
-                             in_i,
+                             in_i|rld2_i,
         '1'             when and_i|bit_i|cpl_i,
         flags_in(H_f)   when res_i,
         '-'             when others;
