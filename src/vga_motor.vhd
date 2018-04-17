@@ -1,20 +1,20 @@
 -- library declaration
 library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;            
-use IEEE.NUMERIC_STD.ALL;
+use IEEE.STD_LOGIC_1164.ALL;            -- basic IEEE library
+use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
 
 
 -- entity
-entity vga_motor is
-    port (clk			: in std_logic;
-	    data			: in std_logic;
-	    addr			: out unsigned(12 downto 0);
-	    rst			    : in std_logic;
-	    vgaRed		    : out std_logic_vector(2 downto 0);
-	    vgaGreen	    : out std_logic_vector(2 downto 0);
-	    vgaBlue		    : out std_logic_vector(2 downto 1);
-	    Hsync		    : out std_logic;
-	    Vsync		    : out std_logic);
+entity vga_motor is port ( 
+     clk			: in std_logic;
+	 data			: in std_logic;
+	 addr			: out std_logic_vector(12 downto 0);
+	 rst			: in std_logic;
+	 vgaRed		    : out std_logic_vector(2 downto 0);
+	 vgaGreen	    : out std_logic_vector(2 downto 0);
+	 vgaBlue		: out std_logic_vector(2 downto 1);
+	 Hsync		    : out std_logic;
+	 Vsync		    : out std_logic);
 end vga_motor;
 
 
@@ -23,87 +23,134 @@ architecture Behavioral of vga_motor is
 
   signal	Xpixel	    : unsigned(9 downto 0);     -- Horizontal pixel counter
   signal	Ypixel	    : unsigned(9 downto 0);		-- Vertical pixel counter
+  signal	clk_count	: unsigned(1 downto 0);	    -- Clock divisor, to generate 25 MHz signal
+  signal	vga_clk		: std_logic;			    -- One pulse width 25 MHz signal
+		
+  signal 	colour      : std_logic_vector(1 downto 0);	
+  
+  signal    blank       : std_logic;                        -- blanking signal
 
-    -- Background (10010110) 	Text(01001000) Bar(00000000)
-  signal 	pixel_colour	: std_logic_vector(1 downto 0);  	
-  signal    blank       : std_logic;
-  signal    pic_mem    : std_logic_vector(6143 downto 0);
 	
 begin
+
+  -- Clock divisor
+  -- Divide system clock (100 MHz) by 4
+  process(clk)
+  begin
+    if rising_edge(clk) then
+        if rst='1' then
+            clk_count <= (others => '0');
+        else
+	        clk_count <= clk_count + 1;
+        end if;
+    end if;
+  end process;
+	
+  -- 25 MHz clock (one system clock pulse width)
+  vga_clk <= '1' when (clk_count = 3) else '0';
+	
 	
   -- Horizontal pixel counter
-    process(clk) begin
-        if rising_edge(clk) then
-            if rst='1' then
-	            Xpixel <= (others => '0');
-            elsif (Xpixel > 800) then
-	            Xpixel <= "00000000";
-	        else
-	            Xpixel <= Xpixel + 1;
+
+  process(clk)
+  begin
+    if rising_edge(clk) then
+        if rst='1' then
+            Xpixel <= (others => '0');     
+        elsif vga_clk = '1'  then    
+            if Xpixel = 799 then
+                Xpixel <= (others => '0');
+            else
+                Xpixel <= Xpixel + 1;
             end if;
         end if;
-    end process;
-
+    end if;
+  end process;
+            
+  
   -- Horizontal sync
-    Hsync <= '1' when Xpixel <= 656 and Xpixel >= 752 else '0';
- 
+
+  Hsync <= '0' when Xpixel > 656 and Xpixel <= 752 else
+           '1';
   
   -- Vertical pixel counter
-    process(clk) begin
-        if rising_edge(clk) then
-            if rst='1' then
-	            Ypixel <= (others => '0');
-            elsif (Ypixel > 521) then
-	            Ypixel <= "00000000";
-	        elsif (Xpixel = 800) then
-	            Ypixel <= Ypixel + 1;
+
+  process(clk)
+  begin
+    if rising_edge(clk) then   
+        if rst='1' then
+            Ypixel <= (others => '0');  
+        elsif vga_clk = '1' then  
+            if Ypixel = 520 then
+                Ypixel <= (others => '0');
+            elsif Xpixel = 799 then 
+                Ypixel <= Ypixel + 1;
             end if;
         end if;
-    end process;
- 
-  -- Vertical sync
-     Vsync <= '1' when Ypixel <= 490 and Ypixel >= 492 else '0';
+    end if;
+  end process;
 
-  -- Blank signal
-    blank <= '1' when Xpixel > 640 or Ypixel > 480 else '0'; 
-             
-    
-    pixel_colour <= '0' & (pic_mem(96* to_integer(Ypixel)/6 + to_integer(Xpixel)/6)) when
-                    Xpixel < 96*6 and Ypixel <= 64*6 else "11";
+  -- Vertical sync
+
+  Vsync <= '0' when Ypixel > 490 and Ypixel <= 492 else
+           '1';
+  
+  -- Video blanking signal
+
+  blank <= '1' when Xpixel > 640 or Ypixel > 480 else
+           '0';
+  
+  -- Tile memory
+  process (clk) begin
+    if rising_edge(clk) then
+      if (blank = '0') then
+        colour <= '0' & data;
+      else
+        colour <= (others => '0');
+      end if;
+    end if;
+  end process;
+  
+  -- Picture memory address composite (16 = 96//6, 10 = 64//2)
+  addr <= std_logic_vector(resize((16*Xpixel + 10*Ypixel), addr'length));
+  
+  -- Set picture colour based on pos and data. (576 = 96*6, 384 = 64*6)
 
   -- Background: (00), (10010110) Text: (01), (01001000) Bar: (11),(00000000)
   -- VGA generation
-    vgaRed(2) 	<= '1' when pixel_colour = "00" else 
-                   '0' when pixel_colour = "01" else
-                   '0' when pixel_colour = "11";
+    vgaRed(2) 	<= '1' when colour = "00" else 
+                   '0' when colour = "01" else
+                   '1' when colour = "11";
                    
-    vgaRed(1) 	<= '0' when pixel_colour = "00" else 
-                   '1' when pixel_colour = "01" else
-                   '0' when pixel_colour = "11";
+    vgaRed(1) 	<= '1' when colour = "00" else 
+                   '0' when colour = "01" else
+                   '1' when colour = "11";
                    
-    vgaRed(0) 	<= '0' when pixel_colour = "00" else 
-                   '0' when pixel_colour = "01" else
-                   '0' when pixel_colour = "11";
+    vgaRed(0) 	<= '1' when colour = "00" else 
+                   '0' when colour = "01" else
+                   '1' when colour = "11";
                    
-    vgaGreen(2) <= '1' when pixel_colour = "00" else 
-                   '0' when pixel_colour = "01" else
-                   '0' when pixel_colour = "11";
+    vgaGreen(2) <= '1' when colour = "00" else 
+                   '0' when colour = "01" else
+                   '1' when colour = "11";
                    
-    vgaGreen(1) <= '0' when pixel_colour = "00" else 
-                   '1' when pixel_colour = "01" else
-                   '0' when pixel_colour = "11";
+    vgaGreen(1) <= '1' when colour = "00" else 
+                   '0' when colour = "01" else
+                   '1' when colour = "11";
                    
-    vgaGreen(0) <= '1' when pixel_colour = "00" else 
-                   '0' when pixel_colour = "01" else
-                   '0' when pixel_colour = "11";
+    vgaGreen(0) <= '1' when colour = "00" else 
+                   '0' when colour = "01" else
+                   '1' when colour = "11";
                    
-    vgaBlue(2) 	<= '1' when pixel_colour = "00" else 
-                   '0' when pixel_colour = "01" else
-                   '0' when pixel_colour = "11";
+    vgaBlue(2) 	<= '1' when colour = "00" else 
+                   '0' when colour = "01" else
+                   '1' when colour = "11";
                    
-    vgaBlue(1) 	<= '0' when pixel_colour = "00" else 
-                   '0' when pixel_colour = "01" else
-                   '0' when pixel_colour = "11";
+    vgaBlue(1) 	<= '1' when colour = "00" else 
+                   '0' when colour = "01" else
+                   '1' when colour = "11";
+
+
 
 end Behavioral;
 

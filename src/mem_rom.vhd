@@ -282,9 +282,7 @@ architecture arch of mem_rom is
     -- bit instructions
     constant set_6_a    : std_logic_vector(7 downto 0) := x"f7";
 
-    constant MEMSIZE : integer := 64;
-
-    type mem_t is array(0 to MEMSIZE-1) of std_logic_vector(7 downto 0);
+    type mem_t is array(0 to 127) of std_logic_vector(7 downto 0);
     constant prgm_fpga : mem_t :=
         (nop,
          others => nop);
@@ -311,12 +309,12 @@ architecture arch of mem_rom is
          nop,
          nop,           -- 20
          ld_hl_nn,
-         x"15",
+         x"3e",
          x"00",
          ld_b_hlx,
          ld_sp_hl,
          ld_bc_nn,
-         x"1f",
+         x"4f",
          x"00",
          ld_a_n,
          x"0a",         -- 30
@@ -324,10 +322,10 @@ architecture arch of mem_rom is
          ld_a_n,
          x"bc",
          ld_nnx_a,
-         x"30",
+         x"70",
          x"00",
          ld_nnx_hl,
-         x"31",
+         x"72",
          x"00",
          ld_c_n,        -- 40
          x"02",
@@ -337,6 +335,11 @@ architecture arch of mem_rom is
          x"4c",
          ed,
          in_c_c,
+         push_hl,
+         inc_hl,
+         dec_sp,           -- 50
+         ld_hlx_c,
+         halt,
          others => nop);
 
     signal mem : mem_t := prgm_fpga;
@@ -347,7 +350,7 @@ begin
         if rising_edge(clk) then
             if rst = '1' then
                 mem <= prgm_test;
-            elsif a < MEMSIZE then
+            elsif a < mem'length then
                 mem(a) <= word_next;
             end if;
         end if;
@@ -355,9 +358,9 @@ begin
 
     a <= to_integer(unsigned(addr)) when ce = '1' else 0;
     word_next <= data_in 
-        when a >= MEMSIZE or (ce = '1' and rd = '1') else mem(a);
+        when a >= mem'length or (ce = '1' and rd = '1') else mem(a);
     data_out <= mem(a)
-        when a < MEMSIZE and ce = '1' and wr = '1' else x"00";
+        when a < mem'length and ce = '1' and wr = '1' else x"00";
 
     cbi.reset <= '0';
     cbi.wt <= '0';

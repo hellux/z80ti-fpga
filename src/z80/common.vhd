@@ -15,17 +15,19 @@ package z80_comm is
     type addr_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
 
-    -- control signals for id
-    type id_ctrl_t is record
-        mode_end : std_logic;       -- last state of current mode
-        cycle_end : std_logic;      -- last state of current cycle
-        instr_end : std_logic;      -- last state of current instr
-        jump : std_logic;           -- use wz when fetching on next cycle
-    end record;
     type id_mode_t is (
         main, ed, cb, dd, ddcb, fd, fdcb, -- exec prefixes
-        wz                                -- use wz instead of pc on fetch
+        wz,                               -- use wz instead of pc on fetch
+        halt                              -- halted
     );
+
+    -- control signals for id
+    type id_ctrl_t is record
+        cycle_end : std_logic;      -- last state of current cycle
+        instr_end : std_logic;      -- last state of current instr
+        mode_next : id_mode_t;      -- mode for next cp
+    end record;
+
     -- current state/context of cpu
     type state_t is record
         mode : id_mode_t;

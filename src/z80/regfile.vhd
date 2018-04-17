@@ -92,7 +92,7 @@ architecture arch of regfile is
             new_ram(baddr(reg_addr, s)) := data;
         elsif rda = '1' then
             new_ram(baddr(reg_addr, s)) := addr(15 downto 8);
-            new_ram(baddr(reg_addr, s)) := addr(7 downto 0);
+            new_ram(baddr(reg_addr+1, s)) := addr(7 downto 0);
         end if;
         if rdf = '1' then
             new_ram(baddr(regF, s)) := f;
@@ -122,7 +122,8 @@ begin
     ram_proc : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                ram <= (others => (others => '0'));
+                ram <= (18 => x"00", 19 => x"3f",
+                        others => x"00");
             else
                 ram <= ram_next;
             end if;

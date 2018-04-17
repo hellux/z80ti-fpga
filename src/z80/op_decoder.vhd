@@ -67,10 +67,8 @@ architecture arch of op_decoder is
             f.cw.addr_rd := '1';    -- read from abus to buffer
             f.cw.addr_wr := '1';    -- write from buffer to outside abus
             f.cb.mreq := '1';       -- signal addr is ready on abus
-            -- TODO have to use buf instead of reg here (test with FPGA)
-            f.cb.wr := '1';         -- signal addr is ready on abus for wr
         when t2 =>
-            f.cw.data_wro := '1';   -- keep sending data
+            f.cw.data_wro := '1';   -- send data
             f.cw.addr_wr := '1';    -- keep writing addr to mem
             f.cb.mreq := '1';       -- keep request until byte read
             f.cb.wr := '1';         -- keep reading
@@ -111,7 +109,7 @@ architecture arch of op_decoder is
             if state.mode = wz then
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := rf_o; -- keep wz on abus for incr
-                f.ct.mode_end := '1'; -- go back to main mode
+                f.ct.mode_next := main; -- go back to main mode
             else 
                 f.cw.abus_src := pc_o; -- keep pc on abus
             end if;
@@ -122,7 +120,8 @@ architecture arch of op_decoder is
         return f;
     end mem_rd_instr;
 
-    function mem_rd_multi(state : state_t; f_in : id_frame_t)
+    function mem_rd_multi(state : state_t; f_in : id_frame_t;
+                          prefix : id_mode_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -134,7 +133,7 @@ architecture arch of op_decoder is
             f := mem_rd_instr(state, f);     -- mem_rd next byte
             case state.t is
             when t3 =>
-                f.ct.mode_end := '1';   -- update mode to prefix
+                f.ct.mode_next := prefix; -- update mode to prefix
                 f.ct.cycle_end := '1';  -- end mcycle
             when others => null; end case;
         end case;
@@ -175,8 +174,7 @@ architecture arch of op_decoder is
             when t3 =>
                 f.cw.rf_addr := regW;
                 f.ct.cycle_end := '1';
-                f.ct.jump := '1';
-                f.ct.mode_end := '1'; -- switch to wz mode
+                f.ct.mode_next := wz;
                 f.ct.instr_end := '1';
             when others => null; end case;
         when others => null; end case;
@@ -458,6 +456,27 @@ architecture arch of op_decoder is
         return f;
     end bit_r;
 
+    function inc_dec_rp(state : state_t; f_in : id_frame_t;
+                        op : addr_op_t; reg : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is 
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := reg;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := op;
+                f.cw.rf_rda := '1';
+            when t5 =>
+            when t6 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end inc_dec_rp;
+
     function ld_r_r(state : state_t; f_in : id_frame_t;
                     src, dst : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
@@ -504,7 +523,7 @@ architecture arch of op_decoder is
     end ld_r_n;
 
     function ld_r_hlx(state : state_t; f_in : id_frame_t;
-                   reg : integer range 0 to 7)
+                      reg : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -583,24 +602,24 @@ architecture arch of op_decoder is
         return f;
     end ld_sp_hl;
 
-    function ld_rpx_a(state : state_t; f_in : id_frame_t;
-                      reg : integer range 0 to 15)
+    function ld_rpx_r(state : state_t; f_in : id_frame_t;
+                      rp : integer range 0 to 15; r : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
         when m1 =>
             case state.t is
             when t4 =>
-                f.cw.rf_addr := regA;
+                f.cw.rf_addr := r;
                 f.cw.dbus_src := rf_o;
-                f.cw.data_rdo := '1';   -- store reg A in data buffer
+                f.cw.data_rdo := '1';   -- store reg in data buffer
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 =>
             f := mem_wr(state, f);
             case state.t is
             when t1 =>
-                f.cw.rf_addr := reg;
+                f.cw.rf_addr := rp;
                 f.cw.abus_src := rf_o;
             when t3 =>
                 f.ct.cycle_end := '1';
@@ -608,7 +627,7 @@ architecture arch of op_decoder is
             when others => null; end case;
         when others => null; end case;
         return f;
-    end ld_rpx_a;
+    end ld_rpx_r;
 
     function ld_nnx_a(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
@@ -755,6 +774,68 @@ architecture arch of op_decoder is
         return f;
     end in_r_c;
 
+    function push_rp2(state : state_t; f_in : id_frame_t;
+                      reg : integer range 0 to 7)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 => -- dec SP
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- write high
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+            when t2 =>
+                f.cw.rf_addr := reg;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- write low
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+            when t2 =>
+                f.cw.rf_addr := reg+1;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end push_rp2;
+
+    function halt(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 => 
+                f.ct.mode_next := halt;
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end halt;
+
     type rp_table_t is array(0 to 3) of integer range 0 to 15;
     type alu_table_t is array(0 to 7) of instr_t;
     constant rp  : rp_table_t := (regBC, regDE, regHL, regSP);
@@ -785,9 +866,9 @@ begin
         s.p := to_integer(unsigned(instr(5 downto 4)));
         if instr(3) = '1' then s.q := 1; else s.q := 0; end if;
 
-        -- reset all signals to defaults (overwrite below)
-        f.ct := (others => '0'); -- reset internal ctrl signals
-        f.cb := (others => '0'); -- reset control bus out signals
+        -- set all signals to defaults (overwrite below)
+        f.ct := (mode_next => state.mode, others => '0');
+        f.cb := (others => '0');
         f.cw := (dbus_src => ext_o,
                  abus_src => pc_o,
                  rf_addr => 0,
@@ -800,7 +881,9 @@ begin
         -- fetch phase
         if state.m = m1 then
             f.cb.m1 := '1';
-            f := mem_rd_instr(state, f);
+            if state.mode /= halt then
+                f := mem_rd_instr(state, f);
+            end if;
         end if;
 
         -- exec phase
@@ -811,99 +894,102 @@ begin
                 case s.z is
                 when 0 =>
                     case s.y is
-                    when 0 => f := nop(state, f); -- NOP
-                    when 1 => f := ex(state, f, af); -- EX AF, AF'
-                    when 2 => f := nop(state, f); -- DJNZ d
+                    when 0 => f := nop(state, f);
+                    when 1 => f := ex(state, f, af);
+                    when 2 => f := nop(state, f); -- TODO DJNZ d
                     when 3 => f := jr_d(state, f);
-                    when 4|5|6|7 => f := jr_cc_d(state, f, s.y-4); -- JR cc[y-4] d
+                    when 4|5|6|7 => f := jr_cc_d(state, f, s.y-4);
                     end case;
                 when 1 =>
                     case s.q is
-                    when 0 => f := ld_rp_nn(state, f, rp(s.p)); -- LD rp[p], nn
-                    when 1 => f := nop(state, f); -- ADD hl, rp[p]
+                    when 0 => f := ld_rp_nn(state, f, rp(s.p));
+                    when 1 => f := nop(state, f); -- TODO ADD hl, rp[p]
                     end case;
                 when 2 =>
                     case s.q is
                     when 0 => 
                         case s.p is
-                        when 0 => f := ld_rpx_a(state, f, regBC); -- LD (BC), A
-                        when 1 => f := ld_rpx_a(state, f, regDE); -- LD (DE), A
-                        when 2 => f := ld_nnx_hl(state, f); -- LD (nn), HL
-                        when 3 => f := ld_nnx_a(state, f); -- LD (nn), A
+                        when 0 => f := ld_rpx_r(state, f, regBC, regA);
+                        when 1 => f := ld_rpx_r(state, f, regDE, regA);
+                        when 2 => f := ld_nnx_hl(state, f);
+                        when 3 => f := ld_nnx_a(state, f);
                         end case;
                     when 1 => 
                         case s.p is
-                        when 0 => f := nop(state, f); -- LD A, (BC)
-                        when 1 => f := nop(state, f); -- LD A, (DE)
-                        when 2 => f := nop(state, f); -- LD HL, (nn)
-                        when 3 => f := nop(state, f); -- LD A, (nn)
+                        when 0 => f := nop(state, f); -- TODO LD A, (BC)
+                        when 1 => f := nop(state, f); -- TODO LD A, (DE)
+                        when 2 => f := nop(state, f); -- TODO LD HL, (nn)
+                        when 3 => f := nop(state, f); -- TODO LD A, (nn)
                         end case;
                     end case;
-                when 3 => -- INC/DEC rp[y];
+                when 3 =>
                     case s.q is
-                    when 0 => null; -- INC rp[y]
-                    when 1 => null; -- DEC rp[y]
+                    when 0 => f := inc_dec_rp(state, f, inc, rp(s.p));
+                    when 1 => f := inc_dec_rp(state, f, dec, rp(s.p));
                     end case;
-                when 4 => f := alu_r(state, f, inc_i, s.y); -- INC r[y]
-                when 5 => f := alu_r(state, f, dec_i, s.y); -- DEC r[y]
-                when 6 => f := ld_r_n(state, f, s.y); -- LD r[y], n
+                when 4 => f := alu_r(state, f, inc_i, s.y);
+                when 5 => f := alu_r(state, f, dec_i, s.y);
+                when 6 => f := ld_r_n(state, f, s.y);
                 when 7 => f := alu_af(state, f, afi(s.y));
                 end case;
             when 1 =>
                 case s.z is
                 when 6 =>
                     case s.y is
-                    when 6 => null; -- HALT
-                    when others => f := ld_r_hlx(state, f, s.y); -- LD r[y], (hl)
+                    when 6 =>
+                        case s.z is
+                        when 6 => f := halt(state, f);
+                        when others => f := ld_rpx_r(state, f, regHL, s.z);
+                        end case;
+                    when others => f := ld_r_hlx(state, f, s.y);
                     end case;
-                -- TODO LD (hl), r[z]
-                when others => f := ld_r_r(state, f, s.z, s.y); --LD r[y], r[z]
+                when others => f := ld_r_r(state, f, s.z, s.y);
                 end case;
             when 2 => 
                 case s.z is
-                when 6 => null; -- alu[y] (hl)
-                when others => f := alu_a_r(state, f, alu(s.y), s.z); -- alu[y] r[z]
+                when 6 => null; -- TODO alu[y] (hl)
+                when others => f := alu_a_r(state, f, alu(s.y), s.z);
                 end case;
             when 3 =>
                 case s.z is
-                when 0 => f := nop(state, f); -- RET cc[y]
-                when 1 => f := nop(state, f);
+                when 0 => f := nop(state, f); -- TODO RET cc[y]
+                when 1 =>
                     case s.q is
-                    when 0 => f := nop(state, f); -- POP rp2[p]
+                    when 0 => f := nop(state, f); -- TODO POP rp2[p]
                     when 1 =>
                         case s.p is
-                        when 0 => f := nop(state, f); -- RET
-                        when 1 => f := ex(state, f, reg); -- EXX
-                        when 2 => f := jp_hl(state, f); -- JP HL
-                        when 3 => f := ld_sp_hl(state, f); -- LD SP, HL
+                        when 0 => f := nop(state, f); -- TODO RET
+                        when 1 => f := ex(state, f, reg);
+                        when 2 => f := jp_hl(state, f);
+                        when 3 => f := ld_sp_hl(state, f);
                         end case;
                     end case;
-                when 2 => f := jp_cc_nn(state, f, s.y); -- JP cc[y], nn
+                when 2 => f := jp_cc_nn(state, f, s.y);
                 when 3 =>
                     case s.y is
                     when 0 => f := jp_nn(state, f);
-                    when 1 => f := mem_rd_multi(state, f); -- (CB/DDCD/FDCB)
-                    when 2 => f := nop(state, f); -- OUT (n), A
-                    when 3 => f := nop(state, f); -- IN A, (n)
-                    when 4 => f := nop(state, f); -- EX (SP), HL
-                    when 5 => f := ex(state, f, dehl); -- EX DE, HL
-                    when 6 => f := nop(state, f); -- DI
-                    when 7 => f := nop(state, f); -- EI
+                    when 1 => f := mem_rd_multi(state, f, cb);
+                    when 2 => f := nop(state, f); -- TODO OUT (n), A
+                    when 3 => f := nop(state, f); -- TODO IN A, (n)
+                    when 4 => f := nop(state, f); -- TODO EX (SP), HL
+                    when 5 => f := ex(state, f, dehl);
+                    when 6 => f := nop(state, f); -- TODO DI
+                    when 7 => f := nop(state, f); -- TODO EI
                     end case;
-                when 4 => f := nop(state, f); -- CALL cc[y], nn
+                when 4 => f := nop(state, f); -- TODO CALL cc[y], nn
                 when 5 =>
                     case s.q is
-                    when 0 => null; -- PUSH rp2[p]
+                    when 0 => f := push_rp2(state, f, rp2(s.p));
                     when 1 =>
                         case s.p is
-                        when 0 => f := nop(state, f); -- CALL nn
-                        when 1 => f := mem_rd_multi(state, f); -- (DD)
-                        when 2 => f := mem_rd_multi(state, f); -- (ED)
-                        when 3 => f := mem_rd_multi(state, f); -- (FD)
+                        when 0 => f := nop(state, f); -- TODO CALL nn
+                        when 1 => f := mem_rd_multi(state, f, dd);
+                        when 2 => f := mem_rd_multi(state, f, ed);
+                        when 3 => f := mem_rd_multi(state, f, fd);
                         end case;
                     end case;
-                when 6 => f := alu_a_n(state, f, alu(s.y)); -- alu[y] n
-                when 7 => f := nop(state, f); -- RST y*8
+                when 6 => f := alu_a_n(state, f, alu(s.y));
+                when 7 => f := nop(state, f); -- TODO RST y*8
                 end case;
             end case;
         when ed =>
@@ -912,45 +998,45 @@ begin
                 case s.z is
                 when 0 =>
                     case s.y is
-                    when 6 => f := in_c(state, f); -- IN (C)
-                    when others => f := in_r_c(state, f, s.y); -- IN r[y], (C)
+                    when 6 => f := in_c(state, f);
+                    when others => f := in_r_c(state, f, s.y);
                     end case;
                 when 1 =>
                     case s.y is
-                    when 6 => f := nop(state, f); -- OUT (C), 0
-                    when others => f := nop(state, f); -- OUT r[y], (C)
+                    when 6 => f := nop(state, f); -- TODO OUT (C), 0
+                    when others => f := nop(state, f); -- TODO OUT r[y], (C)
                     end case;
                 when 2 =>
                     case s.q is
-                    when 0 => f := nop(state, f); -- SBC HL, rp[p]
-                    when 1 => f := nop(state, f); -- ADC HL, rp[p]
+                    when 0 => f := nop(state, f); -- TODO SBC HL, rp[p]
+                    when 1 => f := nop(state, f); -- TODO ADC HL, rp[p]
                     end case;
                 when 3 =>
                     case s.q is
-                    when 0 => f := nop(state, f); -- LD (nn), rp[p]
-                    when 1 => f := nop(state, f); -- LD rp[p], (nn)
+                    when 0 => f := nop(state, f); -- TODO LD (nn), rp[p]
+                    when 1 => f := nop(state, f); -- TODO LD rp[p], (nn)
                     end case;
-                when 4 => f := alu_af(state, f, neg_i) ; -- NEG;
+                when 4 => f := alu_af(state, f, neg_i);
                 when 5 =>
                     case s.y is
-                    when 1 => f := nop(state, f); -- RETI
-                    when others => f := nop(state, f); -- RETN
+                    when 1 => f := nop(state, f); -- TODO RETI
+                    when others => f := nop(state, f); -- TODO RETN
                     end case;
-                when 6 => f := nop(state, f); -- IM im[y]
+                when 6 => f := nop(state, f); -- TODO IM im[y]
                 when 7 =>
                     case s.y is
-                    when 0 => f := nop(state, f); -- LD I, A
-                    when 1 => f := nop(state, f); -- LD R, A
-                    when 2 => f := nop(state, f); -- LD A, I
-                    when 3 => f := nop(state, f); -- LD A, R
-                    when 4 => f := nop(state, f); -- RRD
-                    when 5 => f := nop(state, f); -- RLD
+                    when 0 => f := nop(state, f); -- TODO LD I, A
+                    when 1 => f := nop(state, f); -- TODO LD R, A
+                    when 2 => f := nop(state, f); -- TODO LD A, I
+                    when 3 => f := nop(state, f); -- TODO LD A, R
+                    when 4 => f := nop(state, f); -- TODO RRD
+                    when 5 => f := nop(state, f); -- TODO RLD
                     when 6|7 => f := nop(state, f);
                     end case;
                 end case;
             when 2 =>
                 case s.y is
-                when 4|5|6|7 => f := nop(state, f); -- bli[y,z]
+                when 4|5|6|7 => f := nop(state, f); -- TODO bli[y,z]
                 when others => f := nop(state, f); -- NONI
                 end case;
             when 0|3 => f := nop(state, f); end case; -- NONI
@@ -965,23 +1051,24 @@ begin
             case s.x is
             when 0 =>
                 case s.z is
-                when 6 => f := nop(state, f); -- rot[y] (IX/Y+d)
-                when others => f := nop(state, f); -- LD r[z], rot[y] (IX/Y+d)
+                when 6 => f := nop(state, f); -- TODO rot[y] (IX/Y+d)
+                when others => f := nop(state, f); -- TODO LD r[z], rot[y] (IX/Y+d)
                 end case;
-            when 1 => f := nop(state, f); -- BIT y, (IX/Y+d)
+            when 1 => f := nop(state, f); -- TODO BIT y, (IX/Y+d)
             when 2 =>
                 case s.z is
-                when 6 => f := nop(state, f); -- res y, (IX/Y+d)
-                when others => f := nop(state, f); -- LD r[z], res y, (IX/Y+d)
+                when 6 => f := nop(state, f); -- TODO res y, (IX/Y+d)
+                when others => f := nop(state, f); -- TODO LD r[z], res y, (IX/Y+d)
                 end case;
             when 3 =>
                 case s.z is
-                when 6 => f := nop(state, f); -- set y, (IX/Y+d)
-                when others => f := nop(state, f); -- LD r[z], set y, (IX/Y+d)
+                when 6 => f := nop(state, f); -- TODO set y, (IX/Y+d)
+                when others => f := nop(state, f); -- TODO LD r[z], set y, (IX/Y+d)
                 end case;
             end case;
         when dd|fd => f := nop(state, f); -- TODO
         when wz => null;
+        when halt => f := nop(state, f);
         end case;
 
         cw <= f.cw;
