@@ -10,6 +10,7 @@ src/segment.vhd
 src/mem_rom.vhd
 src/asic.vhd
 src/lcd_ctrl.vhd
+src/pict_mem.vhd
 src/monitor.vhd
 src/comp.vhd
 tests/comp_tb.vhd

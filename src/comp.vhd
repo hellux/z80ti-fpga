@@ -46,11 +46,21 @@ architecture arch of comp is
         clk : in std_logic;
         gmem_data_in : in std_logic_vector(7 downto 0);
         gmem_data_out : out std_logic_vector(7 downto 0);
-        gmem_addr : out std_logic_vector(12 downto 0);
+        gmem_addr : out std_logic_vector(9 downto 0);
+        gmem_rd, gmem_rst : out std_logic;
         status_rd, data_rd : in std_logic;
         status_wr, data_wr : in std_logic;
         status_in, data_in : in std_logic_vector(7 downto 0);
         status_out, data_out : out std_logic_vector(7 downto 0));
+    end component;
+
+    component pict_mem port(
+        clk, rst : in std_logic;
+        rd : in std_logic;
+        di : in std_logic_vector(7 downto 0);
+        do : out std_logic_vector(7 downto 0);
+        addr_rd	: in std_logic_vector(9 downto 0);
+        addr_wr : in std_logic_vector(9 downto 0));
     end component;
 
     component monitor port(
@@ -67,8 +77,9 @@ architecture arch of comp is
     signal data, data_z80, data_rom, data_asic : std_logic_vector(7 downto 0);
     signal io_ports : io_ports_t;
     signal io_data : io_data_t;
-    signal lcd_gmem_data, gmem_lcd_data : std_logic_vector(7 downto 0);
-    signal lcd_gmem_addr : std_logic_vector(12 downto 0);
+    signal lcd_gmem_data, gmem_do : std_logic_vector(7 downto 0);
+    signal lcd_gmem_addr, vga_gmem_addr : std_logic_vector(9 downto 0);
+    signal gmem_rd, gmem_rst : std_logic;
 
     signal rom_ce : std_logic;
 
@@ -126,11 +137,15 @@ begin
                            addr(7 downto 0), data, data_asic,
                            io_data, io_ports);
     lcd : lcd_ctrl port map(clk_z80,
-                            gmem_lcd_data, lcd_gmem_data, lcd_gmem_addr,
+                            gmem_do, lcd_gmem_data, lcd_gmem_addr,
+                            gmem_rd, gmem_rst,
                             io_ports.lcd_status.rd, io_ports.lcd_data.rd,
                             io_ports.lcd_status.wr, io_ports.lcd_data.wr,
                             io_ports.lcd_status.data, io_ports.lcd_data.data,
                             io_data.lcd_status, io_data.lcd_data);
+    gmem : pict_mem port map(clk_z80, gmem_rst, gmem_rd,
+                             lcd_gmem_data, gmem_do,
+                             lcd_gmem_addr, vga_gmem_addr);
 
     -- DEBUG
     mon : monitor port map(clk, btns_op, dbg_z80, seg, led, an);
