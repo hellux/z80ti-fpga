@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 use work.cmp_comm.all;
 
 entity lcd_ctrl is port(
-    clk : in std_logic;
+    clk, rst : in std_logic;
     gmem_data_in : in std_logic_vector(7 downto 0);
     gmem_data_out : out std_logic_vector(7 downto 0);
     gmem_addr : out std_logic_vector(9 downto 0);
@@ -24,10 +24,15 @@ begin
     data_out <= gmem_data_in;
     gmem_data_out <= data_in;
     gmem_addr <= std_logic_vector(to_unsigned((x*64+y)/8, gmem_addr'length));
+    gmem_rd <= '1' when data_wr = '1' else '0';
+    gmem_rst <= rst;
 
     modify_ptr : process(clk) begin
         if rising_edge(clk) then
-            if data_rd = '1' or data_wr = '1' then
+            if rst = '1' then
+                x <= 0;
+                y <= 0;
+            elsif data_rd = '1' or data_wr = '1' then
                 if xy = '1' then
                     if up = '1' then
                         if y /= 95 then y <= y + 1;

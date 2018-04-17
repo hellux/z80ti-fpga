@@ -339,6 +339,10 @@ architecture arch of mem_rom is
          inc_hl,
          dec_sp,           -- 50
          ld_hlx_c,
+         ld_a_n,
+         x"ff",
+         out_n_a,
+         x"11",
          halt,
          others => nop);
 

@@ -43,7 +43,7 @@ architecture arch of comp is
     end component;
 
     component lcd_ctrl port(
-        clk : in std_logic;
+        clk, rst : in std_logic;
         gmem_data_in : in std_logic_vector(7 downto 0);
         gmem_data_out : out std_logic_vector(7 downto 0);
         gmem_addr : out std_logic_vector(9 downto 0);
@@ -136,7 +136,7 @@ begin
     asic_c : asic port map(clk_z80, cbi_asic, cbo,
                            addr(7 downto 0), data, data_asic,
                            io_data, io_ports);
-    lcd : lcd_ctrl port map(clk_z80,
+    lcd : lcd_ctrl port map(clk_z80, rst,
                             gmem_do, lcd_gmem_data, lcd_gmem_addr,
                             gmem_rd, gmem_rst,
                             io_ports.lcd_status.rd, io_ports.lcd_data.rd,

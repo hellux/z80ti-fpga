@@ -38,6 +38,26 @@ architecture arch of op_decoder is
         return f;
     end io_rd;
 
+    function io_wr(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.t is
+        when t1 =>
+            f.cw.addr_rd := '1';    -- read from abus to buffer
+            f.cw.addr_wr := '1';    -- write from buffer to outside abus
+            f.cb.iorq := '1';       -- signal addr is ready on abus
+        when t2 =>
+            f.cw.data_wro := '1';   -- send data
+            f.cw.addr_wr := '1';    -- keep writing addr to mem
+            f.cb.iorq := '1';       -- keep request until byte read
+            f.cb.wr := '1';         -- signal write
+        when t3 =>
+            f.cw.addr_wr := '1';    -- keep writing addr
+            f.cw.data_wro := '1';   -- keep sending data
+        when others => null; end case;
+        return f;
+    end io_wr;
+
     function mem_rd(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -804,6 +824,40 @@ architecture arch of op_decoder is
         return f;
     end in_r_c;
 
+    function out_n_a(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 => f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.rf_addr := regZ;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := io_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regWZ;
+                f.cw.abus_src := rf_o;
+            when t2 =>
+                f.cw.rf_addr := regA;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t4 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end out_n_a;
+
     function push_rp2(state : state_t; f_in : id_frame_t;
                       reg : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
@@ -999,7 +1053,7 @@ begin
                     case s.y is
                     when 0 => f := jp_nn(state, f);
                     when 1 => f := mem_rd_multi(state, f, cb);
-                    when 2 => f := nop(state, f); -- TODO OUT (n), A
+                    when 2 => f := out_n_a(state, f); -- TODO OUT (n), A
                     when 3 => f := nop(state, f); -- TODO IN A, (n)
                     when 4 => f := nop(state, f); -- TODO EX (SP), HL
                     when 5 => f := ex(state, f, dehl);

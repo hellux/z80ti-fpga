@@ -30,7 +30,7 @@ begin
     data_out <= port_rd_data when cbo.iorq = '1' and cbo.rd = '1' else x"00";
     port_rd_data <= darr_in(a);
 
-    process(a, darr_out, rd_arr, wr_arr) begin
+    process(darr_out, rd_arr, wr_arr) begin
         for i in parr_out'range loop
             parr_out(i) <= (data => darr_out(i),
                             rd => rd_arr(i),
@@ -45,12 +45,12 @@ begin
 
     process(a, cbo.rd) begin
         rd_arr <= (others => '-');
-        rd_arr(a) <= cbo.rd;
+        rd_arr(a) <= cbo.iorq and cbo.rd;
     end process;
 
     process(a, cbo.wr) begin
         wr_arr <= (others => '0');
-        wr_arr(a) <= cbo.wr;
+        wr_arr(a) <= cbo.iorq and cbo.wr;
     end process;
 
     cbi.reset <= '0';
