@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
 use work.z80_comm.all;
+use work.cmp_comm.all;
 
 entity comp is port(
     clk : in std_logic;
@@ -37,7 +37,9 @@ architecture arch of comp is
         cbo : in ctrlbus_out;
         addr : in std_logic_vector(7 downto 0);
         data_in : in std_logic_vector(7 downto 0);
-        data_out : out std_logic_vector(7 downto 0));
+        data_out : out std_logic_vector(7 downto 0);
+        ports_in : in io_data_t;
+        ports_out : out io_ports_t);
     end component;
 
     component monitor port(
@@ -52,6 +54,8 @@ architecture arch of comp is
     signal addr : std_logic_vector(15 downto 0);
     signal cbi, cbi_rom, cbi_ext, cbi_asic : ctrlbus_in;
     signal data, data_z80, data_rom, data_asic : std_logic_vector(7 downto 0);
+    signal io_ports : io_ports_t;
+    signal io_data : io_data_t;
 
     signal rom_ce : std_logic;
 
@@ -93,7 +97,8 @@ begin
     rom : mem_rom port map(clk_z80, rst, cbo.wr, cbo.rd, rom_ce, cbi_rom,
                            addr(13 downto 0), data, data_rom);
     asic_c : asic port map(clk_z80, cbi_asic, cbo,
-                           addr(7 downto 0), data, data_asic);
+                           addr(7 downto 0), data, data_asic,
+                           io_data, io_ports);
 
     cbi_ext <= (reset => rst, others => '0');
 
