@@ -7,7 +7,11 @@ entity comp is port(
     clk : in std_logic;
     btns : in std_logic_vector(4 downto 0);
     seg, led : out std_logic_vector(7 downto 0);
-    an : out std_logic_vector(3 downto 0));
+    an : out std_logic_vector(3 downto 0);
+    vga_red : out std_logic_vector(2 downto 0);
+    vga_green : out std_logic_vector(2 downto 0);
+    vga_blue : out std_logic_vector(2 downto 1);
+    hsync, vsync : out std_logic);
 end comp;
 
 architecture arch of comp is
@@ -58,9 +62,21 @@ architecture arch of comp is
         clk, rst : in std_logic;
         rd : in std_logic;
         di : in std_logic_vector(7 downto 0);
-        do : out std_logic_vector(7 downto 0);
+        do_rd, do_wr : out std_logic_vector(7 downto 0);
         addr_rd	: in std_logic_vector(9 downto 0);
         addr_wr : in std_logic_vector(9 downto 0));
+    end component;
+
+    component vga_motor port(
+         clk : in std_logic;
+         data : in std_logic_vector(7 downto 0);
+         addr : out std_logic_vector(9 downto 0);
+         rst : in std_logic;
+         vgaRed	: out std_logic_vector(2 downto 0);
+         vgaGreen : out std_logic_vector(2 downto 0);
+         vgaBlue : out std_logic_vector(2 downto 1);
+         Hsync : out std_logic;
+         Vsync : out std_logic);
     end component;
 
     component monitor port(
@@ -77,7 +93,8 @@ architecture arch of comp is
     signal data, data_z80, data_rom, data_asic : std_logic_vector(7 downto 0);
     signal io_ports : io_ports_t;
     signal io_data : io_data_t;
-    signal lcd_gmem_data, gmem_do : std_logic_vector(7 downto 0);
+    signal gmem_lcd_data, gmem_vga_data : std_logic_vector(7 downto 0);
+    signal lcd_gmem_data : std_logic_vector(7 downto 0);
     signal lcd_gmem_addr, vga_gmem_addr : std_logic_vector(9 downto 0);
     signal gmem_rd, gmem_rst : std_logic;
 
@@ -137,15 +154,17 @@ begin
                            addr(7 downto 0), data, data_asic,
                            io_data, io_ports);
     lcd : lcd_ctrl port map(clk_z80, rst,
-                            gmem_do, lcd_gmem_data, lcd_gmem_addr,
+                            gmem_lcd_data, lcd_gmem_data, lcd_gmem_addr,
                             gmem_rd, gmem_rst,
                             io_ports.lcd_status.rd, io_ports.lcd_data.rd,
                             io_ports.lcd_status.wr, io_ports.lcd_data.wr,
                             io_ports.lcd_status.data, io_ports.lcd_data.data,
                             io_data.lcd_status, io_data.lcd_data);
     gmem : pict_mem port map(clk_z80, gmem_rst, gmem_rd,
-                             lcd_gmem_data, gmem_do,
+                             lcd_gmem_data, gmem_vga_data, gmem_lcd_data,
                              lcd_gmem_addr, vga_gmem_addr);
+    vga : vga_motor port map(clk, gmem_vga_data, vga_gmem_addr, rst,
+                             vga_red, vga_green, vga_blue, hsync, vsync);
 
     -- DEBUG
     mon : monitor port map(clk, btns_op, dbg_z80, seg, led, an);

@@ -6,7 +6,7 @@ entity pict_mem is port (
     clk, rst : in std_logic;
     rd : in std_logic;
     di : in std_logic_vector(7 downto 0);
-    do : out std_logic_vector(7 downto 0);
+    do_rd, do_wr : out std_logic_vector(7 downto 0);
     addr_rd	: in std_logic_vector(9 downto 0);
     addr_wr : in std_logic_vector(9 downto 0));
 end pict_mem;
@@ -31,6 +31,7 @@ begin
     a_wr <= to_integer(unsigned(addr_wr));
 
     byte_next <= di when rd = '1' else pic_mem(a_rd);
-    do <= pic_mem(a_wr);
+    do_rd <= pic_mem(a_rd);
+    do_wr <= pic_mem(a_wr);
 end Behavioral;
 
