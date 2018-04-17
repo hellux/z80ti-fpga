@@ -1,14 +1,15 @@
-tests/util.vhd
-src/z80/common.vhd
+src/z80/z80_comm.vhd
 src/z80/registers.vhd
 src/z80/regfile.vhd
 src/z80/alu.vhd
 src/z80/z80.vhd
 src/z80/op_decoder.vhd
 src/z80/state_machine.vhd
+src/cmp_comm.vhd
 src/segment.vhd
 src/mem_rom.vhd
 src/asic.vhd
+src/lcd_ctrl.vhd
 src/monitor.vhd
 src/comp.vhd
 tests/comp_tb.vhd

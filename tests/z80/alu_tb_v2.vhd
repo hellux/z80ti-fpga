@@ -9,7 +9,6 @@ end alu_tb_v2;
 
 architecture arch of alu_tb_v2 is
     component alu port(
-        clk : in std_logic;
         op1, op2, flags_in : in std_logic_vector(7 downto 0);
         op : in instr_t;
         bit_select : in integer range 0 to 7;
@@ -74,7 +73,6 @@ architecture arch of alu_tb_v2 is
     signal result, flags_out : std_logic_vector(7 downto 0);
 begin
     alu_comp : alu port map(
-        clk => clk,
         op1 => op1,
         op2 => op2,
         flags_in => flags_in,
@@ -292,10 +290,19 @@ begin
              x"26", x"4d", res_i, 6, x"10", "00-1-000", x"0d");
         
         report "daa";
-        -- denna failar, 162 vs 66?
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"3C", daa_i, 0, "00000000", "00-1-100", x"42");
- 
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"42", daa_i, 0, "00000000", "00-0-100", x"42");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"C3", daa_i, 0, "00000000", "00-0-001", x"23");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"CC", daa_i, 0, "00000000", "00-1-001", x"32");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"00", daa_i, 0, "00000001", "00-0-100", x"60");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"00", daa_i, 0, "00010000", "00-0-100", x"06");
+        
         report "scf";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"00", scf_i, 0, "00000000", "00-0-001", x"00"); 
