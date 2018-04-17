@@ -26,7 +26,7 @@ architecture Behavioral of vga_motor is
   signal	clk_count	: unsigned(1 downto 0);	    -- Clock divisor, to generate 25 MHz signal
   signal	vga_clk		: std_logic;			    -- One pulse width 25 MHz signal
 		
-  signal 	colour      : std_logic_vector(1 downto 0);	
+  signal 	colour      : std_logic_vector(7 downto 0);	
   
   signal    blank       : std_logic;                        -- blanking signal
 
@@ -104,7 +104,15 @@ begin
   process (clk) begin
     if rising_edge(clk) then
       if (blank = '0') then
-        colour <= '0' & data;
+        if Xpixel > 576 or Ypixel > 384 then
+            colour <= "00000000";
+        else
+            if (data = '1') then
+                colour <= "11111111";
+            elsif (data = '0') then
+                colour <= "01001000";
+            end if;
+        end if;
       else
         colour <= (others => '0');
       end if;
@@ -112,44 +120,26 @@ begin
   end process;
   
   -- Picture memory address composite (16 = 96//6, 10 = 64//2)
-  addr <= std_logic_vector(resize((16*Xpixel + 10*Ypixel), addr'length));
-  
+  addr <= std_logic_vector(resize(Xpixel/4 + Ypixel*24, addr'length));
   -- Set picture colour based on pos and data. (576 = 96*6, 384 = 64*6)
 
-  -- Background: (00), (10010110) Text: (01), (01001000) Bar: (11),(00000000)
+  -- Text: (10010110) Backgroud: (01001000) Bar: (00000000)
   -- VGA generation
-    vgaRed(2) 	<= '1' when colour = "00" else 
-                   '0' when colour = "01" else
-                   '1' when colour = "11";
+    vgaRed(2) 	<= colour(7);
                    
-    vgaRed(1) 	<= '1' when colour = "00" else 
-                   '0' when colour = "01" else
-                   '1' when colour = "11";
+    vgaRed(1) 	<= colour(6);
                    
-    vgaRed(0) 	<= '1' when colour = "00" else 
-                   '0' when colour = "01" else
-                   '1' when colour = "11";
+    vgaRed(0) 	<= colour(5);
                    
-    vgaGreen(2) <= '1' when colour = "00" else 
-                   '0' when colour = "01" else
-                   '1' when colour = "11";
+    vgaGreen(2) <= colour(4);
                    
-    vgaGreen(1) <= '1' when colour = "00" else 
-                   '0' when colour = "01" else
-                   '1' when colour = "11";
+    vgaGreen(1) <= colour(3);
                    
-    vgaGreen(0) <= '1' when colour = "00" else 
-                   '0' when colour = "01" else
-                   '1' when colour = "11";
+    vgaGreen(0) <= colour(2);
                    
-    vgaBlue(2) 	<= '1' when colour = "00" else 
-                   '0' when colour = "01" else
-                   '1' when colour = "11";
+    vgaBlue(2) 	<= colour(1);
                    
-    vgaBlue(1) 	<= '1' when colour = "00" else 
-                   '0' when colour = "01" else
-                   '1' when colour = "11";
-
+    vgaBlue(1) 	<= colour(0);
 
 
 end Behavioral;
