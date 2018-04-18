@@ -7,7 +7,7 @@ entity lcd_ctrl is port(
     clk, rst : in std_logic;
     gmem_data_in : in std_logic_vector(7 downto 0);
     gmem_data_out : out std_logic_vector(7 downto 0);
-    gmem_addr : out std_logic_vector(9 downto 0);
+    gmem_addr : out std_logic_vector(12 downto 0);
     gmem_rd, gmem_rst : out std_logic;
     status_rd, data_rd : in std_logic;
     status_wr, data_wr : in std_logic;
@@ -23,7 +23,7 @@ architecture arch of lcd_ctrl is
 begin
     data_out <= gmem_data_in;
     gmem_data_out <= data_in;
-    gmem_addr <= std_logic_vector(to_unsigned((x*64+y)/8, gmem_addr'length));
+    gmem_addr <= std_logic_vector(to_unsigned(x*64+y, gmem_addr'length));
     gmem_rd <= '1' when data_wr = '1' else '0';
     gmem_rst <= rst;
 

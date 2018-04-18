@@ -50,7 +50,7 @@ architecture arch of comp is
         clk, rst : in std_logic;
         gmem_data_in : in std_logic_vector(7 downto 0);
         gmem_data_out : out std_logic_vector(7 downto 0);
-        gmem_addr : out std_logic_vector(9 downto 0);
+        gmem_addr : out std_logic_vector(12 downto 0);
         gmem_rd, gmem_rst : out std_logic;
         status_rd, data_rd : in std_logic;
         status_wr, data_wr : in std_logic;
@@ -62,15 +62,16 @@ architecture arch of comp is
         clk, rst : in std_logic;
         rd : in std_logic;
         di : in std_logic_vector(7 downto 0);
-        do_rd, do_wr : out std_logic_vector(7 downto 0);
-        addr_rd	: in std_logic_vector(9 downto 0);
-        addr_wr : in std_logic_vector(9 downto 0));
+        do_vga: out std_logic;
+        do_lcd: out std_logic_vector(7 downto 0);
+        addr_rd	: in std_logic_vector(12 downto 0);
+        addr_wr : in std_logic_vector(12 downto 0));
     end component;
 
     component vga_motor port(
          clk : in std_logic;
-         data : in std_logic_vector(7 downto 0);
-         addr : out std_logic_vector(9 downto 0);
+         data : in std_logic;
+         addr : out std_logic_vector(12 downto 0);
          rst : in std_logic;
          vgaRed	: out std_logic_vector(2 downto 0);
          vgaGreen : out std_logic_vector(2 downto 0);
@@ -93,9 +94,9 @@ architecture arch of comp is
     signal data, data_z80, data_rom, data_asic : std_logic_vector(7 downto 0);
     signal io_ports : io_ports_t;
     signal io_data : io_data_t;
-    signal gmem_lcd_data, gmem_vga_data : std_logic_vector(7 downto 0);
-    signal lcd_gmem_data : std_logic_vector(7 downto 0);
-    signal lcd_gmem_addr, vga_gmem_addr : std_logic_vector(9 downto 0);
+    signal gmem_lcd_data, lcd_gmem_data : std_logic_vector(7 downto 0);
+    signal gmem_vga_data : std_logic;
+    signal lcd_gmem_addr, vga_gmem_addr : std_logic_vector(12 downto 0);
     signal gmem_rd, gmem_rst : std_logic;
 
     signal rom_ce : std_logic;
