@@ -51,7 +51,7 @@ architecture arch of comp is
         gmem_data_in : in std_logic_vector(7 downto 0);
         gmem_data_out : out std_logic_vector(7 downto 0);
         gmem_addr : out std_logic_vector(12 downto 0);
-        gmem_rd, gmem_rst : out std_logic;
+        gmem_rst, gmem_rd, gmem_wl : out std_logic;
         status_rd, data_rd : in std_logic;
         status_wr, data_wr : in std_logic;
         status_in, data_in : in std_logic_vector(7 downto 0);
@@ -60,7 +60,7 @@ architecture arch of comp is
 
     component pict_mem port(
         clk, rst : in std_logic;
-        rd : in std_logic;
+        rd, wl : in std_logic;
         di : in std_logic_vector(7 downto 0);
         do_vga: out std_logic;
         do_lcd: out std_logic_vector(7 downto 0);
@@ -97,7 +97,7 @@ architecture arch of comp is
     signal gmem_lcd_data, lcd_gmem_data : std_logic_vector(7 downto 0);
     signal gmem_vga_data : std_logic;
     signal lcd_gmem_addr, vga_gmem_addr : std_logic_vector(12 downto 0);
-    signal gmem_rd, gmem_rst : std_logic;
+    signal gmem_rst, gmem_rd, gmem_wl : std_logic;
 
     signal rom_ce : std_logic;
 
@@ -156,12 +156,12 @@ begin
                            io_data, io_ports);
     lcd : lcd_ctrl port map(clk_z80, rst,
                             gmem_lcd_data, lcd_gmem_data, lcd_gmem_addr,
-                            gmem_rd, gmem_rst,
+                            gmem_rst, gmem_rd, gmem_wl,
                             io_ports.lcd_status.rd, io_ports.lcd_data.rd,
                             io_ports.lcd_status.wr, io_ports.lcd_data.wr,
                             io_ports.lcd_status.data, io_ports.lcd_data.data,
                             io_data.lcd_status, io_data.lcd_data);
-    gmem : pict_mem port map(clk_z80, gmem_rst, gmem_rd,
+    gmem : pict_mem port map(clk_z80, gmem_rst, gmem_rd, gmem_wl,
                              lcd_gmem_data, gmem_vga_data, gmem_lcd_data,
                              lcd_gmem_addr, vga_gmem_addr);
     vga : vga_motor port map(clk, gmem_vga_data, vga_gmem_addr, rst,

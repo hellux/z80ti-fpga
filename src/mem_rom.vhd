@@ -283,7 +283,7 @@ architecture arch of mem_rom is
     constant set_6_a    : std_logic_vector(7 downto 0) := x"f7";
 
     type mem_t is array(0 to 127) of std_logic_vector(7 downto 0);
-    constant prgm_fpga : mem_t :=
+    constant prgm_vga_test : mem_t :=
         (nop,
          others => nop);
     constant prgm_test : mem_t :=
@@ -346,14 +346,14 @@ architecture arch of mem_rom is
          halt,
          others => nop);
 
-    signal mem : mem_t := prgm_fpga;
+    signal mem : mem_t;
     signal word_next : std_logic_vector(7 downto 0);
     signal a : integer range 0 to 16383 := 0;
 begin
     write : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                mem <= prgm_test;
+                mem <= prgm_vga_test;
             elsif a < mem'length then
                 mem(a) <= word_next;
             end if;
