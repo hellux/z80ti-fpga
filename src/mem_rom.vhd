@@ -6,7 +6,6 @@ use work.z80_comm.all;
 entity mem_rom is port(
     clk, rst : in std_logic;
     rd, wr, ce : in std_logic;
-    cbi : out ctrlbus_in;
     addr : in std_logic_vector(13 downto 0);
     data_in : in std_logic_vector(7 downto 0);
     data_out : out std_logic_vector(7 downto 0));
@@ -284,7 +283,10 @@ architecture arch of mem_rom is
 
     type mem_t is array(0 to 127) of std_logic_vector(7 downto 0);
     constant prgm_vga_test : mem_t :=
-        (nop,
+        (ld_a_n,
+         x"ff",
+         out_n_a,
+         x"11",
          others => nop);
     constant prgm_test : mem_t :=
         (or_b,
@@ -353,7 +355,7 @@ begin
     write : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                mem <= prgm_vga_test;
+                mem <= prgm_test;
             elsif a < mem'length then
                 mem(a) <= word_next;
             end if;
@@ -365,10 +367,4 @@ begin
         when a >= mem'length or (ce = '1' and rd = '1') else mem(a);
     data_out <= mem(a)
         when a < mem'length and ce = '1' and wr = '1' else x"00";
-
-    cbi.reset <= '0';
-    cbi.wt <= '0';
-    cbi.int <= '0';
-    cbi.nmi <= '0';
-    cbi.busrq <= '0';
 end arch;

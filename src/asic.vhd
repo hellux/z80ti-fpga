@@ -39,7 +39,7 @@ begin
     end process;
 
     process(a, data_in) begin
-        darr_out <= (others => (others => '-'));
+        darr_out <= (others => (others => '0'));
         darr_out(a) <= data_in;
     end process;
 

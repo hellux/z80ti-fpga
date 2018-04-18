@@ -20,7 +20,6 @@ architecture arch of lcd_ctrl is
     signal xy : std_logic; -- 0=inc x, 1=inc y
     signal x : integer range 0 to 63;
     signal y : integer range 0 to 95;
-    signal word_length : std_logic;
 begin
     data_out <= gmem_data_in;
     gmem_data_out <= data_in;
@@ -30,12 +29,14 @@ begin
 
     modify_wl : process(clk) begin
         if rising_edge(clk) then
-            if data_wr = '1' then
+            if rst = '1' then
+                gmem_wl <= '0';
+            elsif data_wr = '1' then
                 if status_in = x"00" then
-                    word_length <= '0';
+                    gmem_wl <= '0';
                 end if;
                 if status_in = x"01" then
-                    word_length <= '1';
+                    gmem_wl <= '1';
                 end if;
             end if;
         end if;
