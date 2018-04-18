@@ -25,47 +25,52 @@ architecture arch of vga_fb is
 	    Vsync		    : out std_logic);
     end component;
     
-    component pict_mem is
-    port (clk		: in std_logic;
-         di     	: in std_logic;
-         do     	: out std_logic;
-         addr_in		: in std_logic_vector(12 downto 0);
-         addr_vga		: in std_logic_vector(12 downto 0));    
+    component pict_mem is port (
+        clk, rst : in std_logic;
+        rd : in std_logic;
+        di : in std_logic_vector(7 downto 0);
+        do_vga: out std_logic;
+        do_lcd: out std_logic_vector(7 downto 0);
+        addr_rd	: in std_logic_vector(12 downto 0);
+        addr_wr : in std_logic_vector(12 downto 0));
     end component;
     
-    signal addr_in : std_logic_vector(12 downto 0);
-    signal addr_vga : std_logic_vector(12 downto 0);
-    signal addr_f : unsigned(12 downto 0);
+    signal counter : unsigned(12 downto 0);
     
     signal data : std_logic;
     signal index : integer := 0;
     
-    signal mem_di : std_logic;
-    signal mem_do : std_logic;
+    signal rd       : std_logic;
+    signal do_vga   : std_logic;
+    signal do_lcd   : std_logic_vector(7 downto 0);
+    signal addr_rd	: std_logic_vector(12 downto 0);
+    signal addr_wr  : std_logic_vector(12 downto 0);
+    signal di       : std_logic_vector(7 downto 0);
     
 begin
  
     vga : vga_motor port map(
-        clk, data, addr_vga, btns(1), vgaRed, vgaGreen, vgaBlue, Hsync, Vsync);
+        clk, data, addr_wr, btns(1), vgaRed, vgaGreen, vgaBlue, Hsync, Vsync);
         
     mem : pict_mem port map(
-        clk, mem_di, mem_do, addr_in, addr_vga);
+        clk, btns(1), rd, di, do_vga, do_lcd, addr_rd, addr_wr);
         
    
-    addr_in <= std_logic_vector(addr_f);   
+    addr_rd <= std_logic_vector(counter);   
+    --addr_wr <= std_logic_vector(counter);
     process(clk) begin
         if rising_edge(clk) then
-            if addr_f >= 0 and addr_f < 2000 then
-                mem_di <= '1';
-                addr_f <= addr_f + 1;
-            elsif addr_f < 6144 then
-                addr_f <= addr_f + 1;
+            if counter >= 0 and counter < 2000 then
+                rd <= '1';
+                di <= "11111111";
+                counter <= counter + 1;
+            elsif counter < 6144 then
+                rd <= '0';
+                counter <= counter + 1;
             end if;
         end if;
     end process;
-    
-    
-    data <= mem_do;
+    data <= do_vga;
    
     
 end arch;
