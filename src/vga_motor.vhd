@@ -8,8 +8,9 @@ use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
 entity vga_motor is port ( 
      clk			: in std_logic;
 	 data			: in std_logic;
-	 addr			: out std_logic_vector(12 downto 0);
 	 rst			: in std_logic;
+     x : out std_logic_vector(6 downto 0);
+     y : out std_logic_vector(5 downto 0);
 	 vgaRed		    : out std_logic_vector(2 downto 0);
 	 vgaGreen	    : out std_logic_vector(2 downto 0);
 	 vgaBlue		: out std_logic_vector(2 downto 1);
@@ -119,10 +120,8 @@ begin
     end if;
   end process;
   
-  -- Picture memory address composite (16 = 96//6, 10 = 64//2)
-  addr <= std_logic_vector(to_unsigned(Xpixel* (1/6) + 96*Ypixel * (1/6), addr'length));
-  -- Set picture colour based on pos and data. (576 = 96*6, 384 = 64*6)
-
+    x <= std_logic_vector(to_unsigned(Xpixel, x'length));
+    y <= std_logic_vector(to_unsigned(Ypixel, y'length));
   -- Text: (10010110) Backgroud: (01001000) Bar: (00000000)
   -- VGA generation
     vgaRed(2) 	<= colour(7);

@@ -50,7 +50,8 @@ architecture arch of comp is
         clk, rst : in std_logic;
         gmem_data_in : in std_logic_vector(7 downto 0);
         gmem_data_out : out std_logic_vector(7 downto 0);
-        gmem_addr : out std_logic_vector(12 downto 0);
+        gmem_x : out std_logic_vector(5 downto 0);
+        gmem_y : out std_logic_vector(4 downto 0);
         gmem_rst, gmem_rd, gmem_wl : out std_logic;
         status_rd, data_rd : in std_logic;
         status_wr, data_wr : in std_logic;
@@ -62,9 +63,10 @@ architecture arch of comp is
         clk, rst : in std_logic;
         rd, wl : in std_logic;
         page_in : in std_logic_vector(7 downto 0);
-        x : in std_logic_vector(3 downto 0);
-        y : in std_logic_vector(4 downto 0);
-        addr_vga : in std_logic_vector(12 downto 0);
+        x_lcd : in std_logic_vector(5 downto 0);
+        y_lcd : in std_logic_vector(4 downto 0);
+        x_vga : std_logic_vector(6 downto 0);
+        y_vga : std_logic_vector(5 downto 0);
         do_vga: out std_logic;
         do_lcd: out std_logic_vector(7 downto 0));
     end component;
@@ -72,8 +74,9 @@ architecture arch of comp is
     component vga_motor port(
          clk : in std_logic;
          data : in std_logic;
-         addr : out std_logic_vector(12 downto 0);
          rst : in std_logic;
+         x : out std_logic_vector(6 downto 0);
+         y : out std_logic_vector(5 downto 0);
          vgaRed	: out std_logic_vector(2 downto 0);
          vgaGreen : out std_logic_vector(2 downto 0);
          vgaBlue : out std_logic_vector(2 downto 1);
@@ -95,11 +98,12 @@ architecture arch of comp is
     signal data, data_z80, data_rom, data_asic : std_logic_vector(7 downto 0);
     signal io_ports : io_ports_t;
     signal io_data : io_data_t;
-    signal lcd_gmem_x : std_logic_vector(3 downto 0);
-    signal lcd_gmem_y : std_logic_vector(4 downto 0);
+    signal x_vga : std_logic_vector(6 downto 0);
+    signal y_vga : std_logic_vector(5 downto 0);
+    signal x_lcd : std_logic_vector(5 downto 0);
+    signal y_lcd : std_logic_vector(4 downto 0);
     signal gmem_lcd_data, lcd_gmem_data : std_logic_vector(7 downto 0);
     signal gmem_vga_data : std_logic;
-    signal lcd_gmem_addr, vga_gmem_addr : std_logic_vector(12 downto 0);
     signal gmem_rst, gmem_rd, gmem_wl : std_logic;
 
     signal rst : std_logic;
@@ -154,17 +158,16 @@ begin
                            addr(7 downto 0), data, data_asic,
                            io_data, io_ports);
     lcd : lcd_ctrl port map(clk_z80, rst,
-                            gmem_lcd_data, lcd_gmem_data, lcd_gmem_addr,
+                            gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd,
                             gmem_rst, gmem_rd, gmem_wl,
                             io_ports.lcd_status.rd, io_ports.lcd_data.rd,
                             io_ports.lcd_status.wr, io_ports.lcd_data.wr,
                             io_ports.lcd_status.data, io_ports.lcd_data.data,
                             io_data.lcd_status, io_data.lcd_data);
     gmem : pict_mem port map(clk_z80, gmem_rst, gmem_rd, gmem_wl,
-                             lcd_gmem_data, lcd_gmem_x, lcd_gmem_y,
-                             vga_gmem_addr,
+                             lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,
                              gmem_vga_data, gmem_lcd_data);
-    vga : vga_motor port map(clk, gmem_vga_data, vga_gmem_addr, rst,
+    vga : vga_motor port map(clk, gmem_vga_data, rst, x_vga, y_vga,
                              vga_red, vga_green, vga_blue, hsync, vsync);
 
     -- DEBUG

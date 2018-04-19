@@ -3,10 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.cmp_comm.all;
 
--- TODO
---  - ensure correct address (crop 120x64 to 96x64?)
-
--- MISSING, low prio
+-- TODO / MISSING
 --  - power on/off
 --  - rowshift (z register/counter)
 --  - contrast
@@ -15,7 +12,8 @@ entity lcd_ctrl is port(
     clk, rst : in std_logic;
     gmem_data_in : in std_logic_vector(7 downto 0);
     gmem_data_out : out std_logic_vector(7 downto 0);
-    gmem_addr : out std_logic_vector(12 downto 0);
+    gmem_x : out std_logic_vector(5 downto 0);
+    gmem_y : out std_logic_vector(4 downto 0);
     gmem_rst, gmem_rd, gmem_wl : out std_logic;
     status_rd, data_rd : in std_logic;
     status_wr, data_wr : in std_logic;
@@ -41,7 +39,8 @@ begin
     control <= unsigned(status_in);
 
     gmem_data_out <= data_in;
-    gmem_addr <= std_logic_vector(to_unsigned(x+15*y, gmem_addr'length));
+    gmem_x <= std_logic_vector(to_unsigned(x, gmem_x'length));
+    gmem_y <= std_logic_vector(to_unsigned(y, gmem_y'length));
     gmem_rst <= rst;
     gmem_rd <= '1' when data_wr = '1' else '0';
     gmem_wl <= mode.wl;
