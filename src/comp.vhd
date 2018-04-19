@@ -60,13 +60,13 @@ architecture arch of comp is
     end component;
 
     component pict_mem port(
-        clk, rst : in std_logic;
+        clk_z80, clk_vga, rst : in std_logic;
         rd, wl : in std_logic;
         page_in : in std_logic_vector(7 downto 0);
-        x_lcd : in std_logic_vector(5 downto 0);
-        y_lcd : in std_logic_vector(4 downto 0);
-        x_vga : std_logic_vector(6 downto 0);
-        y_vga : std_logic_vector(5 downto 0);
+        x_lcd : in std_logic_vector(5 downto 0); -- row
+        y_lcd : in std_logic_vector(4 downto 0); -- column page
+        x_vga : in std_logic_vector(6 downto 0); -- column
+        y_vga : in std_logic_vector(5 downto 0); -- row
         do_vga: out std_logic;
         do_lcd: out std_logic_vector(7 downto 0));
     end component;
@@ -107,8 +107,9 @@ architecture arch of comp is
     signal gmem_rst, gmem_rd, gmem_wl : std_logic;
 
     signal rst : std_logic;
-    signal clk_z80 : std_logic;
-    signal clk_div : integer range 0 to 24;
+    signal clk_z80, clk_vga : std_logic;
+    signal clk_z80_div : integer range 0 to 24;
+    signal clk_vga_div : integer range 0 to 3;
 
     signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
 
@@ -126,16 +127,24 @@ begin
     -- clock sync
     process(clk) begin
         if rising_edge(clk) then
-            if btns(1) = '1' then
-                clk_div <= 0;
-            elsif clk_div = 24 then
-                clk_div <= 0;
+            if clk_z80_div = 24 then
+                clk_z80_div <= 0;
             else
-                clk_div <= clk_div + 1;
+                clk_z80_div <= clk_z80_div + 1;
+            end if;
+            if clk_vga_div = 3 then
+                clk_vga_div <= 0;
+            else
+                clk_vga_div <= clk_vga_div + 1;
+            end if;
+            if rst = '1' then
+                clk_z80_div <= 0;
+                clk_vga_div <= 0;
             end if;
         end if;
     end process;
-    clk_z80 <= '1' when clk_div = 0 else '0';
+    clk_z80 <= '1' when clk_z80_div = 0 else '0';
+    clk_vga <= '1' when clk_vga_div = 0 else '0';
 
     -- buses
     rst <= btns(1);
@@ -164,7 +173,7 @@ begin
                             io_ports.lcd_status.wr, io_ports.lcd_data.wr,
                             io_ports.lcd_status.data, io_ports.lcd_data.data,
                             io_data.lcd_status, io_data.lcd_data);
-    gmem : pict_mem port map(clk_z80, gmem_rst, gmem_rd, gmem_wl,
+    gmem : pict_mem port map(clk_z80, clk_vga, gmem_rst, gmem_rd, gmem_wl,
                              lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,
                              gmem_vga_data, gmem_lcd_data);
     vga : vga_motor port map(clk, gmem_vga_data, rst, x_vga, y_vga,

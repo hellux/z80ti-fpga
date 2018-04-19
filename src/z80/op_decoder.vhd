@@ -59,7 +59,7 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            --f.cb.mreq := '1';       -- signal addr is ready on abus
+            f.cb.mreq := '1';       -- signal addr is ready on abus
             --f.cb.rd := '1';         -- request reading from memory
         when t2 =>
             f.cw.data_rdi := '1';   -- store instr to data buf

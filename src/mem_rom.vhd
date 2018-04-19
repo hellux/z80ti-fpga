@@ -369,13 +369,13 @@ begin
     process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                mem <= prgm_test;
+                mem <= prgm_vga_test;
             elsif ce = '1' then
                 if rd = '1' then
                     mem(a) <= data_in;
                 end if;
+                word_out <= mem(a);
             end if;
-            word_out <= mem(a);
         end if;
     end process;
 
