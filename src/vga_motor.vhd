@@ -72,8 +72,10 @@ begin
               x"48" when data = '0' else
               (others => '-');
   
-    x <= std_logic_vector(to_unsigned(Xpixel/4, x'length));
-    y <= std_logic_vector(to_unsigned(Ypixel/4, y'length));
+    x <= std_logic_vector(to_unsigned(Xpixel/4, x'length))
+             when Xpixel < 480 else (others => '0');
+    y <= std_logic_vector(to_unsigned(Ypixel/4, y'length))
+            when Ypixel < 256 else (others => '0');
 
     vgaRed <= colour(7 downto 5);
     vgaGreen <= colour(4 downto 2);

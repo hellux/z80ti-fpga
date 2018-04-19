@@ -32,9 +32,12 @@ architecture Behavioral of pict_mem is
     signal clk_z80_div : integer range 0 to 24;
     signal clk_vga_div : integer range 0 to 3;
 
-    --120x64/24=480
-    signal xl, yl, xv, yv : integer := 0;
-    type mem_t is array(0 to 480) of std_logic_vector(0 to 23);
+    --120x64/24 = 320
+    signal xl : integer range 0 to 63;
+    signal yl : integer range 0 to 19;
+    signal xv : integer range 0 to 119;
+    signal yv : integer range 0 to 63;
+    type mem_t is array(0 to 319) of std_logic_vector(0 to 23);
     signal mem : mem_t;
     signal tri_bit_lcd, tri_bit_lcd_8b, tri_bit_vga : integer range 0 to 23;
     signal tri_addr_lcd, tri_addr_lcd_8b : integer range mem'range;
