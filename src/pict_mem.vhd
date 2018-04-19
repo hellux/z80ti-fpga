@@ -42,7 +42,7 @@ architecture Behavioral of pict_mem is
     signal tri_bit_lcd, tri_bit_lcd_8b, tri_bit_vga : integer range 0 to 23;
     signal tri_addr_lcd, tri_addr_lcd_8b : integer range mem'range;
     signal tri_addr_vga : integer range mem'range;
-    signal tri_out : std_logic_vector(0 to 23);
+    signal tri_sel_lcd, tri_next : std_logic_vector(0 to 23);
 begin
     xl <= to_integer(unsigned(x_lcd));
     yl <= to_integer(unsigned(y_lcd));
@@ -102,30 +102,35 @@ begin
     tri_bit_lcd <= tri_bit_lcd_8b when wl = '1' else yl mod 4;
     tri_bit_vga <= rem24(xv);
 
+    process(tri_sel_lcd, tri_bit_lcd, rd, page_in, wl)
+        variable tri_tmp : std_logic_vector(0 to 23);
+    begin
+        tri_tmp := tri_sel_lcd;
+        if rd = '1' then
+            if wl = '1' then
+                tri_tmp(tri_bit_lcd to tri_bit_lcd+7) := page_in;
+            else
+                tri_tmp(tri_bit_lcd to tri_bit_lcd+5) := page_in(5 downto 0);
+            end if;
+        end if;
+        tri_next <= tri_tmp;
+    end process;
+
     lcd_in_out : process(clk) begin
         if rising_edge(clk) then
             if clk_z80 = '1' then
                 if rst = '1' then
                     mem <= (others => x"000000");
-                elsif rd = '1' then
-                    if wl = '1' then
-                        mem(tri_addr_lcd)(tri_bit_lcd to tri_bit_lcd+7)
-                            <= page_in;
-                    else
-                        mem(tri_addr_lcd)(tri_bit_lcd to tri_bit_lcd+5)
-                            <= page_in(5 downto 0);
-                    end if;
-                end if;
-                if wl = '1' then
-                    do_lcd <= mem(tri_addr_lcd)
-                                 (tri_bit_lcd to tri_bit_lcd+7);
                 else
-                    do_lcd <= "00" & mem(tri_addr_lcd)
-                                        (tri_bit_lcd to tri_bit_lcd+5);
+                    mem(tri_addr_lcd) <= tri_next;
                 end if;
+                tri_sel_lcd <= mem(tri_addr_lcd);
             end if;
         end if;
     end process;
+
+    do_lcd <= tri_sel_lcd(tri_bit_lcd to tri_bit_lcd+7) when wl = '1' else
+              "00" & tri_sel_lcd(tri_bit_lcd to tri_bit_lcd+5);
 
     vga_out : process(clk) begin
         if rising_edge(clk) then
