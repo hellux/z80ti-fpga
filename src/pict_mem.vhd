@@ -102,16 +102,14 @@ begin
     tri_bit_lcd <= tri_bit_lcd_8b when wl = '1' else yl mod 4;
     tri_bit_vga <= rem24(xv);
 
-    process(tri_sel_lcd, tri_bit_lcd, rd, page_in, wl)
+    process(tri_sel_lcd, tri_bit_lcd, page_in, wl)
         variable tri_tmp : std_logic_vector(0 to 23);
     begin
         tri_tmp := tri_sel_lcd;
-        if rd = '1' then
-            if wl = '1' then
-                tri_tmp(tri_bit_lcd to tri_bit_lcd+7) := page_in;
-            else
-                tri_tmp(tri_bit_lcd to tri_bit_lcd+5) := page_in(5 downto 0);
-            end if;
+        if wl = '1' then
+            tri_tmp(tri_bit_lcd to tri_bit_lcd+7) := page_in;
+        else
+            tri_tmp(tri_bit_lcd to tri_bit_lcd+5) := page_in(5 downto 0);
         end if;
         tri_next <= tri_tmp;
     end process;
@@ -121,7 +119,7 @@ begin
             if clk_z80 = '1' then
                 if rst = '1' then
                     mem <= (others => x"000000");
-                else
+                elsif rd = '1' then
                     mem(tri_addr_lcd) <= tri_next;
                 end if;
                 tri_sel_lcd <= mem(tri_addr_lcd);
