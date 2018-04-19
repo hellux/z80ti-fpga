@@ -16,22 +16,38 @@ end pict_mem;
 
 architecture Behavioral of pict_mem is
     type gmem_state_t is (idle, load);
-    signal bit_out, bit_in : integer range 0 to 7;
-    signal pic_mem : std_logic_vector(0 to 7679);
-    signal a_lcd, a_vga : integer range pic_mem'range;
-    signal xl, yl, xv, yv : integer := 0;
-    signal page_buf : std_logic_vector(7 downto 0);
+    type gmem_mem_t is array(0 to 7679) of std_logic;
 
+    signal pic_mem : gmem_mem_t;
+    signal a_lcd, a_vga : integer range pic_mem'range;
+    signal page_buf : std_logic_vector(7 downto 0);
+    signal bit_out, bit_in : integer range 0 to 7;
     signal state : gmem_state_t;
 begin
-    xl <= to_integer(unsigned(x_lcd));
-    yl <= to_integer(unsigned(y_lcd));
-    xv <= to_integer(unsigned(x_vga));
-    yv <= to_integer(unsigned(y_vga));
-    a_lcd <= xl*120+yl*8 when wl = '1' else xl*120+yl*6;
-    a_vga <= yv*120+xv;
+    -- helpers
+    process(x_lcd, y_lcd, wl)
+        variable xl : integer range 0 to 63;
+        variable yl : integer range 0 to 19;
+    begin
+        xl := to_integer(unsigned(x_lcd));
+        yl := to_integer(unsigned(y_lcd));
+        if wl = '1' then
+            a_lcd <= xl*120+yl*8;
+        else
+            a_lcd <= xl*120+yl*6;
+        end if;
+    end process;
 
-    bram_in : process(clk) begin
+    process(x_vga, y_vga)
+        variable xv : integer range 0 to 119;
+        variable yv : integer range 0 to 63;
+    begin
+        xv := to_integer(unsigned(x_vga));
+        yv := to_integer(unsigned(y_vga));
+        a_vga <= yv*120+xv;
+    end process;
+
+    bram_in_lcd : process(clk) begin
         if rising_edge(clk) then
             if clk_z80 = '1' then
                 if rd = '1' then
@@ -56,19 +72,23 @@ begin
         end if;
     end process;
 
-    bram_out : process(clk) begin
+    bram_out_lcd : process(clk) begin
+        if rising_edge(clk) then
+            do_lcd(7-bit_out) <= pic_mem(a_lcd+bit_out);
+            if wl = '1' and bit_out = 7 then
+                bit_out <= 0;
+            elsif wl = '0' and bit_out = 5 then
+                bit_out <= 0;
+            else
+                bit_out <= bit_out + 1;
+            end if;
+        end if;
+    end process;
+
+    bram_out_vga : process(clk) begin
         if rising_edge(clk) then
             if clk_vga = '1' then
                 do_vga <= pic_mem(a_vga);
-            else
-                do_lcd(7-bit_out) <= pic_mem(a_lcd+bit_out);
-                if wl = '1' and bit_out = 7 then
-                    bit_out <= 0;
-                elsif wl = '0' and bit_out = 5 then
-                    bit_out <= 0;
-                else
-                    bit_out <= bit_out + 1;
-                end if;
             end if;
         end if;
     end process;
