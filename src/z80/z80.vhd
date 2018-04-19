@@ -119,15 +119,17 @@ begin
     -- -- BUSES -- --
     -- mux bus input
     with cw.dbus_src select
-        dbus <= dbufi_out   when ext_o,
-                rf_do       when rf_o,
-                tmp_out     when tmp_o,
-                alu_out     when alu_o;
+        dbus <= (others => '-') when none,
+                dbufi_out       when ext_o,
+                rf_do           when rf_o,
+                tmp_out         when tmp_o,
+                alu_out         when alu_o;
     with cw.abus_src select
-        abus <= pc_out      when pc_o,
-                rf_ao       when rf_o,
-                tmpa_out    when tmpa_o,
-                dis_out     when dis_o;
+        abus <= (others => '-') when none,
+                pc_out          when pc_o,
+                rf_ao           when rf_o,
+                tmpa_out        when tmpa_o,
+                dis_out         when dis_o;
     -- buffer dbus both ways
     -- TODO test buf on FPGA
     dbufi : buf generic map(8)
@@ -135,7 +137,6 @@ begin
     dbufo : buf generic map(8)
                 port map(clk, cbi.reset, cw.data_rdo, dbus, dbufo_out);
     data_out <= dbufo_out when cw.data_wro = '1' else x"00";
-
     -- buffer abus outgoing
     abuf : buf generic map(16)
                port map(clk, cbi.reset, cw.addr_rd, abus, addr);

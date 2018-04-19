@@ -24,11 +24,9 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cw.addr_wr := '1';    -- write from buffer to outside abus
             f.cb.iorq := '1';       -- signal addr is ready on abus
             f.cb.rd := '1';         -- request reading from io
         when t2 =>
-            f.cw.addr_wr := '1';    -- keep writing addr to mem
             f.cw.data_rdi := '1';   -- store instr to data buf
             f.cb.iorq := '1';       -- keep request until byte retrieved
             f.cb.rd := '1';         -- keep reading
@@ -44,15 +42,12 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cw.addr_wr := '1';    -- write from buffer to outside abus
             f.cb.iorq := '1';       -- signal addr is ready on abus
         when t2 =>
             f.cw.data_wro := '1';   -- send data
-            f.cw.addr_wr := '1';    -- keep writing addr to mem
             f.cb.iorq := '1';       -- keep request until byte read
             f.cb.wr := '1';         -- signal write
         when t3 =>
-            f.cw.addr_wr := '1';    -- keep writing addr
             f.cw.data_wro := '1';   -- keep sending data
         when others => null; end case;
         return f;
@@ -64,11 +59,9 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cw.addr_wr := '1';    -- write from buffer to outside abus
             f.cb.mreq := '1';       -- signal addr is ready on abus
             f.cb.rd := '1';         -- request reading from memory
         when t2 =>
-            f.cw.addr_wr := '1';    -- keep writing addr to mem
             f.cw.data_rdi := '1';   -- store instr to data buf
             f.cb.mreq := '1';       -- keep request until byte retrieved
             f.cb.rd := '1';         -- keep reading
@@ -85,15 +78,12 @@ architecture arch of op_decoder is
         when t1 =>
             f.cw.data_wro := '1';   -- send data to memory
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cw.addr_wr := '1';    -- write from buffer to outside abus
             f.cb.mreq := '1';       -- signal addr is ready on abus
         when t2 =>
             f.cw.data_wro := '1';   -- send data
-            f.cw.addr_wr := '1';    -- keep writing addr to mem
             f.cb.mreq := '1';       -- keep request until byte read
             f.cb.wr := '1';         -- keep reading
         when t3 =>
-            f.cw.addr_wr := '1';    -- keep writing addr
             f.cw.data_wro := '1';   -- keep sending data
         when others => null; end case;
         return f;
@@ -953,8 +943,8 @@ begin
         -- set all signals to defaults (overwrite below)
         f.ct := (mode_next => state.mode, others => '0');
         f.cb := (others => '0');
-        f.cw := (dbus_src => ext_o,
-                 abus_src => pc_o,
+        f.cw := (dbus_src => none,
+                 abus_src => none,
                  rf_addr => 0,
                  rf_swp => none,
                  alu_op => unknown,

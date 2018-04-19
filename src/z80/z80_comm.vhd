@@ -52,8 +52,8 @@ package z80_comm is
         busack : std_logic;
     end record;
 
-    type dbus_src_t is (ext_o, rf_o, tmp_o, alu_o);
-    type abus_src_t is (pc_o, rf_o, tmpa_o, dis_o);
+    type dbus_src_t is (none, ext_o, rf_o, tmp_o, alu_o);
+    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o);
 
     type ctrlword is record 
         -- buses / registers
@@ -75,7 +75,7 @@ package z80_comm is
         tmp_rd : std_logic;
         -- buffers
         data_rdi, data_rdo, data_wro : std_logic;
-        addr_rd, addr_wr : std_logic;
+        addr_rd : std_logic;
     end record;
 
     -- flags

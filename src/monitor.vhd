@@ -42,11 +42,13 @@ begin
     end process;
 
     with dbg.cw.abus_src select abus_src <= 
+        x"0" when none,
         x"1" when pc_o,
         x"2" when rf_o,
         x"3" when tmpa_o,
         x"4" when dis_o;
     with dbg.cw.dbus_src select dbus_src <= 
+        x"0" when none,
         x"1" when ext_o,
         x"2" when rf_o,
         x"3" when tmp_o,
