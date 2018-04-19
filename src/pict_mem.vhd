@@ -19,9 +19,12 @@ architecture Behavioral of pict_mem is
     begin
         num_v := num;
         q := 0;
-        while num_v >= 24 loop
+        for i in 0 to 319 loop
             num_v := num_v - 24;
             q := q + 1;
+            if num_v < 24 then
+                exit;
+            end if;
         end loop;
         return q;
     end div24;
@@ -29,8 +32,11 @@ architecture Behavioral of pict_mem is
         variable q, num_v : integer;
     begin
         num_v := num;
-        while num_v >= 24 loop
+        for i in 0 to 319 loop
             num_v := num_v - 24;
+            if num_v < 24 then
+                exit;
+            end if;
         end loop;
         return num_v;
     end rem24;
