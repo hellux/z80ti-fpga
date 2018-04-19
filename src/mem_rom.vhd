@@ -284,9 +284,21 @@ architecture arch of mem_rom is
     type mem_t is array(0 to 127) of std_logic_vector(7 downto 0);
     constant prgm_vga_test : mem_t :=
         (ld_a_n,
+         x"01",
+         out_n_a,
+         x"10",
+         ld_a_n,
+         x"07",
+         out_n_a,
+         x"10",
+         ld_a_n,
          x"ff",
          out_n_a,
          x"11",
+         dec_a,
+         jp_nz_nn,
+         x"0a",
+         halt,
          others => nop);
     constant prgm_test : mem_t :=
         (or_b,
@@ -355,7 +367,7 @@ begin
     write : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                mem <= prgm_test;
+                mem <= prgm_vga_test;
             elsif a < mem'length then
                 mem(a) <= word_next;
             end if;
