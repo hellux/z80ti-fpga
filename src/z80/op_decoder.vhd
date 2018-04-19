@@ -467,7 +467,7 @@ architecture arch of op_decoder is
     end bit_r;
 
     function rld_rrd(state : state_t; f_in : id_frame_t;
-                     op1 : instr_t, op2 : instr_t)
+                     op1 : instr_t; op2 : instr_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is

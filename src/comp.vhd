@@ -61,11 +61,12 @@ architecture arch of comp is
     component pict_mem port(
         clk, rst : in std_logic;
         rd, wl : in std_logic;
-        di : in std_logic_vector(7 downto 0);
+        page_in : in std_logic_vector(7 downto 0);
+        x : in std_logic_vector(3 downto 0);
+        y : in std_logic_vector(4 downto 0);
+        addr_vga : in std_logic_vector(12 downto 0);
         do_vga: out std_logic;
-        do_lcd: out std_logic_vector(7 downto 0);
-        addr_rd	: in std_logic_vector(12 downto 0);
-        addr_wr : in std_logic_vector(12 downto 0));
+        do_lcd: out std_logic_vector(7 downto 0));
     end component;
 
     component vga_motor port(
@@ -94,6 +95,8 @@ architecture arch of comp is
     signal data, data_z80, data_rom, data_asic : std_logic_vector(7 downto 0);
     signal io_ports : io_ports_t;
     signal io_data : io_data_t;
+    signal lcd_gmem_x : std_logic_vector(3 downto 0);
+    signal lcd_gmem_y : std_logic_vector(4 downto 0);
     signal gmem_lcd_data, lcd_gmem_data : std_logic_vector(7 downto 0);
     signal gmem_vga_data : std_logic;
     signal lcd_gmem_addr, vga_gmem_addr : std_logic_vector(12 downto 0);
@@ -158,8 +161,9 @@ begin
                             io_ports.lcd_status.data, io_ports.lcd_data.data,
                             io_data.lcd_status, io_data.lcd_data);
     gmem : pict_mem port map(clk_z80, gmem_rst, gmem_rd, gmem_wl,
-                             lcd_gmem_data, gmem_vga_data, gmem_lcd_data,
-                             lcd_gmem_addr, vga_gmem_addr);
+                             lcd_gmem_data, lcd_gmem_x, lcd_gmem_y,
+                             vga_gmem_addr,
+                             gmem_vga_data, gmem_lcd_data);
     vga : vga_motor port map(clk, gmem_vga_data, vga_gmem_addr, rst,
                              vga_red, vga_green, vga_blue, hsync, vsync);
 
