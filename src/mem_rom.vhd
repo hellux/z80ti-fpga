@@ -361,22 +361,23 @@ architecture arch of mem_rom is
          others => nop);
 
     signal mem : mem_t;
-    signal word_next : std_logic_vector(7 downto 0);
+    signal word_out : std_logic_vector(7 downto 0);
     signal a : integer range 0 to 16383 := 0;
 begin
-    write : process(clk) begin
+    a <= to_integer(unsigned(addr));
+
+    process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                mem <= prgm_vga_test;
-            elsif a < mem'length then
-                mem(a) <= word_next;
+                mem <= prgm_test;
+            elsif ce = '1' then
+                if rd = '1' then
+                    mem(a) <= data_in;
+                end if;
             end if;
+            word_out <= mem(a);
         end if;
     end process;
 
-    a <= to_integer(unsigned(addr)) when ce = '1' else 0;
-    word_next <= data_in 
-        when a >= mem'length or (ce = '1' and rd = '1') else mem(a);
-    data_out <= mem(a)
-        when a < mem'length and ce = '1' and wr = '1' else x"00";
+    data_out <= word_out when ce = '1' and wr = '1' else x"00";
 end arch;

@@ -104,10 +104,13 @@ begin
             else
                 mem(tri_addr_lcd) <= tri_next;
             end if;
+            if wl = '1' then
+                do_lcd <= tri_sel_lcd(tri_bit_lcd to tri_bit_lcd+7);
+            else
+                do_lcd <= tri_sel_lcd(tri_bit_lcd to tri_bit_lcd+5) & "00";
+            end if;
+            do_vga <= mem(tri_addr_vga)(tri_bit_vga);
         end if;
     end process;
 
-    do_lcd <= tri_sel_lcd(tri_bit_lcd to tri_bit_lcd+7) when wl = '1' else
-              tri_sel_lcd(tri_bit_lcd to tri_bit_lcd+5) & "00";
-    do_vga <= mem(tri_addr_vga)(tri_bit_vga);
 end Behavioral;
