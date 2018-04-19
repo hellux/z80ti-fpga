@@ -457,30 +457,42 @@ architecture arch of op_decoder is
     end bit_r;
 
     function rld_rrd(state : state_t; f_in : id_frame_t;
-                   op : instr_t; bs : integer range 0 to 7;
-                   reg : integer range 0 to 7)
+                     op1 : instr_t, op2 : instr_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        case state.m is 
+        case state.m is
         when m2 =>
             case state.t is
             when t4 =>
-                f.cw.rf_addr := reg;
-                f.cw.dbus_src := rf_o;
-                f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            f := mem_rd_instr(state, f); -- overlap
+            f := mem_rd(state, f);
             case state.t is
-            when t2 =>
-                f.cw.alu_op := op;
-                f.cw.alu_bs := bs;
+            when t1 =>
+                f.cw.rf_addr := regHL;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.cw.act_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 =>
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.alu_op := op1;
                 f.cw.dbus_src := alu_o;
-                f.cw.f_rd := '1';
-                f.cw.rf_addr := reg;
+                f.cw.data_rdo := '1';
+                f.cw.rf_addr := regHL;
+                f.cw.abus_src := rf_o;
+            when t2 =>
+                f.cw.alu_op := op2;
+                f.cw.dbus_src := alu_o;
+                f.cw.rf_addr := regA;  
                 f.cw.rf_rdd := '1';
-                f.ct.instr_end := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
