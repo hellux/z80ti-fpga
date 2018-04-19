@@ -1,11 +1,3 @@
---------------------------------------------------------------------------------
--- KBD ENC
--- Anders Nilsson
--- 16-feb-2016
--- Version 1.1
-
-
--- library declaration
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;            -- basic IEEE library
 use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
@@ -13,38 +5,38 @@ use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
 
 -- entity
 entity KBD_ENC is
-  port ( clk	                : in std_logic;			-- system clock (100 MHz)
-	 rst		        : in std_logic;			-- reset signal
-         PS2KeyboardCLK	        : in std_logic; 		-- USB keyboard PS2 clock
-         PS2KeyboardData	: in std_logic;			-- USB keyboard PS2 data
-         data			: out std_logic_vector(7 downto 0);		-- tile data
-         addr			: out unsigned(10 downto 0);	-- tile address
-         we			: out std_logic);		-- write enable
+  port ( clk	              : in std_logic;			        -- system clock (100 MHz)
+	 rst		              : in std_logic;			        -- reset signal
+         PS2KeyboardCLK	      : in std_logic; 		            -- USB keyboard PS2 clock
+         PS2KeyboardData	  : in std_logic;			        -- USB keyboard PS2 data
+         data			      : out std_logic_vector(7 downto 0); -- tile data
+         addr			      : out unsigned(10 downto 0);	    -- tile address
+         we			          : out std_logic);		            -- write enable
 end KBD_ENC;
 
 -- architecture
 architecture behavioral of KBD_ENC is
-  signal ps2clk			: std_logic;			-- synchronized ps2 clock
-  signal ps2data		: std_logic;			-- synchronized ps2 data
-  signal ps2clk_q1, ps2clk_q2 	: std_logic;			-- ps2 clock one pulse flip flop
-  signal ps2clk_op 		: std_logic;			-- ps2 clock one pulse 
+  signal ps2clk			      : std_logic;			            -- synchronized ps2 clock
+  signal ps2data		      : std_logic;			            -- synchronized ps2 data
+  signal ps2clk_q1, ps2clk_q2 : std_logic;			            -- ps2 clock one pulse flip flop
+  signal ps2clk_op 		      : std_logic;			            -- ps2 clock one pulse 
 	
-  signal ps2data_sr 		: std_logic_vector(10 downto 0);-- ps2 data shift register
+  signal ps2data_sr 	      : std_logic_vector(10 downto 0);-- ps2 data shift register
 	
-  signal ps2bitcounter	        : unsigned(3 downto 0);		-- ps2 bit counter
-  signal make_q			: std_logic;			-- make one pulselse flip flop
-  signal make_op		: std_logic;			-- make one pulse
+  signal ps2bitcounter	      : unsigned(3 downto 0);		    -- ps2 bit counter
+  signal make_q			      : std_logic;			            -- make one pulselse flip flop
+  signal make_op		      : std_logic;			            -- make one pulse
 
-  type state_type is (idle, make, break);			-- declare state types for ps2
-  signal ps2state : state_type;					-- ps2 state
+  type state_type is (idle, make, break);			            -- declare state types for ps2
+  signal ps2state : state_type;					                -- ps2 state
 
-  signal scancode		: std_logic_vector(7 downto 0);	-- scan code
-  signal keycode        : std_logic_vector(7 downto 0); -- key code
+  signal scancode		      : std_logic_vector(7 downto 0);	-- scan code
+  signal keycode              : std_logic_vector(7 downto 0);   -- key code
 
 
 	
-  type wr_type is (STANDBY, WRCHAR, WRCUR);			-- declare state types for write cycle
-  signal WRstate : wr_type;					-- write cycle state
+  type wr_type is (STANDBY, WRCHAR, WRCUR);			            -- declare state types for write cycle
+  signal WRstate : wr_type;					                    -- write cycle state
 
 begin
 
