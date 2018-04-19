@@ -24,11 +24,9 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cw.addr_wr := '1';    -- write from buffer to outside abus
             f.cb.iorq := '1';       -- signal addr is ready on abus
             f.cb.rd := '1';         -- request reading from io
         when t2 =>
-            f.cw.addr_wr := '1';    -- keep writing addr to mem
             f.cw.data_rdi := '1';   -- store instr to data buf
             f.cb.iorq := '1';       -- keep request until byte retrieved
             f.cb.rd := '1';         -- keep reading
@@ -44,15 +42,12 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cw.addr_wr := '1';    -- write from buffer to outside abus
             f.cb.iorq := '1';       -- signal addr is ready on abus
         when t2 =>
             f.cw.data_wro := '1';   -- send data
-            f.cw.addr_wr := '1';    -- keep writing addr to mem
             f.cb.iorq := '1';       -- keep request until byte read
             f.cb.wr := '1';         -- signal write
         when t3 =>
-            f.cw.addr_wr := '1';    -- keep writing addr
             f.cw.data_wro := '1';   -- keep sending data
         when others => null; end case;
         return f;
@@ -64,11 +59,9 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cw.addr_wr := '1';    -- write from buffer to outside abus
             f.cb.mreq := '1';       -- signal addr is ready on abus
             f.cb.rd := '1';         -- request reading from memory
         when t2 =>
-            f.cw.addr_wr := '1';    -- keep writing addr to mem
             f.cw.data_rdi := '1';   -- store instr to data buf
             f.cb.mreq := '1';       -- keep request until byte retrieved
             f.cb.rd := '1';         -- keep reading
@@ -85,15 +78,12 @@ architecture arch of op_decoder is
         when t1 =>
             f.cw.data_wro := '1';   -- send data to memory
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cw.addr_wr := '1';    -- write from buffer to outside abus
             f.cb.mreq := '1';       -- signal addr is ready on abus
         when t2 =>
             f.cw.data_wro := '1';   -- send data
-            f.cw.addr_wr := '1';    -- keep writing addr to mem
             f.cb.mreq := '1';       -- keep request until byte read
             f.cb.wr := '1';         -- keep reading
         when t3 =>
-            f.cw.addr_wr := '1';    -- keep writing addr
             f.cw.data_wro := '1';   -- keep sending data
         when others => null; end case;
         return f;
@@ -477,30 +467,42 @@ architecture arch of op_decoder is
     end bit_r;
 
     function rld_rrd(state : state_t; f_in : id_frame_t;
-                   op : instr_t; bs : integer range 0 to 7;
-                   reg : integer range 0 to 7)
+                     op1 : instr_t, op2 : instr_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        case state.m is 
+        case state.m is
         when m2 =>
             case state.t is
             when t4 =>
-                f.cw.rf_addr := reg;
-                f.cw.dbus_src := rf_o;
-                f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            f := mem_rd_instr(state, f); -- overlap
+            f := mem_rd(state, f);
             case state.t is
-            when t2 =>
-                f.cw.alu_op := op;
-                f.cw.alu_bs := bs;
+            when t1 =>
+                f.cw.rf_addr := regHL;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.cw.act_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 =>
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.alu_op := op1;
                 f.cw.dbus_src := alu_o;
-                f.cw.f_rd := '1';
-                f.cw.rf_addr := reg;
+                f.cw.data_rdo := '1';
+                f.cw.rf_addr := regHL;
+                f.cw.abus_src := rf_o;
+            when t2 =>
+                f.cw.alu_op := op2;
+                f.cw.dbus_src := alu_o;
+                f.cw.rf_addr := regA;  
                 f.cw.rf_rdd := '1';
-                f.ct.instr_end := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -953,8 +955,8 @@ begin
         -- set all signals to defaults (overwrite below)
         f.ct := (mode_next => state.mode, others => '0');
         f.cb := (others => '0');
-        f.cw := (dbus_src => ext_o,
-                 abus_src => pc_o,
+        f.cw := (dbus_src => none,
+                 abus_src => none,
                  rf_addr => 0,
                  rf_swp => none,
                  alu_op => unknown,
@@ -1153,6 +1155,7 @@ begin
         when dd|fd => f := nop(state, f); -- TODO
         when wz => null;
         when halt => f := nop(state, f);
+        when int => null;
         end case;
 
         cw <= f.cw;
