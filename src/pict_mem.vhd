@@ -14,6 +14,27 @@ entity pict_mem is port (
 end pict_mem;
 
 architecture Behavioral of pict_mem is
+    function div24(num : integer range 0 to 7679) return integer is
+        variable q, num_v : integer;
+    begin
+        num_v := num;
+        q := 0;
+        while num_v >= 24 loop
+            num_v := num_v - 24;
+            q := q + 1;
+        end loop;
+        return q;
+    end div24;
+    function rem24(num : integer range 0 to 7679) return integer is
+        variable q, num_v : integer;
+    begin
+        num_v := num;
+        while num_v >= 24 loop
+            num_v := num_v - 24;
+        end loop;
+        return num_v;
+    end rem24;
+
     type mem_t is array(0 to 480) of std_logic_vector(0 to 23);
     --120x64/24=6144
     signal mem : mem_t;
@@ -21,11 +42,11 @@ architecture Behavioral of pict_mem is
     signal tri_addr_lcd, tri_addr_vga : integer range mem'range;
     signal tri_sel_lcd, tri_sel_vga, tri_next : std_logic_vector(0 to 23);
 begin
-    tri_addr_vga <= to_integer(unsigned(addr_vga)) / 24;
-    tri_addr_lcd <=
-        to_integer(unsigned(x)) * 5 + to_integer(unsigned(y)) / 3
+    tri_addr_vga <= div24(to_integer(unsigned(addr_vga)));
+    tri_addr_lcd <= 
+        div24(to_integer(unsigned(x))*120+to_integer(unsigned(y))*8)
             when wl = '1' else
-        to_integer(unsigned(x)) * 5 + to_integer(unsigned(y)) / 4;
+        div24(to_integer(unsigned(x))*120+to_integer(unsigned(y))*6);
     tri_sel_lcd <= mem(tri_addr_lcd);
     tri_sel_vga <= mem(tri_addr_vga);
     tri_bit_lcd <= to_integer(unsigned(y)) rem 24;
