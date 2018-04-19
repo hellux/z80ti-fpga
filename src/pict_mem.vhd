@@ -47,7 +47,7 @@ architecture Behavioral of pict_mem is
     signal mem : mem_t;
     signal tri_bit_lcd, tri_bit_vga : integer range 0 to 23;
     signal tri_addr_lcd, tri_addr_vga : integer range mem'range;
-    signal tri_sel_lcd, tri_sel_vga, tri_next : std_logic_vector(0 to 23);
+    signal tri_sel_lcd, tri_next : std_logic_vector(0 to 23);
 begin
     tri_addr_vga <= div24(to_integer(unsigned(x_vga)) +
                           to_integer(unsigned(y_vga)*120));
@@ -56,7 +56,6 @@ begin
             when wl = '1' else
         div24(to_integer(unsigned(x_lcd))*120+to_integer(unsigned(y_lcd))*6);
     tri_sel_lcd <= mem(tri_addr_lcd);
-    tri_sel_vga <= mem(tri_addr_vga);
     tri_bit_lcd <= rem24(to_integer(unsigned(y_lcd))*8) when wl = '1' else
                    rem24(to_integer(unsigned(y_lcd))*6) when wl = '0' else
                    0;
@@ -84,6 +83,7 @@ begin
         end if;
     end process;
 
-    do_lcd <= x"00";
+    do_lcd <= tri_sel_lcd(tri_bit_lcd to tri_bit_lcd+7) when wl = '1' else
+              tri_sel_lcd(tri_bit_lcd to tri_bit_lcd+5) & "00";
     do_vga <= mem(tri_addr_vga)(tri_bit_vga);
 end Behavioral;
