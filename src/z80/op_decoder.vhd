@@ -1143,6 +1143,7 @@ begin
         when dd|fd => f := nop(state, f); -- TODO
         when wz => null;
         when halt => f := nop(state, f);
+        when int => null;
         end case;
 
         cw <= f.cw;

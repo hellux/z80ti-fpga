@@ -79,9 +79,10 @@ architecture arch of z80 is
     signal flags_in, flags_out : std_logic_vector(7 downto 0); -- rel to alu
 
     -- dbus/abus src
-    signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_out
+    signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_out, i_out
         : std_logic_vector(7 downto 0);
-    signal rf_ao, tmpa_out, pc_out, dis_out : std_logic_vector(15 downto 0);
+    signal rf_ao, tmpa_out, pc_out, dis_out, int_addr
+        : std_logic_vector(15 downto 0);
 
     signal dbus : std_logic_vector(7 downto 0);
     signal abus : std_logic_vector(15 downto 0);
@@ -97,6 +98,8 @@ begin
         cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_swp,
         dbus, addr_in, flags_out, rf_do, rf_ao, rf_dis_out, acc, flags_in,
         dbg.regs);
+    i : reg generic map(8)
+            port map(clk, cbi.reset, cw.i_rd, dbus, i_out);
     pc : reg generic map(16)
              port map(clk, cbi.reset, cw.pc_rd, addr_in, pc_out);
     tmpa : reg generic map(16)
@@ -106,6 +109,7 @@ begin
         std_logic_vector(unsigned(abus) + 1) when inc,
         abus                                 when none,
         std_logic_vector(unsigned(abus) - 1) when dec;
+    int_addr <= i_out & dbus(7 downto 1) & '0';
 
     -- -- ALU section -- --
     alu_comp : alu port map(act_out, tmp_out, flags_in,
@@ -123,15 +127,17 @@ begin
                 dbufi_out       when ext_o,
                 rf_do           when rf_o,
                 tmp_out         when tmp_o,
-                alu_out         when alu_o;
+                alu_out         when alu_o,
+                i_out           when i_o;
     with cw.abus_src select
         abus <= (others => '-') when none,
                 pc_out          when pc_o,
                 rf_ao           when rf_o,
                 tmpa_out        when tmpa_o,
-                dis_out         when dis_o;
+                dis_out         when dis_o,
+                int_addr        when int_o;
     -- buffer dbus both ways
-    -- TODO test buf on FPGA
+    -- TODO test buf on FPGA (mealy circuit)
     dbufi : buf generic map(8)
                 port map(clk, cbi.reset, cw.data_rdi, data_in, dbufi_out);
     dbufo : buf generic map(8)

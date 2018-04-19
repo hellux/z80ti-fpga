@@ -18,7 +18,8 @@ package z80_comm is
     type id_mode_t is (
         main, ed, cb, dd, ddcb, fd, fdcb, -- exec prefixes
         wz,                               -- use wz instead of pc on fetch
-        halt                              -- halted
+        halt,                             -- halted
+        int                               -- interrupt init
     );
 
     -- control signals for id
@@ -30,6 +31,7 @@ package z80_comm is
 
     -- current state/context of cpu
     type state_t is record
+        int_mode : integer range 0 to 2;
         mode : id_mode_t;
         cc : cond_t;
         m : integer range 1 to 6;
@@ -52,8 +54,8 @@ package z80_comm is
         busack : std_logic;
     end record;
 
-    type dbus_src_t is (none, ext_o, rf_o, tmp_o, alu_o);
-    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o);
+    type dbus_src_t is (none, ext_o, rf_o, tmp_o, alu_o, i_o);
+    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o);
 
     type ctrlword is record 
         -- buses / registers
@@ -63,6 +65,7 @@ package z80_comm is
         rf_rdd, rf_rda : std_logic;
         rf_swp : rf_swap_t;
         f_rd : std_logic;
+        i_rd : std_logic;
         ir_rd : std_logic;
         tmpa_rd : std_logic;
         pc_rd : std_logic;
