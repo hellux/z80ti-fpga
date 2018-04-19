@@ -28,6 +28,7 @@ architecture arch of lcd_ctrl is
         inc : std_logic_vector(1 downto 0); -- counter & up/down
         active : std_logic;
         wl : std_logic; -- 0: 6bit, 1: 8bit
+        busy : std_logic;
     end record;
 
     -- helpers
@@ -39,12 +40,14 @@ architecture arch of lcd_ctrl is
 begin
     control <= unsigned(status_in);
 
-    data_out <= gmem_data_in;
     gmem_data_out <= data_in;
     gmem_addr <= std_logic_vector(to_unsigned(x+15*y, gmem_addr'length));
     gmem_rst <= rst;
     gmem_rd <= '1' when data_wr = '1' else '0';
     gmem_wl <= mode.wl;
+
+    data_out <= gmem_data_in;
+    status_out <= mode.busy & mode.wl & mode.active & "0--" & mode.inc;
 
     update : process(clk) begin
         if rising_edge(clk) then
@@ -67,8 +70,7 @@ begin
             when x"00"|x"01" => m.wl := control(0);
             when x"02"|x"03" => m.active := control(1);
             when x"04"|x"05"|x"06"|x"07" =>
-                m.inc := std_logic_vector(control(1
-            downto 0));
+                m.inc := std_logic_vector(control(1 downto 0));
             when others => null; end case;
         end if;
         mode_next <= m;
@@ -99,10 +101,10 @@ begin
                 if x_tmp < 0 then x_tmp := 63; end if;
             end if;
         elsif status_wr = '1' then
-            if x"20" <= control and control <= x"3f" then
-                x_tmp := to_integer(control - x"20");
-            elsif x"80" <= control and control <= x"bf" then
-                y_tmp := to_integer(control - x"80");
+            if control(7 downto 5) = "001" then
+                x_tmp := to_integer(control(4 downto 0));
+            elsif control(7 downto 6) = "10" then
+                y_tmp := to_integer(control(5 downto 0));
             end if;
         end if;
         x_next <= x_tmp; y_next <= y_tmp;
