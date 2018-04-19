@@ -1,11 +1,3 @@
---------------------------------------------------------------------------------
--- KBD ENC
--- Anders Nilsson
--- 16-feb-2016
--- Version 1.1
-
-
--- library declaration
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;            -- basic IEEE library
 use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
@@ -13,42 +5,38 @@ use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
 
 -- entity
 entity KBD_ENC is
-  port ( clk	                : in std_logic;			-- system clock (100 MHz)
-	 rst		        : in std_logic;			-- reset signal
-         PS2KeyboardCLK	        : in std_logic; 		-- USB keyboard PS2 clock
-         PS2KeyboardData	: in std_logic;			-- USB keyboard PS2 data
-         data			: out std_logic_vector(7 downto 0);		-- tile data
-         addr			: out unsigned(10 downto 0);	-- tile address
-         we			: out std_logic);		-- write enable
+  port ( clk	              : in std_logic;			        -- system clock (100 MHz)
+	 rst		              : in std_logic;			        -- reset signal
+         PS2KeyboardCLK	      : in std_logic; 		            -- USB keyboard PS2 clock
+         PS2KeyboardData	  : in std_logic;			        -- USB keyboard PS2 data
+         data			      : out std_logic_vector(7 downto 0); -- tile data
+         addr			      : out unsigned(10 downto 0);	    -- tile address
+         we			          : out std_logic);		            -- write enable
 end KBD_ENC;
 
 -- architecture
 architecture behavioral of KBD_ENC is
-  signal PS2Clk			: std_logic;			-- Synchronized PS2 clock
-  signal PS2Data		: std_logic;			-- Synchronized PS2 data
-  signal PS2Clk_Q1, PS2Clk_Q2 	: std_logic;			-- PS2 clock one pulse flip flop
-  signal PS2Clk_op 		: std_logic;			-- PS2 clock one pulse 
+  signal ps2clk			      : std_logic;			            -- synchronized ps2 clock
+  signal ps2data		      : std_logic;			            -- synchronized ps2 data
+  signal ps2clk_q1, ps2clk_q2 : std_logic;			            -- ps2 clock one pulse flip flop
+  signal ps2clk_op 		      : std_logic;			            -- ps2 clock one pulse 
 	
-  signal PS2Data_sr 		: std_logic_vector(10 downto 0);-- PS2 data shift register
+  signal ps2data_sr 	      : std_logic_vector(10 downto 0);-- ps2 data shift register
 	
-  signal PS2BitCounter	        : unsigned(3 downto 0);		-- PS2 bit counter
-  signal make_Q			: std_logic;			-- make one pulselse flip flop
-  signal make_op		: std_logic;			-- make one pulse
+  signal ps2bitcounter	      : unsigned(3 downto 0);		    -- ps2 bit counter
+  signal make_q			      : std_logic;			            -- make one pulselse flip flop
+  signal make_op		      : std_logic;			            -- make one pulse
 
-  type state_type is (IDLE, MAKE, BREAK);			-- declare state types for PS2
-  signal PS2state : state_type;					-- PS2 state
+  type state_type is (idle, make, break);			            -- declare state types for ps2
+  signal ps2state : state_type;					                -- ps2 state
 
-  signal ScanCode		: std_logic_vector(7 downto 0);	-- scan code
-  signal TileIndex		: std_logic_vector(7 downto 0);	-- tile index
-  
-  type curmov_type is (FORWARD, BACKWARD, NEWLINE);		-- declare cursor movement types
-  signal curMovement : curmov_type;				-- cursor movement
+  signal scancode		      : std_logic_vector(7 downto 0);	-- scan code
+  signal keycode              : std_logic_vector(7 downto 0);   -- key code
+
+
 	
-  signal curposX		: unsigned(5 downto 0);		-- cursor X position
-  signal curposY		: unsigned(4 downto 0);		-- cursor Y position
-	
-  type wr_type is (STANDBY, WRCHAR, WRCUR);			-- declare state types for write cycle
-  signal WRstate : wr_type;					-- write cycle state
+  type wr_type is (STANDBY, WRCHAR, WRCUR);			            -- declare state types for write cycle
+  signal WRstate : wr_type;					                    -- write cycle state
 
 begin
 
@@ -134,111 +122,31 @@ begin
         end if;
     end process;
 
-  -- Scan Code -> Tile Index mapping
-  with ScanCode select
-    TileIndex <= x"00" when x"29",	-- space
-                 x"01" when x"1C",	-- A
-                 x"02" when x"32",	-- B
-                 x"03" when x"21",	-- C
-                 x"04" when x"23",	-- D
-                 x"05" when x"24",	-- E
-                 x"06" when x"2B",	-- F
-                 x"07" when x"34",	-- G
-                 x"08" when x"33",	-- H
-                 x"09" when x"43",	-- I
-                 x"0A" when x"3B",	-- J
-                 x"0B" when x"42",	-- K
-                 x"0C" when x"4B",	-- L
-                 x"0D" when x"3A",	-- M
-                 x"0E" when x"31",	-- N
-                 x"0F" when x"44",	-- O
-                 x"10" when x"4D",	-- P
-                 x"11" when x"15",	-- Q
-                 x"12" when x"2D",	-- R
-                 x"13" when x"1B",	-- S
-                 x"14" when x"2C",	-- T
-		         x"15" when x"3C",	-- U
-		         x"16" when x"2A",	-- V
-		         x"17" when x"1D",	-- W
-		         x"18" when x"22",	-- X
-		         x"19" when x"35",	-- Y
-		         x"1A" when x"1A",	-- Z
-                 x"1B" when x"54",  -- Å                 x"1C" when x"52",  -- Ä                 x"1D" when x"4C",  -- Ö		         x"00" when others;
-						 
-  -- set cursor movement based on scan code
-  with ScanCode select
-    curMovement <= NEWLINE when x"5A",--enter scancode (5A), so move cursor to next line
-                   BACKWARD when x"66",--backspace scancode (66), so move cursor backward
-                   FORWARD when others;--for all other scancodes, move cursor forward
-
-
-  -- curposX
-  -- update cursor X position based on current cursor 
-  -- position (curposX and curposY) and cursor
-  -- movement (curMovement)
-  process(clk)
-  begin
-    if rising_edge(clk) then
-      if rst='1' then
-        curposX <= (others => '0');
-      elsif (WRstate = WRCHAR) then
-        if (curMovement = FORWARD) then
-          if (curposX = 19) then
-            curposX <= (others => '0');
-          else
-            curposX <= curposX + 1;
-          end if;
-        elsif (curMovement = BACKWARD) then
-          if ((curposX = 0) and (curposY >= 0)) then
-            curposX <= to_unsigned(19, curposX'length);
-          else
-            curposX <= curposX - 1;
-          end if;
-        elsif (curMovement = NEWLINE) then
-          curposX <= (others => '0');
-        end if;
-      end if;
-    end if;
-  end process;
-	
-
-  -- curposY
-  -- update cursor Y position based on current cursor 
-  -- position (curposX and curposY) and cursor
-  -- movement (curMovement)
-  process(clk)
-  begin
-    if rising_edge(clk) then
-      if rst='1' then
-        curposY <= (others => '0');
-      elsif (WRstate = WRCHAR) then
-        if (curMovement = FORWARD) then
-          if (curposX = 19) then
-            if (curposY = 14) then
-              curposY <= (others => '0');
-            else
-              curposY <= curposY + 1;
-            end if;
-          end if;
-        elsif (curMovement = BACKWARD) then
-          if (curposX = 0) then
-            if (curposY = 0) then
-              curposY <= to_unsigned(14, curposY'length);
-            else
-              curposY <= curposY - 1;
-            end if;
-          end if;
-        elsif (curMovement = NEWLINE) then
-          if (curposY = 14) then
-            curposY <= (others => '0');
-          else
-            curposY <= curposY + 1;
-          end if;
-        end if;
-      end if;
-    end if;
-  end process;
-
+  -- Scan Code -> Key Code mapping
+  with scancode select
+    keycode <=   x"01" when x"72",	-- KEY DOWN  | KP_Down
+                 x"02" when x"6B",	-- KEY LEFT  | KP_Left
+                 x"03" when x"74",	-- KEY RIGHT | KP_Right
+                 x"04" when x"75",	-- KEY UP    | KP_Up
+                 x"09" when x"5A",	-- ENTER     | ENTER
+                 x"0A" when x"79",	-- ADD +     | KP_Add 
+                 x"0B" when x"7B",	-- SUB -     | KP_Sub
+                 x"0C" when x"7C",	-- MULT x    | 
+                 x"0D" when x"4E",	-- DIV \     | (+ ? \)   
+                 x"0E" when x"5B",	-- POWER ^   | (Key next to Å)
+                 x"0F" when x"77",	-- CLEAR     | Num Lock
+                 x"22" when x"16",	-- 1         | 1
+                 x"1A" when x"1E",	-- 2         | 2
+                 x"12" when x"26",	-- 3         | 3
+                 x"23" when x"25",	-- 4         | 4
+                 x"1B" when x"2E",	-- 5         | 5
+                 x"13" when x"36",	-- 6         | 6
+                 x"24" when x"3D",	-- 7         | 7
+                 x"1C" when x"3E",	-- 8         | 8
+                 x"14" when x"46",	-- 9         | 9
+                 x"21" when x"45",	-- 0         | 0
+		         x"36" when x"0D",	-- 2ND       | TAB
+		         x"29" when x"0E",	-- ON        | Button next to 1
 
   -- write state
   -- every write cycle begins with writing the character tile index at the current
