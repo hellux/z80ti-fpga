@@ -82,10 +82,10 @@ begin
         if data_rd = '1' or data_wr = '1' then
             -- inc/dec
             case mode.inc is
-            when "00" => y_tmp := y - 1;
-            when "01" => y_tmp := y + 1;
-            when "10" => x_tmp := x - 1;
-            when "11" => x_tmp := x + 1;
+            when "00" => x_tmp := x - 1;
+            when "01" => x_tmp := x + 1;
+            when "10" => y_tmp := y - 1;
+            when "11" => y_tmp := y + 1;
             when others => null; end case;
             -- limit (values from t6a04 data sheet)
             if mode.wl = '1' then
