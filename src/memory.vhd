@@ -36,4 +36,6 @@ begin
                            addr(13 downto 0), data_in, data_rom);
 
     data_out <= data_rom;
+
+    cbi <= (others => '0');
 end arch;

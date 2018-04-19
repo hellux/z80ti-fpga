@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity pict_mem is port (
-    clk_z80, clk_vga, rst : in std_logic;
+    clk, rst : in std_logic;
     rd, wl : in std_logic;
     page_in : in std_logic_vector(7 downto 0);
     x_lcd : in std_logic_vector(5 downto 0); -- row
@@ -28,6 +28,10 @@ architecture Behavioral of pict_mem is
         return num_v;
     end rem24;
 
+    signal clk_z80, clk_vga : std_logic;
+    signal clk_z80_div : integer range 0 to 24;
+    signal clk_vga_div : integer range 0 to 3;
+
     --120x64/24=480
     signal xl, yl, xv, yv : integer := 0;
     type mem_t is array(0 to 480) of std_logic_vector(0 to 23);
@@ -41,6 +45,28 @@ begin
     yl <= to_integer(unsigned(y_lcd));
     xv <= to_integer(unsigned(x_vga));
     yv <= to_integer(unsigned(y_vga));
+
+    -- clock sync
+    process(clk) begin
+        if rising_edge(clk) then
+            if clk_z80_div = 24 then
+                clk_z80_div <= 0;
+            else
+                clk_z80_div <= clk_z80_div + 1;
+            end if;
+            if clk_vga_div = 3 then
+                clk_vga_div <= 0;
+            else
+                clk_vga_div <= clk_vga_div + 1;
+            end if;
+            if rst = '1' then
+                clk_z80_div <= 0;
+                clk_vga_div <= 0;
+            end if;
+        end if;
+    end process;
+    clk_z80 <= '1' when clk_z80_div = 0 else '0';
+    clk_vga <= '1' when clk_vga_div = 0 else '0';
 
     -- tri_addr_vga = (xv+120*yv)/24 = xv/8/3 + 5*yv
     with xv/8 select tri_addr_vga <=
@@ -66,39 +92,43 @@ begin
     -- tri_bit_lcd_6b = 6*(yl mod 24) (trivial)
     -- tri_bit_lcd_8b = 8*(yl mod 24)
     with yl select tri_bit_lcd_8b <=
-        0  when 0|3|6| 9|12|15|18,
-        8  when 1|4|7|10|13|16|19,
-        16 when 2|5|8|11|14|17,
+        0  when 0| 3| 6| 9|12|15|18,
+        8  when 1| 4| 7|10|13|16|19,
+        16 when 2| 5| 8|11|14|17,
         0  when others;
     tri_bit_lcd <= tri_bit_lcd_8b when wl = '1' else yl mod 4;
     tri_bit_vga <= rem24(xv);
 
-    process(clk_z80) begin
-        if rising_edge(clk_z80) then
-            if rst = '1' then
-                mem <= (others => x"000000");
-            elsif rd = '1' then
-                if wl = '1' then
-                    mem(tri_addr_lcd)
-                       (tri_bit_lcd to tri_bit_lcd+7) <= page_in;
-                else
-                    mem(tri_addr_lcd)
-                       (tri_bit_lcd to tri_bit_lcd+5) <= page_in(5 downto 0);
+    in_out_lcd : process(clk) begin
+        if rising_edge(clk) then
+            if clk_z80 = '1' then
+                if rst = '1' then
+                    mem <= (others => x"000000");
+                elsif rd = '1' then
+                    if wl = '1' then
+                        mem(tri_addr_lcd)(tri_bit_lcd to tri_bit_lcd+7)
+                            <= page_in;
+                    else
+                        mem(tri_addr_lcd)(tri_bit_lcd to tri_bit_lcd+5)
+                            <= page_in(5 downto 0);
+                    end if;
                 end if;
-            end if;
-            if wl = '1' then
-                do_lcd <= mem(tri_addr_lcd)
-                             (tri_bit_lcd to tri_bit_lcd+7);
-            else
-                do_lcd <= "00" & mem(tri_addr_lcd)
-                                    (tri_bit_lcd to tri_bit_lcd+5);
+                if wl = '1' then
+                    do_lcd <= mem(tri_addr_lcd)
+                                 (tri_bit_lcd to tri_bit_lcd+7);
+                else
+                    do_lcd <= "00" & mem(tri_addr_lcd)
+                                        (tri_bit_lcd to tri_bit_lcd+5);
+                end if;
             end if;
         end if;
     end process;
 
-    process(clk_vga) begin
-        if rising_edge(clk_vga) then
-            do_vga <= mem(tri_addr_vga)(tri_bit_vga);
+    out_vga : process(clk) begin
+        if rising_edge(clk) then
+            if clk_vga = '1' then
+                do_vga <= mem(tri_addr_vga)(tri_bit_vga);
+            end if;
         end if;
     end process;
 end Behavioral;
