@@ -1,0 +1,4 @@
+src/pict_mem.vhd
+src/vga_motor.vhd
+tests/vga_fb.vhd
+tests/vga_fb_tb.vhd

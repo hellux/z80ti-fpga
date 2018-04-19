@@ -99,7 +99,7 @@ begin
     tri_bit_lcd <= tri_bit_lcd_8b when wl = '1' else yl mod 4;
     tri_bit_vga <= rem24(xv);
 
-    in_out_lcd : process(clk) begin
+    lcd_in_out : process(clk) begin
         if rising_edge(clk) then
             if clk_z80 = '1' then
                 if rst = '1' then
@@ -124,7 +124,7 @@ begin
         end if;
     end process;
 
-    out_vga : process(clk) begin
+    vga_out : process(clk) begin
         if rising_edge(clk) then
             if clk_vga = '1' then
                 do_vga <= mem(tri_addr_vga)(tri_bit_vga);
