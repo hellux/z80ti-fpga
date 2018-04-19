@@ -30,11 +30,15 @@ begin
                    ctrl.mode_next /= halt then
                     state.mode <= main;
                 end if;
+                if cbi.int = '1' then
+                    state.mode <= int;
+                end if;
             elsif ctrl.cycle_end = '1' then
                 state.m <= state.m + 1;
             end if;
 
             if cbi.reset = '1' then
+                state.int_mode <= 0;
                 state.mode <= main;
                 state.m <= m1;
                 state.t <= t1;

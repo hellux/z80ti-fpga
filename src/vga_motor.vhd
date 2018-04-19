@@ -21,8 +21,8 @@ end vga_motor;
 -- architecture
 architecture Behavioral of vga_motor is
 
-  signal	Xpixel	    : unsigned(9 downto 0);     -- Horizontal pixel counter
-  signal	Ypixel	    : unsigned(9 downto 0);		-- Vertical pixel counter
+  signal	Xpixel	    : integer range 0 to 800;   -- Horizontal pixel counter
+  signal	Ypixel	    : integer range 0 to 521;	-- Vertical pixel counter
   signal	clk_count	: unsigned(1 downto 0);	    -- Clock divisor, to generate 25 MHz signal
   signal	vga_clk		: std_logic;			    -- One pulse width 25 MHz signal
 		
@@ -56,10 +56,10 @@ begin
   begin
     if rising_edge(clk) then
         if rst='1' then
-            Xpixel <= (others => '0');     
+            Xpixel <= 0;     
         elsif vga_clk = '1'  then    
             if Xpixel = 799 then
-                Xpixel <= (others => '0');
+                Xpixel <= 0;
             else
                 Xpixel <= Xpixel + 1;
             end if;
@@ -79,10 +79,10 @@ begin
   begin
     if rising_edge(clk) then   
         if rst='1' then
-            Ypixel <= (others => '0');  
+            Ypixel <= 0;  
         elsif vga_clk = '1' then  
             if Ypixel = 520 then
-                Ypixel <= (others => '0');
+                Ypixel <= 0;
             elsif Xpixel = 799 then 
                 Ypixel <= Ypixel + 1;
             end if;
@@ -120,7 +120,7 @@ begin
   end process;
   
   -- Picture memory address composite (16 = 96//6, 10 = 64//2)
-  addr <= std_logic_vector(resize(Xpixel/4 + Ypixel*24, addr'length));
+  addr <= std_logic_vector(to_unsigned(Xpixel* (1/6) + 96*Ypixel * (1/6), addr'length));
   -- Set picture colour based on pos and data. (576 = 96*6, 384 = 64*6)
 
   -- Text: (10010110) Backgroud: (01001000) Bar: (00000000)

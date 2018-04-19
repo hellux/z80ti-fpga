@@ -7,7 +7,11 @@ entity comp is port(
     clk : in std_logic;
     btns : in std_logic_vector(4 downto 0);
     seg, led : out std_logic_vector(7 downto 0);
-    an : out std_logic_vector(3 downto 0));
+    an : out std_logic_vector(3 downto 0);
+    vga_red : out std_logic_vector(2 downto 0);
+    vga_green : out std_logic_vector(2 downto 0);
+    vga_blue : out std_logic_vector(2 downto 1);
+    hsync, vsync : out std_logic);
 end comp;
 
 architecture arch of comp is
@@ -22,11 +26,11 @@ architecture arch of comp is
         dbg : out dbg_z80_t);
     end component;
 
-    component mem_rom port(
+    component memory port(
         clk, rst : in std_logic;
-        rd, wr, ce : in std_logic;
         cbi : out ctrlbus_in;
-        addr : in std_logic_vector(13 downto 0);
+        cbo : in ctrlbus_out;
+        addr : in std_logic_vector(15 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0));
     end component;
@@ -43,14 +47,37 @@ architecture arch of comp is
     end component;
 
     component lcd_ctrl port(
-        clk : in std_logic;
+        clk, rst : in std_logic;
         gmem_data_in : in std_logic_vector(7 downto 0);
         gmem_data_out : out std_logic_vector(7 downto 0);
         gmem_addr : out std_logic_vector(12 downto 0);
+        gmem_rst, gmem_rd, gmem_wl : out std_logic;
         status_rd, data_rd : in std_logic;
         status_wr, data_wr : in std_logic;
         status_in, data_in : in std_logic_vector(7 downto 0);
         status_out, data_out : out std_logic_vector(7 downto 0));
+    end component;
+
+    component pict_mem port(
+        clk, rst : in std_logic;
+        rd, wl : in std_logic;
+        di : in std_logic_vector(7 downto 0);
+        do_vga: out std_logic;
+        do_lcd: out std_logic_vector(7 downto 0);
+        addr_rd	: in std_logic_vector(12 downto 0);
+        addr_wr : in std_logic_vector(12 downto 0));
+    end component;
+
+    component vga_motor port(
+         clk : in std_logic;
+         data : in std_logic;
+         addr : out std_logic_vector(12 downto 0);
+         rst : in std_logic;
+         vgaRed	: out std_logic_vector(2 downto 0);
+         vgaGreen : out std_logic_vector(2 downto 0);
+         vgaBlue : out std_logic_vector(2 downto 1);
+         Hsync : out std_logic;
+         Vsync : out std_logic);
     end component;
 
     component monitor port(
@@ -63,18 +90,18 @@ architecture arch of comp is
 
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
-    signal cbi, cbi_rom, cbi_ext, cbi_asic : ctrlbus_in;
+    signal cbi, cbi_mem, cbi_ext, cbi_asic : ctrlbus_in;
     signal data, data_z80, data_rom, data_asic : std_logic_vector(7 downto 0);
     signal io_ports : io_ports_t;
     signal io_data : io_data_t;
-    signal lcd_gmem_data, gmem_lcd_data : std_logic_vector(7 downto 0);
-    signal lcd_gmem_addr : std_logic_vector(12 downto 0);
-
-    signal rom_ce : std_logic;
+    signal gmem_lcd_data, lcd_gmem_data : std_logic_vector(7 downto 0);
+    signal gmem_vga_data : std_logic;
+    signal lcd_gmem_addr, vga_gmem_addr : std_logic_vector(12 downto 0);
+    signal gmem_rst, gmem_rd, gmem_wl : std_logic;
 
     signal rst : std_logic;
     signal clk_z80 : std_logic;
-    signal clk_div : integer range 0 to 25;
+    signal clk_div : integer range 0 to 24;
 
     signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
 
@@ -94,7 +121,7 @@ begin
         if rising_edge(clk) then
             if btns(1) = '1' then
                 clk_div <= 0;
-            elsif clk_div = 25 then
+            elsif clk_div = 24 then
                 clk_div <= 0;
             else
                 clk_div <= clk_div + 1;
@@ -109,28 +136,32 @@ begin
 
     -- OR common buses instead of tristate
     data <= data_z80 or data_rom or data_asic;
-    cbi.wt    <= cbi_rom.wt    or cbi_ext.wt    or cbi_asic.wt;
-    cbi.int   <= cbi_rom.int   or cbi_ext.int   or cbi_asic.int;
-    cbi.nmi   <= cbi_rom.nmi   or cbi_ext.nmi   or cbi_asic.nmi;
-    cbi.reset <= cbi_rom.reset or cbi_ext.reset or cbi_asic.reset;
-    cbi.busrq <= cbi_rom.busrq or cbi_ext.busrq or cbi_asic.busrq;
+    cbi.wt    <= cbi_mem.wt    or cbi_ext.wt    or cbi_asic.wt;
+    cbi.int   <= cbi_mem.int   or cbi_ext.int   or cbi_asic.int;
+    cbi.nmi   <= cbi_mem.nmi   or cbi_ext.nmi   or cbi_asic.nmi;
+    cbi.reset <= cbi_mem.reset or cbi_ext.reset or cbi_asic.reset;
+    cbi.busrq <= cbi_mem.busrq or cbi_ext.busrq or cbi_asic.busrq;
 
     -- CPU / MEM
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
-    rom_ce <= cbo.mreq and not addr(15) and not addr(14); -- 0-3fff
-    rom : mem_rom port map(clk_z80, rst, cbo.wr, cbo.rd, rom_ce, cbi_rom,
-                           addr(13 downto 0), data, data_rom);
+    mem : memory port map(clk_z80, rst, cbi_mem, cbo, addr, data, data_rom);
 
     -- IO
     asic_c : asic port map(clk_z80, cbi_asic, cbo,
                            addr(7 downto 0), data, data_asic,
                            io_data, io_ports);
-    lcd : lcd_ctrl port map(clk_z80,
+    lcd : lcd_ctrl port map(clk_z80, rst,
                             gmem_lcd_data, lcd_gmem_data, lcd_gmem_addr,
+                            gmem_rst, gmem_rd, gmem_wl,
                             io_ports.lcd_status.rd, io_ports.lcd_data.rd,
                             io_ports.lcd_status.wr, io_ports.lcd_data.wr,
                             io_ports.lcd_status.data, io_ports.lcd_data.data,
                             io_data.lcd_status, io_data.lcd_data);
+    gmem : pict_mem port map(clk_z80, gmem_rst, gmem_rd, gmem_wl,
+                             lcd_gmem_data, gmem_vga_data, gmem_lcd_data,
+                             lcd_gmem_addr, vga_gmem_addr);
+    vga : vga_motor port map(clk, gmem_vga_data, vga_gmem_addr, rst,
+                             vga_red, vga_green, vga_blue, hsync, vsync);
 
     -- DEBUG
     mon : monitor port map(clk, btns_op, dbg_z80, seg, led, an);

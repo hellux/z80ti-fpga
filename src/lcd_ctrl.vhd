@@ -3,11 +3,20 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.cmp_comm.all;
 
+-- TODO
+--  - ensure correct address (crop 120x64 to 96x64?)
+
+-- MISSING, low prio
+--  - power on/off
+--  - rowshift (z register/counter)
+--  - contrast
+
 entity lcd_ctrl is port(
-    clk : in std_logic;
+    clk, rst : in std_logic;
     gmem_data_in : in std_logic_vector(7 downto 0);
     gmem_data_out : out std_logic_vector(7 downto 0);
     gmem_addr : out std_logic_vector(12 downto 0);
+    gmem_rst, gmem_rd, gmem_wl : out std_logic;
     status_rd, data_rd : in std_logic;
     status_wr, data_wr : in std_logic;
     status_in, data_in : in std_logic_vector(7 downto 0);
@@ -15,40 +24,89 @@ entity lcd_ctrl is port(
 end lcd_ctrl;
 
 architecture arch of lcd_ctrl is
-    signal up : std_logic; -- increment on read/write
-    signal xy : std_logic; -- 0: inc x, 1: inc y
-    signal x : integer range 0 to 63;
-    signal y : integer range 0 to 95;
-begin
-    data_out <= gmem_data_in;
-    gmem_data_out <= data_in;
-    gmem_addr <= std_logic_vector(to_unsigned(x*64+y, gmem_addr'length));
+    type lcd_mode_t is record
+        inc : std_logic_vector(1 downto 0); -- counter & up/down
+        active : std_logic;
+        wl : std_logic; -- 0: 6bit, 1: 8bit
+        busy : std_logic;
+    end record;
 
-    advance_ptr : process(clk) begin
+    -- helpers
+    signal control : unsigned(7 downto 0);
+
+    signal mode, mode_next : lcd_mode_t;
+    signal x, x_next : integer range 0 to 63; -- row
+    signal y, y_next : integer range 0 to 19; -- column page
+begin
+    control <= unsigned(status_in);
+
+    gmem_data_out <= data_in;
+    gmem_addr <= std_logic_vector(to_unsigned(x+15*y, gmem_addr'length));
+    gmem_rst <= rst;
+    gmem_rd <= '1' when data_wr = '1' else '0';
+    gmem_wl <= mode.wl;
+
+    data_out <= gmem_data_in;
+    status_out <= mode.busy & mode.wl & mode.active & "0--" & mode.inc;
+
+    update : process(clk) begin
         if rising_edge(clk) then
-            if data_rd = '1' or data_wr = '1' then
-                if xy = '1' then
-                    if up = '1' then
-                        if y /= 95 then y <= y + 1;
-                        else            y <= 0;
-                        end if;
-                    else
-                        if y /= 0  then y <= y - 1;
-                        else            y <= 95;
-                        end if;
-                    end if;
-                else
-                    if up = '1' then
-                        if x /= 63 then x <= x + 1;
-                        else            x <= 0;
-                        end if;
-                    else
-                        if x /= 0  then x <= x - 1;
-                        else            x <= 63;
-                        end if;
-                    end if;
-                end if;
+            if rst = '1' then
+                mode <= (inc => "00", others => '0');
+                x <= 0; y <= 0;
+            else
+                mode <= mode_next;
+                x <= x_next; y <= y_next;
             end if;
         end if;
+    end process;
+
+    next_mode : process(control, status_wr, mode)
+        variable m : lcd_mode_t;
+    begin
+        m := mode;
+        if status_wr = '1' then
+            case control is
+            when x"00"|x"01" => m.wl := control(0);
+            when x"02"|x"03" => m.active := control(1);
+            when x"04"|x"05"|x"06"|x"07" =>
+                m.inc := std_logic_vector(control(1 downto 0));
+            when others => null; end case;
+        end if;
+        mode_next <= m;
+    end process;
+
+    next_ptr : process(data_rd, data_wr, status_wr, control, mode, x, y)
+        variable x_tmp, y_tmp : integer;
+    begin
+        x_tmp := x; y_tmp := y;
+        if data_rd = '1' or data_wr = '1' then
+            -- inc/dec
+            case mode.inc is
+            when "00" => y_tmp := y - 1;
+            when "01" => y_tmp := y + 1;
+            when "10" => x_tmp := x - 1;
+            when "11" => x_tmp := x + 1;
+            when others => null; end case;
+            -- limit (values from t6a04 data sheet)
+            if mode.wl = '1' then
+                if y_tmp > 14 then y_tmp := 0; end if;
+                if y_tmp < 0 then y_tmp := 14; end if;
+                if x_tmp > 63 then x_tmp := 0; end if;
+                if x_tmp < 0 then x_tmp := 63; end if;
+            else
+                if y_tmp > 19 then y_tmp := 0; end if;
+                if y_tmp < 0 then y_tmp := 19; end if;
+                if x_tmp > 63 then x_tmp := 0; end if;
+                if x_tmp < 0 then x_tmp := 63; end if;
+            end if;
+        elsif status_wr = '1' then
+            if control(7 downto 5) = "001" then
+                x_tmp := to_integer(control(4 downto 0));
+            elsif control(7 downto 6) = "10" then
+                y_tmp := to_integer(control(5 downto 0));
+            end if;
+        end if;
+        x_next <= x_tmp; y_next <= y_tmp;
     end process;
 end arch;
