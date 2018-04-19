@@ -137,14 +137,14 @@ begin
                 dis_out         when dis_o,
                 int_addr        when int_o;
     -- buffer dbus both ways
-    -- TODO test buf on FPGA (mealy circuit)
-    dbufi : reg generic map(8)
+    -- TODO test buf on FPGA (mealy circuit danger danger)
+    dbufi : buf generic map(8)
                 port map(clk, cbi.reset, cw.data_rdi, data_in, dbufi_out);
-    dbufo : reg generic map(8)
+    dbufo : buf generic map(8)
                 port map(clk, cbi.reset, cw.data_rdo, dbus, dbufo_out);
     data_out <= dbufo_out when cw.data_wro = '1' else x"00";
     -- buffer abus outgoing
-    abuf : reg generic map(16)
+    abuf : buf generic map(16)
                port map(clk, cbi.reset, cw.addr_rd, abus, addr);
 
     -- debug
