@@ -4,14 +4,14 @@ use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
                                         -- and various arithmetic operations
 
 -- entity
-entity KBD_ENC is
+entity kbd_enc is
   port ( clk	              : in std_logic;			        -- system clock(100 MHz)
 	     rst		              : in std_logic;			    -- reset signal
          PS2KeyboardCLK	      : in std_logic; 		            -- USB keyboard PS2 clock
          PS2KeyboardData	  : in std_logic;			        -- USB keyboard PS2 data
          data			      : out std_logic_vector(7 downto 0); -- scan code data
          we			          : out std_logic);		            -- write enable
-end KBD_ENC;
+end kbd_enc;
 
 -- architecture
 architecture behavioral of KBD_ENC is
@@ -27,15 +27,15 @@ architecture behavioral of KBD_ENC is
   signal make_op		      : std_logic;			            -- make one pulse
 
   type state_type is (idle, make, break);			            -- declare state types for ps2
-  signal ps2state : state_type;					                -- ps2 state
+  signal ps2_state : state_type;					                -- ps2 state
 
   signal scancode		      : std_logic_vector(7 downto 0);	-- scan code
   signal keycode              : std_logic_vector(7 downto 0);   -- key code
 
 
 	
-  type wr_type is (STANDBY, WRCHAR, WRCUR);			            -- declare state types for write cycle
-  signal WRstate : wr_type;					                    -- write cycle state
+  type wr_type is (standby, wrchar, wrcur);			            -- declare state types for write cycle
+  signal wrstate : wr_type;					                    -- write cycle state
 
 begin
 
@@ -43,8 +43,8 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      PS2Clk <= PS2KeyboardCLK;
-      PS2Data <= PS2KeyboardData;
+      ps2clk <= ps2keyboardclk;
+      ps2data <= ps2keyboarddata;
     end if;
   end process;
 
@@ -64,34 +64,32 @@ begin
     end if;
   end process;
 	
-  PS2Clk_op <= (not PS2Clk_Q1) and (not PS2Clk_Q2);
-	
-
-  
+  ps2clk_op <= (not ps2clk_q1) and (not ps2clk_q2);
   -- PS2 data shift register
-
-  -- ***********************************
-  -- *                                 *
-  -- *  VHDL for :                     *
-  -- *  PS2_data_shift_reg             *
-  -- *                                 *
-  -- ***********************************
-
-
-
-
-  scancode <= PS2Data_sr(8 downto 1);
+    process(clk)
+      begin
+        if rising_edge(clk) then
+          if rst='1' then
+            ps2data_sr <= (others => '0');
+          elsif ps2clk_op = '1' then 
+            ps2data_sr(9 downto 0) <= ps2data_sr(10 downto 1);
+            ps2data_sr(10) <= ps2data;
+          end if;
+        end if;
+     end process;
+  scancode <= ps2data_sr(8 downto 1);
 	
   -- PS2 bit counter
-  -- The purpose of the PS2 bit counter is to tell the PS2 state machine when to change state
-
-  -- ***********************************
-  -- *                                 *
-  -- *  VHDL for :                     *
-  -- *  PS2_bit_Counter                *
-  -- *                                 *
-  -- ***********************************
-
+    process(clk)
+      begin
+        if rising_edge(clk) then
+          if rst='1' or ps2bitcounter = 11 then
+            ps2bitcounter <= (others => '0');
+          elsif ps2clk_op = '1' then 
+              ps2bitcounter <= ps2bitcounter + 1;
+          end if;
+        end if;
+     end process;
 	
 	
 
@@ -106,20 +104,27 @@ begin
   -- *  PS2_State                      *
   -- *                                 *
   -- ***********************************
-    process(clk) begin
+      process(clk)
+      begin
         if rising_edge(clk) then
-            if  PS2BitCounter = 11 then
-                case PS2_state is 
-                when(idle) =>
-                    if ScanCode = X"F0" then
-                        PS2_state <= make;
-                    end if;
-                when(make) => PS2_state <= idle;
-                when(break) => PS2_state <= idle;
-                end case;
+          if rst='1' then
+            ps2_state <= idle;
+          elsif ps2_state = idle then 
+            if ps2bitcounter = 11 and scancode /= X"F0" then
+                ps2_state <= make;
+            elsif ps2bitcounter = 11 and scancode = X"F0" then 
+                ps2_state <= break;
             end if;
+          elsif ps2_state = make then
+            ps2_state <= idle;
+          elsif ps2_state = break then
+            if ps2bitcounter = 11 then 
+                ps2_state <= idle;
+            end if;
+          end if;
         end if;
-    end process;
+     end process;
+	
 
   -- Scan Code -> Key Code mapping
   with scancode select
@@ -146,14 +151,14 @@ begin
                  x"21" when x"45",	-- 0         | 0
 		         x"36" when x"0D",	-- 2ND       | TAB
 		         x"29" when x"0E",	-- ON        | Button next to 1
-
+                 x"00" when others;
   -- we will be enabled ('1') for two consecutive clock 
   -- cycles during WRCHAR and WRCUR states
   -- and disabled ('0') otherwise at STANDBY state
-  we <= '0' when (WRstate = STANDBY) else '1';
+  we <= '0' when (wrstate = standby) else 
+        '1';
   
   -- set as keycode
   data <=  keycode;
 
-  
 end behavioral;
