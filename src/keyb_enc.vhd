@@ -5,12 +5,11 @@ use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
 
 -- entity
 entity KBD_ENC is
-  port ( clk	              : in std_logic;			        -- system clock (100 MHz)
-	 rst		              : in std_logic;			        -- reset signal
+  port ( clk	              : in std_logic;			        -- system clock(100 MHz)
+	     rst		              : in std_logic;			    -- reset signal
          PS2KeyboardCLK	      : in std_logic; 		            -- USB keyboard PS2 clock
          PS2KeyboardData	  : in std_logic;			        -- USB keyboard PS2 data
-         data			      : out std_logic_vector(7 downto 0); -- tile data
-         addr			      : out unsigned(10 downto 0);	    -- tile address
+         data			      : out std_logic_vector(7 downto 0); -- scan code data
          we			          : out std_logic);		            -- write enable
 end KBD_ENC;
 
@@ -21,7 +20,7 @@ architecture behavioral of KBD_ENC is
   signal ps2clk_q1, ps2clk_q2 : std_logic;			            -- ps2 clock one pulse flip flop
   signal ps2clk_op 		      : std_logic;			            -- ps2 clock one pulse 
 	
-  signal ps2data_sr 	      : std_logic_vector(10 downto 0);-- ps2 data shift register
+  signal ps2data_sr 	      : std_logic_vector(10 downto 0);  -- ps2 data shift register
 	
   signal ps2bitcounter	      : unsigned(3 downto 0);		    -- ps2 bit counter
   signal make_q			      : std_logic;			            -- make one pulselse flip flop
@@ -81,7 +80,7 @@ begin
 
 
 
-  ScanCode <= PS2Data_sr(8 downto 1);
+  scancode <= PS2Data_sr(8 downto 1);
 	
   -- PS2 bit counter
   -- The purpose of the PS2 bit counter is to tell the PS2 state machine when to change state
@@ -148,50 +147,13 @@ begin
 		         x"36" when x"0D",	-- 2ND       | TAB
 		         x"29" when x"0E",	-- ON        | Button next to 1
 
-  -- write state
-  -- every write cycle begins with writing the character tile index at the current
-  -- cursor position, then moving to the next cursor position and there write the
-  -- cursor tile index
-  process(clk)
-  begin
-    if rising_edge(clk) then
-      if rst='1' then
-        WRstate <= STANDBY;
-      else
-        case WRstate is
-          when STANDBY =>
-            if (PS2state = MAKE) then
-              WRstate <= WRCHAR;
-            else
-              WRstate <= STANDBY;
-            end if;
-          when WRCHAR =>
-            WRstate <= WRCUR;
-          when WRCUR =>
-            WRstate <= STANDBY;
-          when others =>
-            WRstate <= STANDBY;
-        end case;
-      end if;
-    end if;
-  end process;
-	
-
   -- we will be enabled ('1') for two consecutive clock 
   -- cycles during WRCHAR and WRCUR states
   -- and disabled ('0') otherwise at STANDBY state
   we <= '0' when (WRstate = STANDBY) else '1';
-
-
-  -- memory address is a composite of curposY and curposX
-  -- the "to_unsigned(20, 6)" is needed to generate a correct 
-  -- size of the resulting unsigned vector
-  addr <= to_unsigned(20, 6)*curposY + curposX;
-
   
-  -- data output is set to be x"1F" (cursor tile index) 
-  -- during WRCUR state, otherwise set as scan code tile index
-  data <= x"1F" when (WRstate =  WRCUR) else TileIndex;
+  -- set as keycode
+  data <=  keycode;
 
   
 end behavioral;
