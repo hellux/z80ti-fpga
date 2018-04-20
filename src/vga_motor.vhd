@@ -68,7 +68,9 @@ begin
     blank <= '1' when Xpixel > 640 or Ypixel > 480 else '0';
     colour <= x"00" when blank = '1' else
               x"00" when Xpixel > 383 or Ypixel > 255 else
-              x"37" when data = '1' else
+              --001 010 01
+              x"00" when data = '1' else
+              --01001000
               x"48" when data = '0' else
               (others => '-');
   
@@ -76,9 +78,8 @@ begin
              when Xpixel < 480 else (others => '0');
     y <= std_logic_vector(to_unsigned(Ypixel/4, y'length))
             when Ypixel < 256 else (others => '0');
-
-    vgaRed <= colour(7 downto 5);
-    vgaGreen <= colour(4 downto 2);
-    vgaBlue <= colour(1 downto 0);
+    vgaRed 	    <= colour(7 downto 5);
+    vgaGreen    <= colour(4 downto 2);
+    vgaBlue 	<= colour(1 downto 0);
 end Behavioral;
 

@@ -26,9 +26,7 @@ begin
             if web='1' then
                 mem(to_integer(unsigned(addrb))) <= data_inb;
             end if;
-            if rst = '1' then
-                mem <= (others => (others => '0'));
-            end if;
+            
             data_outa <= mem(to_integer(unsigned(addra)));
             data_outb <= mem(to_integer(unsigned(addrb)));
         end if;
