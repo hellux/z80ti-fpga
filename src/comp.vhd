@@ -160,7 +160,7 @@ begin
 
     -- CPU / MEM
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
-    mem : memory port map(clk_z80, rst, cbi_mem, cbo, addr, data, data_rom);
+    mem : memory port map(clk, rst, cbi_mem, cbo, addr, data, data_rom);
 
     -- IO
     asic_c : asic port map(clk_z80, cbi_asic, cbo,

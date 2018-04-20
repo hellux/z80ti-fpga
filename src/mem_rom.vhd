@@ -33,7 +33,7 @@ architecture arch of mem_rom is
         return mem;
     end function;
 
-    signal mem : mem_t := file_to_mem("/edu/noahe116/tsea83-z80/a.bin");
+    signal mem : mem_t := file_to_mem("a.bin");
     signal word_out : std_logic_vector(7 downto 0);
     signal a : integer range 0 to 16383 := 0;
 begin
