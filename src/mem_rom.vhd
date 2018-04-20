@@ -292,12 +292,13 @@ architecture arch of mem_rom is
          out_n_a,
          x"10",
          ld_a_n,
-         x"ff",
+         x"0b",
          out_n_a,
          x"11",
          dec_a,
          jp_nz_nn,
          x"0a",
+         x"00",
          halt,
          others => nop);
     constant prgm_test : mem_t :=
