@@ -20,14 +20,14 @@ architecture arch of bram is
 begin
     process(clk) begin
         if rising_edge(clk) then
-            if wea='1' then
+            if wea = '1' then
                 mem(to_integer(unsigned(addra))) <= data_ina;
             end if;
-            if web='1' then
+            data_outa <= mem(to_integer(unsigned(addra)));
+
+            if web = '1' then
                 mem(to_integer(unsigned(addrb))) <= data_inb;
             end if;
-            
-            data_outa <= mem(to_integer(unsigned(addra)));
             data_outb <= mem(to_integer(unsigned(addrb)));
         end if;
     end process;
