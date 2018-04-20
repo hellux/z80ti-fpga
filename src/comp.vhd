@@ -60,7 +60,7 @@ architecture arch of comp is
     end component;
 
     component pict_mem port(
-        clk, clk_z80, clk_vga, rst : in std_logic;
+        clk, clk_z80, rst : in std_logic;
         rd, wl : in std_logic;
         page_in : in std_logic_vector(7 downto 0);
         x_lcd : in std_logic_vector(5 downto 0); -- row
@@ -173,7 +173,7 @@ begin
                             io_ports.lcd_status.wr, io_ports.lcd_data.wr,
                             io_ports.lcd_status.data, io_ports.lcd_data.data,
                             io_data.lcd_status, io_data.lcd_data);
-    gmem : pict_mem port map(clk, clk_z80, clk_vga, gmem_rst, gmem_rd, gmem_wl,
+    gmem : pict_mem port map(clk, clk_z80, gmem_rst, gmem_rd, gmem_wl,
                              lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,
                              gmem_vga_data, gmem_lcd_data);
     vga : vga_motor port map(clk, gmem_vga_data, rst, x_vga, y_vga,

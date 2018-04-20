@@ -63,7 +63,7 @@ if [ "$quit" = true ]; then
 fi
 
 if [ "$analyze" = true ]; then
-    ghdl -a $src        # analyze designs
+    ghdl -a --ieee=synopsys $src        # analyze designs
     if [ "$make" = true -a $? = '0' ]; then
         ghdl -i $src    # import designs
         ghdl -m $entity # make executable

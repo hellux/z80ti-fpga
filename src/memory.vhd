@@ -19,7 +19,7 @@ end memory;
 
 architecture arch of memory is
     component mem_rom port(
-        clk, rst : in std_logic;
+        clk : in std_logic;
         rd, wr, ce : in std_logic;
         addr : in std_logic_vector(13 downto 0);
         data_in : in std_logic_vector(7 downto 0);
@@ -32,7 +32,7 @@ begin
     -- static mapping
     rom_ce <= cbo.mreq and not addr(15) and not addr(14); -- 0-3fff
 
-    rom : mem_rom port map(clk, rst, cbo.wr, cbo.rd, rom_ce,
+    rom : mem_rom port map(clk, cbo.wr, cbo.rd, rom_ce,
                            addr(13 downto 0), data_in, data_rom);
 
     data_out <= data_rom;

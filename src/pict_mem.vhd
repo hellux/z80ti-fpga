@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 -- TODO do_lcd
 
 entity pict_mem is port (
-    clk, clk_z80, clk_vga, rst : in std_logic;
+    clk, clk_z80, rst : in std_logic;
     rd, wl : in std_logic;
     page_in : in std_logic_vector(7 downto 0);
     x_lcd : in std_logic_vector(5 downto 0); -- row
