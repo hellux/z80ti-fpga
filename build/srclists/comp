@@ -7,6 +7,7 @@ src/z80/op_decoder.vhd
 src/z80/state_machine.vhd
 src/cmp_comm.vhd
 src/segment.vhd
+src/bram.vhd
 src/mem_rom.vhd
 src/memory.vhd
 src/asic.vhd
