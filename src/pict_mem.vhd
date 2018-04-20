@@ -38,7 +38,7 @@ architecture arch of pict_mem is
     signal bit_out, bit_in : integer range 0 to 7;
     signal state : gmem_state_t;
 begin
-    gmem : bram generic map(1, 7679, 13) port map(clk, rst,
+    gmem : bram generic map(1, 8192, 13) port map(clk, rst,
                                                  gmem_we_lcd, '0',
                                                  gmem_a_lcd, gmem_a_vga,
                                                  gmem_di_lcd, "0", 
@@ -52,22 +52,22 @@ begin
         yl := to_integer(unsigned(y_lcd));
         if wl = '1' then
             gmem_a_lcd <= std_logic_vector(to_unsigned(
-                          xl*120+yl*8 + bit_in,
+                          xl*128+yl*8 + bit_in,
                           13));
         else
             gmem_a_lcd <= std_logic_vector(to_unsigned(
-                          xl*120+yl*6 + bit_in,
+                          xl*128+yl*6 + bit_in,
                           13));
         end if;
     end process;
 
     process(x_vga, y_vga)
-        variable xv : integer range 0 to 119;
+        variable xv : integer range 0 to 127;
         variable yv : integer range 0 to 63;
     begin
         xv := to_integer(unsigned(x_vga));
         yv := to_integer(unsigned(y_vga));
-        gmem_a_vga <= std_logic_vector(to_unsigned(yv*120+xv, 13));
+        gmem_a_vga <= std_logic_vector(to_unsigned(yv*128+xv, 13));
     end process;
 
     gmem_we_lcd <= '1' when state = load else '0';
