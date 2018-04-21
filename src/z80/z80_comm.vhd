@@ -28,9 +28,9 @@ package z80_comm is
 
     -- current state/context of cpu
     type state_t is record
-        int_mode : integer range 0 to 2;
         mode : id_mode_t;
         prefix : id_prefix_t;
+        im : integer range 0 to 2;
         cc : cond_t;
         m : integer range 1 to 6;
         t : integer range 1 to 6;
@@ -53,7 +53,7 @@ package z80_comm is
     end record;
 
     type dbus_src_t is (none, ext_o, rf_o, tmp_o, alu_o, i_o);
-    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o);
+    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int0_o, int1_o);
 
     type ctrlword is record 
         -- buses / registers

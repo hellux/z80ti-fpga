@@ -240,10 +240,10 @@ architecture arch of op_decoder is
         when m1 =>
             case state.t is
             when t4 =>
-                f.cw.rf_addr := reg;   -- place rp on abus
+                f.cw.rf_addr := reg; -- place rp on abus
                 f.cw.abus_src := rf_o;
-                f.cw.addr_op := none; -- make sure no inc to addr
-                f.cw.pc_rd := '1';       -- store addr in pc
+                f.cw.addr_op := none; -- no inc to addr
+                f.cw.pc_rd := '1'; -- store addr in pc
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
             when others => end case;
@@ -481,6 +481,7 @@ architecture arch of op_decoder is
                       op : instr_t; bs : integer range 0 to 7;
                       reg : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin
+        report integer'image(bs);
         f := f_in;
         case state.m is
         when m1 => -- store displaced addr to tmpa
@@ -509,6 +510,7 @@ architecture arch of op_decoder is
             when t1 =>
                 f.cw.abus_src := tmpa_o;
                 f.cw.alu_op := op;
+                f.cw.alu_bs := bs;
                 f.cw.dbus_src := alu_o;
                 f.cw.rf_addr := regW;
                 f.cw.rf_rdd := '1';
@@ -923,22 +925,23 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
-        when m1 =>
+        when m1 => -- dec sp
             case state.t is
-            when t4 => -- dec SP
+            when t4 =>
                 f.cw.rf_addr := regSP;
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m2 => -- write high
+        when m2 => -- write high, dec sp
             f := mem_wr(state, f);
             case state.t is
             when t1 =>
                 f.cw.rf_addr := regSP;
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
             when t2 =>
                 f.cw.rf_addr := reg;
                 f.cw.dbus_src := rf_o;
@@ -952,7 +955,6 @@ architecture arch of op_decoder is
             when t1 =>
                 f.cw.rf_addr := regSP;
                 f.cw.abus_src := rf_o;
-                f.cw.addr_op := dec;
             when t2 =>
                 f.cw.rf_addr := reg+1;
                 f.cw.dbus_src := rf_o;
@@ -977,6 +979,103 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end halt;
+
+    function im0(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        -- TODO
+        return f;
+    end im0;
+
+    function im1(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        -- TODO
+        return f;
+    end im1;
+
+    function im2(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 => -- dec SP, PC->WZ, data->tmp
+            case state.t is
+            when t1 =>
+                f.cw.data_rdi := '1';
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+            when t2 =>
+                f.cw.dbus_src := ext_o;
+                f.cw.tmp_rd := '1';
+                f.cw.rf_addr := regWZ;
+                f.cw.abus_src := pc_o;
+                f.cw.rf_rda := '1';
+                f.cw.addr_op := none;
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- write w to stack, dec SP
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+            when t2 =>
+                f.cw.rf_addr := regW;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- write z to stack
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+            when t2 =>
+                f.cw.rf_addr := regZ;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 => -- store low order byte to w
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.dbus_src := tmp_o;
+                f.cw.abus_src := int0_o;
+            when t3 =>
+                f.cw.rf_addr := regW;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m5 => -- store high order byte to z, store wz to pc
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.dbus_src := tmp_o;
+                f.cw.abus_src := int1_o;
+            when t3 =>
+                f.cw.rf_addr := regZ;
+                f.cw.rf_rdd := '1';
+            when t4 =>
+                f.cw.rf_addr := regWZ;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := none;
+                f.cw.pc_rd := '1';
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+                f.ct.mode_next := exec;
+            when others => null; end case;
+        when others => null; end case;
+            f := mem_rd(state, f);
+        return f;
+    end im2;
 
     type rp_table_t is array(0 to 3) of integer range 0 to 15;
     type alu_table_t is array(0 to 7) of instr_t;
@@ -1032,6 +1131,14 @@ begin
                  addr_op => inc,
                  others => '0');
 
+        if state.mode = int then
+            case state.im is
+            when 0 => f := im0(state, f);
+            when 1 => f := im1(state, f);
+            when 2 => f := im2(state, f);
+            end case;
+        else
+
         -- fetch phase
         if state.m = m1 then
             f.cb.m1 := '1';
@@ -1040,7 +1147,6 @@ begin
             end if;
         end if;
 
-        -- exec phase
         case state.prefix is
         when main =>
             case s.x is
@@ -1309,6 +1415,7 @@ begin
                 end case;
             end case;
         end case;
+        end if;
 
         cw <= f.cw;
         cbo <= f.cb;

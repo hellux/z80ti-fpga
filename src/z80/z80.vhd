@@ -81,8 +81,9 @@ architecture arch of z80 is
     -- dbus/abus src
     signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_out, i_out
         : std_logic_vector(7 downto 0);
-    signal rf_ao, tmpa_out, pc_out, dis_in, dis_out, int_addr
+    signal rf_ao, tmpa_out, pc_out, dis_in, dis_out
         : std_logic_vector(15 downto 0);
+    signal int_addr : std_logic_vector(15 downto 1);
 
     signal dbus : std_logic_vector(7 downto 0);
     signal abus : std_logic_vector(15 downto 0);
@@ -112,7 +113,7 @@ begin
         std_logic_vector(unsigned(abus) + 1) when inc,
         abus                                 when none,
         std_logic_vector(unsigned(abus) - 1) when dec;
-    int_addr <= i_out & dbus(7 downto 1) & '0';
+    int_addr <= i_out & dbus(7 downto 1);
 
     -- -- ALU section -- --
     alu_comp : alu port map(act_out, tmp_out, flags_in,
@@ -126,19 +127,20 @@ begin
     -- -- BUSES -- --
     -- mux bus input
     with cw.dbus_src select
-        dbus <= (others => '-') when none,
-                dbufi_out       when ext_o,
-                rf_do           when rf_o,
-                tmp_out         when tmp_o,
-                alu_out         when alu_o,
-                i_out           when i_o;
+        dbus <= (others => '-')     when none,
+                dbufi_out           when ext_o,
+                rf_do               when rf_o,
+                tmp_out             when tmp_o,
+                alu_out             when alu_o,
+                i_out               when i_o;
     with cw.abus_src select
         abus <= (others => '-') when none,
                 pc_out          when pc_o,
                 rf_ao           when rf_o,
                 tmpa_out        when tmpa_o,
                 dis_out         when dis_o,
-                int_addr        when int_o;
+                int_addr & '0'  when int0_o,
+                int_addr & '1'  when int1_o;
     -- buffer dbus both ways
     dbufi : reg generic map(8)
                 port map(clk, cbi.reset, cw.data_rdi, data_in, dbufi_out);

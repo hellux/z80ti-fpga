@@ -35,7 +35,7 @@ begin
             end if;
 
             if cbi.reset = '1' then
-                state.int_mode <= 0;
+                state.im <= 0;
                 state.mode <= exec;
                 state.prefix <= main;
                 state.m <= m1;
