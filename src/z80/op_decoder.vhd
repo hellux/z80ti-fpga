@@ -18,6 +18,18 @@ architecture arch of op_decoder is
         cw : ctrlword;
     end record;
 
+    function int_rd(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.t is
+        when t1 =>
+            f.cb.iorq := '1';
+        when t2 =>
+            f.cw.data_rdi := '1';
+            f.cb.iorq := '1';
+        when others => null; end case;
+    end int_rd;
+
     function io_rd(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -261,26 +273,28 @@ architecture arch of op_decoder is
             when t4 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m2 =>
+        when m2 => -- load displacement to tmp, pc->wz
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
                 f.cw.abus_src := pc_o;
-            when t2 => -- parce pc without increment
-                f.cw.abus_src := pc_o;
             when t3 =>
-                f.cw.pc_dis := '1';    -- send pc to displacer
-                f.cw.abus_src := dis_o; -- write displaced addr (pc+z) to abus
-                f.cw.pc_rd := '1';      -- write displaced+1 to pc
+                f.cw.tmp_rd := '1';
+                f.cw.rf_addr := regWZ;
+                f.cw.abus_src := pc_o;
+                f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m3 =>
-            -- why does z80 use this cycle for 5 cp?
+        when m3 => -- wz+d->pc
             case state.t is
-            when t1 => -- chilla
-            when t2 => -- gå på rast
-            when t3 => -- ta kaffepaus i java
-            when t4 => -- gå ut och ta lite frisk luft
+            when t1 =>
+                f.cw.dbus_src := tmp_o;
+                f.cw.rf_addr := regWZ;
+                f.cw.abus_src := dis_o;
+                f.cw.pc_rd := '1';
+            when t2 =>
+            when t3 =>
+            when t4 =>
             when t5 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
@@ -1010,6 +1024,125 @@ architecture arch of op_decoder is
         return f;
     end pop_rp;
 
+    function call_nn(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 => 
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- fetch low to z
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.rf_addr := regZ;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- fetch high to w
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.rf_addr := regW;
+                f.cw.rf_rdd := '1';
+            when t4 => -- dec sp
+                f.cw.rf_addr := regSP;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 => -- pch -> (sph--)
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+            when t3 =>
+                f.cw.dbus_src := pch_o;
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m5 => -- pcl -> (sph--)
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+            when t3 =>
+                f.cw.dbus_src := pcl_o;
+                f.ct.mode_next := wz;
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end call_nn;
+
+    function call_cc_nn(state : state_t; f_in : id_frame_t;
+                        cond : integer range 0 to 7)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.cc(cond) is
+        when true => f := call_nn(state, f);
+        when false =>
+            case state.m is
+            when m1 =>
+                case state.t is
+                when t4 =>
+                    f.ct.cycle_end := '1';
+                when others => null; end case;
+            when m2 => -- inc pc
+                f := mem_rd_pc(state, f);
+                case state.t is
+                when t3 =>
+                    f.ct.cycle_end := '1';
+                when others => null; end case;
+            when m3 => -- inc pc
+                f := mem_rd_pc(state, f);
+                case state.t is
+                when t3 =>
+                    f.ct.cycle_end := '1';
+                    f.ct.instr_end := '1';
+                when others => null; end case;
+            when others => null; end case;
+        end case;
+        return f;
+    end call_cc_nn;
+
+    function ret(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        f := pop_rp(state, f, regWZ);
+        case state.m is
+        when m3 =>
+            case state.t is
+            when t3 =>
+                f.ct.mode_next := wz; -- use wz instead of pc
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ret;
+
+    function ret_cc(state : state_t; f_in : id_frame_t;
+                    cond : integer range 0 to 7)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.cc(cond) is
+        when true => f := ret(state, f);
+        when false =>
+            case state.m is
+            when m1 =>
+                case state.t is
+                when t5 =>
+                    f.ct.cycle_end := '1';
+                    f.ct.instr_end := '1';
+                when others => null; end case;
+            when others => null; end case;
+        end case;
+        return f;
+    end ret_cc;
+
     function halt(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -1026,7 +1159,15 @@ architecture arch of op_decoder is
     function im0(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        -- TODO
+        case state.m is
+        when m1 => -- rd instr from data bus to ir
+            f := int_rd(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.ir_rd := '1';
+                f.ct.mode_next := exec;
+            when others => null; end case;
+        when others => null; end case;
         return f;
     end im0;
 
@@ -1042,14 +1183,14 @@ architecture arch of op_decoder is
         f := f_in;
         case state.m is
         when m1 => -- dec SP, PC->WZ, data->tmp
+            f := int_rd(state, f);
             case state.t is
             when t1 =>
-                f.cw.data_rdi := '1';
                 f.cw.rf_addr := regSP;
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
-            when t2 =>
+            when t3 =>
                 f.cw.dbus_src := ext_o;
                 f.cw.tmp_rd := '1';
                 f.cw.rf_addr := regWZ;
@@ -1099,7 +1240,7 @@ architecture arch of op_decoder is
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m5 => -- store high order byte to z, store wz to pc
+        when m5 => -- store high order byte to z
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
@@ -1108,14 +1249,9 @@ architecture arch of op_decoder is
             when t3 =>
                 f.cw.rf_addr := regZ;
                 f.cw.rf_rdd := '1';
-            when t4 =>
-                f.cw.rf_addr := regWZ;
-                f.cw.abus_src := rf_o;
-                f.cw.addr_op := none;
-                f.cw.pc_rd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
-                f.ct.mode_next := exec;
+                f.ct.mode_next := wz;
             when others => null; end case;
         when others => null; end case;
             f := mem_rd(state, f);
@@ -1257,13 +1393,13 @@ begin
                 end case;
             when 3 =>
                 case s.z is
-                when 0 => f := nop(state, f); -- TODO RET cc[y]
+                when 0 => f := ret_cc(state, f, s.y);
                 when 1 =>
                     case s.q is
                     when 0 => f := pop_rp(state, f, rp2(s.p));
                     when 1 =>
                         case s.p is
-                        when 0 => f := nop(state, f); -- TODO RET
+                        when 0 => f := ret(state, f);
                         when 1 => f := ex(state, f, reg);
                         when 2 => f := jp_rp(state, f, regHL);
                         when 3 => f := ld_sp_rp(state, f, regHL);
@@ -1281,13 +1417,13 @@ begin
                     when 6 => f := nop(state, f); -- TODO DI
                     when 7 => f := nop(state, f); -- TODO EI
                     end case;
-                when 4 => f := nop(state, f); -- TODO CALL cc[y], nn
+                when 4 => f := call_cc_nn(state, f, s.y);
                 when 5 =>
                     case s.q is
                     when 0 => f := push_rp(state, f, rp2(s.p));
                     when 1 =>
                         case s.p is
-                        when 0 => f := nop(state, f); -- TODO CALL nn
+                        when 0 => f := call_nn(state, f);
                         when 1 => f := mem_rd_multi(state, f, dd);
                         when 2 => f := mem_rd_multi(state, f, ed);
                         when 3 => f := mem_rd_multi(state, f, fd);

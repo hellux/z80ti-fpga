@@ -52,7 +52,7 @@ package z80_comm is
         busack : std_logic;
     end record;
 
-    type dbus_src_t is (none, ext_o, rf_o, tmp_o, alu_o, i_o);
+    type dbus_src_t is (none, pch_o, pcl_o, ext_o, rf_o, tmp_o, alu_o, i_o);
     type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o);
 
     type ctrlword is record 
@@ -67,7 +67,6 @@ package z80_comm is
         ir_rd : std_logic;
         tmpa_rd : std_logic;
         pc_rd : std_logic;
-        pc_dis : std_logic;
         addr_op : addr_op_t;
         -- alu
         alu_op : instr_t;

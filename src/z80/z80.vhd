@@ -73,7 +73,7 @@ architecture arch of z80 is
     signal cw : ctrlword;
 
     signal addr_in : std_logic_vector(15 downto 0);
-    signal rf_dis_out : std_logic_vector(15 downto 0);
+    signal rf_dis : std_logic_vector(15 downto 0);
 
     signal acc, act_out : std_logic_vector(7 downto 0);
     signal flags_in, flags_out : std_logic_vector(7 downto 0); -- rel to alu
@@ -96,7 +96,7 @@ begin
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset,
         cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_swp,
-        dbus, addr_in, flags_out, rf_do, rf_ao, rf_dis_out, acc, flags_in,
+        dbus, addr_in, flags_out, rf_do, rf_ao, rf_dis, acc, flags_in,
         dbg.regs);
     i : reg generic map(8)
             port map(clk, cbi.reset, cw.i_rd, dbus, i_out);
@@ -104,9 +104,7 @@ begin
              port map(clk, cbi.reset, cw.pc_rd, addr_in, pc_out);
     tmpa : reg generic map(16)
                port map(clk, cbi.reset, cw.tmpa_rd, addr_in, tmpa_out);
-    dis_in <= pc_out when cw.pc_dis = '1' else rf_dis_out;
-    dis_out <= std_logic_vector(signed(dis_in) + resize(signed(dbus), 16));
- 
+    dis_out <= std_logic_vector(signed(rf_dis) + resize(signed(dbus), 16));
 
     with cw.addr_op select addr_in <=
         std_logic_vector(unsigned(abus) + 1) when inc,
@@ -131,6 +129,8 @@ begin
                 rf_do               when rf_o,
                 tmp_out             when tmp_o,
                 alu_out             when alu_o,
+                pc_out(15 downto 8) when pch_o,
+                pc_out(7 downto 0)  when pcl_o,
                 i_out               when i_o;
     with cw.abus_src select
         abus <= (others => '-') when none,
