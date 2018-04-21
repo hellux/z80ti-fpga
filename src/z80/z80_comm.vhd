@@ -15,24 +15,22 @@ package z80_comm is
     type addr_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
 
-    type id_mode_t is (
-        main, ed, cb, dd, ddcb, fd, fdcb, -- exec prefixes
-        wz,                               -- use wz instead of pc on fetch
-        halt,                             -- halted
-        int                               -- interrupt init
-    );
+    type id_prefix_t is (main, ed, cb, dd, ddcb, fd, fdcb);
+    type id_mode_t is (exec, wz, halt, int);
 
     -- control signals for id
     type id_ctrl_t is record
         cycle_end : std_logic;      -- last state of current cycle
         instr_end : std_logic;      -- last state of current instr
         mode_next : id_mode_t;      -- mode for next cp
+        prefix_next : id_prefix_t;  -- prefix for next cp
     end record;
 
     -- current state/context of cpu
     type state_t is record
         int_mode : integer range 0 to 2;
         mode : id_mode_t;
+        prefix : id_prefix_t;
         cc : cond_t;
         m : integer range 1 to 6;
         t : integer range 1 to 6;
@@ -47,7 +45,7 @@ package z80_comm is
 
     type ctrlbus_out is record
         -- system control
-        m1, mreq, iorq, rd, wr, rfsh : std_logic;
+        m1, mreq, iorq, rd, wr : std_logic;
         -- cpu control
         halt : std_logic;
         -- cpu bus control

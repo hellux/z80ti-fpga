@@ -25,11 +25,10 @@ architecture arch of op_decoder is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
             f.cb.iorq := '1';       -- signal addr is ready on abus
-            --f.cb.rd := '1';         -- request reading from io
         when t2 =>
             f.cw.data_rdi := '1';   -- store instr to data buf
             f.cb.iorq := '1';       -- keep request until byte retrieved
-            f.cb.rd := '1';         -- keep reading
+            f.cb.rd := '1';         -- read
         when t3 =>
             f.cw.dbus_src := ext_o; -- write data to inner dbus from buf
         when others => null; end case;
@@ -44,11 +43,10 @@ architecture arch of op_decoder is
             f.cw.addr_rd := '1';    -- read from abus to buffer
             f.cb.iorq := '1';       -- signal addr is ready on abus
         when t2 =>
-            --f.cw.data_wro := '1';   -- send data
         when t3 =>
             f.cb.iorq := '1';       -- keep request until byte read
             f.cb.wr := '1';         -- signal write
-            f.cw.data_wro := '1';   -- keep sending data
+            f.cw.data_wro := '1';   -- send data
         when others => null; end case;
         return f;
     end io_wr;
@@ -60,11 +58,10 @@ architecture arch of op_decoder is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
             f.cb.mreq := '1';       -- signal addr is ready on abus
-            --f.cb.rd := '1';         -- request reading from memory
         when t2 =>
             f.cw.data_rdi := '1';   -- store instr to data buf
             f.cb.mreq := '1';       -- keep request until byte retrieved
-            f.cb.rd := '1';         -- keep reading
+            f.cb.rd := '1';         -- read
         when t3 =>
             f.cw.dbus_src := ext_o; -- write byte to inner dbus from buf
         when others => null; end case;
@@ -76,7 +73,6 @@ architecture arch of op_decoder is
         f := f_in;
         case state.t is
         when t1 =>
-            --f.cw.data_wro := '1';   -- send data to memory
             f.cw.addr_rd := '1';    -- read from abus to buffer
             f.cb.mreq := '1';       -- signal addr is ready on abus
         when t2 =>
@@ -84,9 +80,9 @@ architecture arch of op_decoder is
             --f.cb.mreq := '1';       -- signal addr ready
             --f.cb.wr := '1';         -- keep reading
         when t3 =>
-            f.cb.mreq := '1';       -- 
+            f.cb.mreq := '1';
             f.cb.wr := '1';         -- write byte to mem
-            f.cw.data_wro := '1';   -- keep sending data
+            f.cw.data_wro := '1';   -- send data
         when others => null; end case;
         return f;
     end mem_wr;
@@ -121,7 +117,7 @@ architecture arch of op_decoder is
             if state.mode = wz then
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := rf_o; -- keep wz on abus for incr
-                f.ct.mode_next := main; -- go back to main mode
+                f.ct.mode_next := exec; -- go back to exec mode
             else 
                 f.cw.abus_src := pc_o; -- keep pc on abus
             end if;
@@ -133,22 +129,17 @@ architecture arch of op_decoder is
     end mem_rd_instr;
 
     function mem_rd_multi(state : state_t; f_in : id_frame_t;
-                          prefix : id_mode_t)
+                          prefix : id_prefix_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        case state.m is
-        when m1 => 
-            case state.t is
-            when t4 => f.ct.cycle_end := '1'; -- end m1
-            when others => null; end case;
-        when others =>
-            f := mem_rd_instr(state, f);     -- mem_rd next byte
-            case state.t is
-            when t3 =>
-                f.ct.mode_next := prefix; -- update mode to prefix
-                f.ct.cycle_end := '1';
-            when others => null; end case;
-        end case;
+        f := mem_rd_instr(state, f);
+        case state.t is
+        when t3 =>
+            f.ct.prefix_next := prefix;
+            f.ct.instr_end := '1'; -- return to m1 / update prefix
+        when t4 =>
+            f.ct.cycle_end := '1';
+        when others => null; end case;
         return f;
     end mem_rd_multi;
 
@@ -444,7 +435,7 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is 
-        when m2 =>
+        when m1 =>
             case state.t is
             when t4 =>
                 f.cw.rf_addr := reg;
@@ -452,7 +443,7 @@ architecture arch of op_decoder is
                 f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m3 =>
+        when m2 =>
             f := mem_rd_instr(state, f); -- overlap
             case state.t is
             when t2 =>
@@ -473,12 +464,12 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
-        when m2 =>
+        when m1 =>
             case state.t is
             when t4 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m3 =>
+        when m2 =>
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
@@ -489,7 +480,7 @@ architecture arch of op_decoder is
                 f.cw.act_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m4 =>
+        when m3 =>
             f := mem_wr(state, f);
             case state.t is
             when t1 =>
@@ -790,12 +781,12 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
-        when m2 =>
+        when m1 =>
             case state.t is
             when t4 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m3 =>
+        when m2 =>
             f := io_rd(state, f);
             case state.t is
             when t1 =>
@@ -819,7 +810,7 @@ architecture arch of op_decoder is
         f := f_in;
         f := in_c(state, f);
         case state.m is
-        when m3 =>
+        when m2 =>
             case state.t is
             when t3 =>
                 f.cw.rf_addr := reg;
@@ -913,14 +904,12 @@ architecture arch of op_decoder is
     function halt(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        case state.m is
-        when m1 =>
-            case state.t is
-            when t4 => 
-                f.ct.mode_next := halt;
-                f.ct.cycle_end := '1';
-                f.ct.instr_end := '1';
-            when others => null; end case;
+        f.cb.halt := '1';
+        case state.t is
+        when t4 => 
+            f.ct.mode_next := halt;
+            f.ct.cycle_end := '1';
+            f.ct.instr_end := '1';
         when others => null; end case;
         return f;
     end halt;
@@ -958,10 +947,10 @@ begin
         s.z := to_integer(unsigned(instr(2 downto 0)));
         s.p := to_integer(unsigned(instr(5 downto 4)));
         if instr(3) = '1' then s.q := 1; else s.q := 0; end if;
-        if state.mode = fd then xy := 1; else xy := 0; end if;
+        if state.prefix = fd then xy := 1; else xy := 0; end if;
 
         -- set all signals to defaults (overwrite below)
-        f.ct := (mode_next => state.mode, others => '0');
+        f.ct := (mode_next => state.mode, prefix_next => main, others => '0');
         f.cb := (others => '0');
         f.cw := (dbus_src => none,
                  abus_src => none,
@@ -981,7 +970,7 @@ begin
         end if;
 
         -- exec phase
-        case state.mode is
+        case state.prefix is
         when main =>
             case s.x is
             when 0 =>
@@ -1256,9 +1245,6 @@ begin
                 when 7 => f := nop(state, f); -- TODO RST y*8
                 end case;
             end case;
-        when wz => null;
-        when halt => f := nop(state, f);
-        when int => null;
         end case;
 
         cw <= f.cw;
