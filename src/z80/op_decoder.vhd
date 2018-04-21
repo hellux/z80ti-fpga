@@ -96,6 +96,7 @@ architecture arch of op_decoder is
             f.cw.abus_src := pc_o;
         when t2 =>
             f.cw.abus_src := pc_o;
+            f.cw.addr_op := inc;
             f.cw.pc_rd := '1';
         when others => null; end case;
         return f;
@@ -481,7 +482,6 @@ architecture arch of op_decoder is
                       op : instr_t; bs : integer range 0 to 7;
                       reg : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin
-        report integer'image(bs);
         f := f_in;
         case state.m is
         when m1 => -- store displaced addr to tmpa
@@ -490,6 +490,7 @@ architecture arch of op_decoder is
                 f.cw.rf_addr := reg;
                 f.cw.dbus_src := tmp_o; -- tmp holds d
                 f.cw.abus_src := dis_o;
+                f.cw.addr_op := none;
                 f.cw.tmpa_rd := '1';
             when t5 =>
                 f.ct.cycle_end := '1';
@@ -699,6 +700,7 @@ architecture arch of op_decoder is
             when t4 =>
                 f.cw.rf_addr := reg;
                 f.cw.abus_src := rf_o;
+                f.cw.addr_op := none;
                 f.cw.tmpa_rd := '1';
             when t5 =>
                 f.cw.abus_src := tmpa_o;
@@ -967,6 +969,46 @@ architecture arch of op_decoder is
         return f;
     end push_rp;
 
+    function pop_rp(state : state_t; f_in : id_frame_t;
+                      reg : integer range 0 to 7)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- read low, inc sp
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := inc;
+                f.cw.rf_rda := '1';
+            when t3 =>
+                f.cw.rf_addr := reg+1;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- write high, inc sp
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := inc;
+                f.cw.rf_rda := '1';
+            when t3 =>
+                f.cw.rf_addr := reg;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end pop_rp;
+
     function halt(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -1048,7 +1090,9 @@ architecture arch of op_decoder is
             case state.t is
             when t1 =>
                 f.cw.dbus_src := tmp_o;
-                f.cw.abus_src := int0_o;
+                f.cw.abus_src := int_o;
+                f.cw.addr_op := inc;
+                f.cw.tmpa_rd := '1';
             when t3 =>
                 f.cw.rf_addr := regW;
                 f.cw.rf_rdd := '1';
@@ -1059,7 +1103,7 @@ architecture arch of op_decoder is
             case state.t is
             when t1 =>
                 f.cw.dbus_src := tmp_o;
-                f.cw.abus_src := int1_o;
+                f.cw.abus_src := tmpa_o;
             when t3 =>
                 f.cw.rf_addr := regZ;
                 f.cw.rf_rdd := '1';
