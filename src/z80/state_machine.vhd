@@ -26,15 +26,18 @@ begin
 
             if ctrl.instr_end = '1' then
                 state.m <= m1;
-                if ctrl.mode_next /= wz and
-                   ctrl.mode_next /= halt then
-                    state.mode <= main;
-                end if;
-                if cbi.int = '1' then
-                    state.mode <= int;
-                end if;
             elsif ctrl.cycle_end = '1' then
                 state.m <= state.m + 1;
+            end if;
+
+            if ctrl.instr_end = '1' then
+                if cbi.int = '1' then
+                    state.mode <= int;
+                elsif ctrl.mode_next /= wz and
+                      ctrl.mode_next /= halt
+                then
+                    state.mode <= main;
+                end if;
             end if;
 
             if cbi.reset = '1' then

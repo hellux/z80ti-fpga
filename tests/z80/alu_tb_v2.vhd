@@ -288,6 +288,12 @@ begin
         report "res";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"26", x"4d", res_i, 6, x"10", "00-1-000", x"0d");
+
+        report "set";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"05", set_i, 1, x"00", "00000000", x"07");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"05", set_i, 0, x"ff", "11-1-111", x"05");
         
         report "daa";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
