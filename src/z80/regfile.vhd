@@ -122,7 +122,7 @@ begin
     ram_proc : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                ram <= (18 => x"00", 19 => x"3f",
+                ram <= (18 => x"00", 19 => x"40",
                         others => x"00");
             else
                 ram <= ram_next;
