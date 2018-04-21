@@ -143,6 +143,23 @@ architecture arch of op_decoder is
         return f;
     end mem_rd_multi;
 
+    function mem_rd_xy_d(state : state_t; f_in : id_frame_t;
+                         prefix : id_prefix_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        f := mem_rd_pc(state, f);
+        case state.t is
+        when t3 =>
+            f.cw.tmp_rd := '1';
+            f.ct.prefix_next := prefix;
+            f.ct.cycle_end := '1';
+            f.ct.instr_end := '1'; -- return to m1 / update prefix
+        when t4 =>
+            f.ct.cycle_end := '1';
+        when others => null; end case;
+        return f;
+    end mem_rd_xy_d;
+
     function nop(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -459,6 +476,51 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end bit_r;
+
+    function bit_xy_d(state : state_t; f_in : id_frame_t;
+                      op : instr_t; bs : integer range 0 to 7;
+                      reg : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 => -- store displaced addr to tmpa
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := reg;
+                f.cw.dbus_src := tmp_o; -- tmp holds d
+                f.cw.abus_src := dis_o;
+                f.cw.tmpa_rd := '1';
+            when t5 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- fetch byte to tmp, located at displaced addr
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.abus_src := tmpa_o;
+            when t3 =>
+                f.cw.tmp_rd := '1';
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- perform bit op, write res to mem
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.abus_src := tmpa_o;
+                f.cw.alu_op := op;
+                f.cw.dbus_src := alu_o;
+                f.cw.rf_addr := regW;
+                f.cw.rf_rdd := '1';
+                f.cw.f_rd := '1';
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end bit_xy_d;
 
     function rld_rrd(state : state_t; f_in : id_frame_t;
                      op1 : instr_t; op2 : instr_t)
@@ -929,7 +991,8 @@ architecture arch of op_decoder is
     constant afi : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
                                    daa_i, cpl_i, scf_i, ccf_i);
     constant rxy : xy_table_t := (regIX, regIY);
-    constant pxy : prefix_table_t := (ddcb, fdcb);
+    constant pxy : prefix_table_t := (ddcb_d, fdcb_d);
+    constant pxy_d : prefix_table_t := (ddcb, fdcb);
 
     --     | p | |q|
     -- |1 0|0 0| |0|1 1 1|
@@ -951,7 +1014,11 @@ begin
         s.z := to_integer(unsigned(instr(2 downto 0)));
         s.p := to_integer(unsigned(instr(5 downto 4)));
         if instr(3) = '1' then s.q := 1; else s.q := 0; end if;
-        if state.prefix = fd then xy := 1; else xy := 0; end if;
+        if state.prefix = fd or state.prefix = fdcb_d then
+            xy := 1;
+        else
+            xy := 0;
+        end if;
 
         -- set all signals to defaults (overwrite below)
         f.ct := (mode_next => state.mode, prefix_next => main, others => '0');
@@ -1134,22 +1201,24 @@ begin
             when 2 => f := bit_r(state, f, res_i, s.y, s.z);
             when 3 => f := bit_r(state, f, set_i, s.y, s.z);
             end case;
+        when ddcb_d|fdcb_d => -- fetch fdcb/ddcb instr after d
+            f := mem_rd_multi(state, f, pxy(xy));
         when ddcb|fdcb =>
             case s.x is
             when 0 =>
                 case s.z is
-                when 6 => f := nop(state, f); -- TODO rot[y] (IX/Y+d)
+                when 6 => f := bit_xy_d(state, f, rot(s.y), 0, rxy(xy));
                 when others => f := nop(state, f); -- TODO LD r[z], rot[y] (IX/Y+d)
                 end case;
-            when 1 => f := nop(state, f); -- TODO BIT y, (IX/Y+d)
+            when 1 => f := bit_xy_d(state, f, bit_i, 0, rxy(xy));
             when 2 =>
                 case s.z is
-                when 6 => f := nop(state, f); -- TODO res y, (IX/Y+d)
+                when 6 => f := bit_xy_d(state, f, res_i, s.y, rxy(xy));
                 when others => f := nop(state, f); -- TODO LD r[z], res y, (IX/Y+d)
                 end case;
             when 3 =>
                 case s.z is
-                when 6 => f := nop(state, f); -- TODO set y, (IX/Y+d)
+                when 6 => f := bit_xy_d(state, f, set_i, s.y, rxy(xy));
                 when others => f := nop(state, f); -- TODO LD r[z], set y, (IX/Y+d)
                 end case;
             end case;
@@ -1224,7 +1293,7 @@ begin
                     end case;
                 when 3 =>
                     case s.y is
-                    when 1 => f := mem_rd_multi(state, f, pxy(xy));
+                    when 1 => f := mem_rd_xy_d(state, f, pxy_d(xy));
                     when others => f := nop(state, f);
                     end case;
                 when 5 =>

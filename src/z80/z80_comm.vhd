@@ -15,7 +15,7 @@ package z80_comm is
     type addr_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
 
-    type id_prefix_t is (main, ed, cb, dd, ddcb, fd, fdcb);
+    type id_prefix_t is (main, ed, cb, dd, ddcb, fd, fdcb, ddcb_d, fdcb_d);
     type id_mode_t is (exec, wz, halt, int);
 
     -- control signals for id
@@ -148,7 +148,7 @@ package z80_comm is
         state : state_t;
         ct : id_ctrl_t;
         cw : ctrlword;
-        pc, abus : std_logic_vector(15 downto 0);
+        pc, abus, tmpa : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
     end record;
 end z80_comm;

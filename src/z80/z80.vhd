@@ -140,7 +140,6 @@ begin
                 dis_out         when dis_o,
                 int_addr        when int_o;
     -- buffer dbus both ways
-    -- TODO test buf on FPGA (mealy circuit danger danger)
     dbufi : reg generic map(8)
                 port map(clk, cbi.reset, cw.data_rdi, data_in, dbufi_out);
     dbufo : reg generic map(8)
