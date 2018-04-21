@@ -35,6 +35,10 @@ src=$(find . -name '*.vhd')
 entity=""
 args=""
 wave="wave.ghw"
+args_ghdl="--workdir=build --ieee=synopsys --warn-reserved --warn-default-binding
+--warn-binding --warn-library --warn-vital-generic --warn-delayed-checks
+--warn-body --warn-specs --warn-unused --warn-error --warn-nested-comment
+--warn-parenthesis --warn-runtime-error"
 
 while getopts hAM:S:Cf:u:at:w: OPT; do
     case $OPT in
@@ -63,10 +67,10 @@ if [ "$quit" = true ]; then
 fi
 
 if [ "$analyze" = true ]; then
-    ghdl -a --ieee=synopsys $src        # analyze designs
+    ghdl -a $args_ghdl $src # analyze designs
     if [ "$make" = true -a $? = '0' ]; then
-        ghdl -i $src    # import designs
-        ghdl -m $entity # make executable
+        ghdl -i $args_ghdl $src    # import designs
+        ghdl -m $args_ghdl $entity # make executable
 
         if [ "$sim" = true -a $? = '0' ]; then
             ./$entity $args --wave=$wave
@@ -79,3 +83,4 @@ if [ "$clean" = true ]; then
 fi
 
 rm -f *.o *.cf
+ghdl --clean --workdir=build
