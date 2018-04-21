@@ -660,7 +660,7 @@ architecture arch of op_decoder is
     end ld_r_hlx;
 
     function ld_rp_nn(state : state_t; f_in : id_frame_t;
-                      reg : integer range 0 to 7)
+                      reg : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -923,7 +923,7 @@ architecture arch of op_decoder is
     end out_n_a;
 
     function push_rp(state : state_t; f_in : id_frame_t;
-                      reg : integer range 0 to 7)
+                      reg : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -970,7 +970,7 @@ architecture arch of op_decoder is
     end push_rp;
 
     function pop_rp(state : state_t; f_in : id_frame_t;
-                      reg : integer range 0 to 7)
+                    reg : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -992,7 +992,7 @@ architecture arch of op_decoder is
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m3 => -- write high, inc sp
+        when m3 => -- read high, inc sp
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
@@ -1004,6 +1004,7 @@ architecture arch of op_decoder is
                 f.cw.rf_addr := reg;
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -1259,7 +1260,7 @@ begin
                 when 0 => f := nop(state, f); -- TODO RET cc[y]
                 when 1 =>
                     case s.q is
-                    when 0 => f := nop(state, f); -- TODO POP rp2[p]
+                    when 0 => f := pop_rp(state, f, rp2(s.p));
                     when 1 =>
                         case s.p is
                         when 0 => f := nop(state, f); -- TODO RET
@@ -1432,7 +1433,7 @@ begin
                     case s.q is
                     when 0 =>
                         case s.p is
-                        when 2 => f := nop(state, f); -- TODO POP ix/y[p]
+                        when 2 => f := pop_rp(state, f, rxy(xy));
                         when others => null; end case;
                     when 1 =>
                         case s.p is
