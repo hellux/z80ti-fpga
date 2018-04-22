@@ -281,8 +281,8 @@ architecture arch of op_decoder is
             when t3 =>
                 f.cw.tmp_rd := '1';
                 f.cw.abus_src := pc_o;
-                f.cw.addr_op := none;
                 f.cw.rf_addr := regWZ;
+                f.cw.addr_op := none;
                 f.cw.rf_rda := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
@@ -719,8 +719,8 @@ architecture arch of op_decoder is
                 f.cw.tmpa_rd := '1';
             when t5 =>
                 f.cw.abus_src := tmpa_o;
-                f.cw.addr_op := none;
                 f.cw.rf_addr := regSP;
+                f.cw.addr_op := none;
                 f.cw.rf_rda := '1';
             when t6 =>
                 f.ct.cycle_end := '1';
@@ -839,6 +839,7 @@ architecture arch of op_decoder is
             when t3 => -- increment WZ
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := rf_o;
+                f.cw.addr_op := inc;
                 f.cw.rf_rda := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
@@ -1119,6 +1120,58 @@ architecture arch of op_decoder is
         return f;
     end call_cc_nn;
 
+    function rst(state : state_t; f_in : id_frame_t;
+                 addr : integer range 0 to 7)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 => -- fetch high to w
+            case state.t is
+            when t4 => -- dec sp
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+            when t5 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- pch -> (sph--)
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+            when t2 =>
+                f.cw.dbus_src := pch_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- pcl -> (sph--), rst_addr -> wz
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+            when t2 =>
+                f.cw.dbus_src := pcl_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.cw.abus_src := rst_o;
+                f.cw.rst_addr := std_logic_vector(to_unsigned(addr, 3));
+                f.cw.rf_addr := regWZ;
+                f.cw.addr_op := none;
+                f.cw.rf_rda := '1';
+                f.ct.mode_next := wz;
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end rst;
+
     function ret(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -1204,8 +1257,8 @@ architecture arch of op_decoder is
                 f.cw.tmp_rd := '1';
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := pc_o;
-                f.cw.rf_rda := '1';
                 f.cw.addr_op := none;
+                f.cw.rf_rda := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 => -- write w to stack, dec SP
@@ -1314,6 +1367,7 @@ begin
         f.cb := (others => '0');
         f.cw := (dbus_src => none,
                  abus_src => none,
+                 rst_addr => "000",
                  rf_addr => 0,
                  rf_swp => none,
                  alu_op => unknown,
@@ -1439,7 +1493,7 @@ begin
                         end case;
                     end case;
                 when 6 => f := alu_a_n(state, f, alu(s.y));
-                when 7 => f := nop(state, f); -- TODO RST y*8
+                when 7 => f := rst(state, f, s.y);
                 end case;
             end case;
         when ed =>

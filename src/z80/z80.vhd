@@ -81,7 +81,7 @@ architecture arch of z80 is
     -- dbus/abus src
     signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_out, i_out
         : std_logic_vector(7 downto 0);
-    signal rf_ao, tmpa_out, pc_out, dis_in, dis_out, int_addr
+    signal rf_ao, tmpa_out, pc_out, dis_in, dis_out, int_addr, rst_addr
         : std_logic_vector(15 downto 0);
 
     signal dbus : std_logic_vector(7 downto 0);
@@ -111,6 +111,7 @@ begin
         abus                                 when none,
         std_logic_vector(unsigned(abus) - 1) when dec;
     int_addr <= i_out & dbus(7 downto 1) & '0';
+    rst_addr <= x"00" & "00" & cw.rst_addr & "000";
 
     -- -- ALU section -- --
     alu_comp : alu port map(act_out, tmp_out, flags_in,
@@ -138,7 +139,8 @@ begin
                 rf_ao           when rf_o,
                 tmpa_out        when tmpa_o,
                 dis_out         when dis_o,
-                int_addr        when int_o;
+                int_addr        when int_o,
+                rst_addr        when rst_o;
     -- buffer dbus both ways
     dbufi : reg generic map(8)
                 port map(clk, cbi.reset, cw.data_rdi, data_in, dbufi_out);

@@ -53,7 +53,7 @@ package z80_comm is
     end record;
 
     type dbus_src_t is (none, pch_o, pcl_o, ext_o, rf_o, tmp_o, alu_o, i_o);
-    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o);
+    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o, rst_o);
 
     type ctrlword is record 
         -- buses / registers
@@ -62,6 +62,7 @@ package z80_comm is
         rf_addr : integer range 0 to 15;
         rf_rdd, rf_rda : std_logic;
         rf_swp : rf_swap_t;
+        rst_addr : std_logic_vector(2 downto 0);
         f_rd : std_logic;
         i_rd : std_logic;
         ir_rd : std_logic;
