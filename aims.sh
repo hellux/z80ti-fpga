@@ -33,7 +33,7 @@ clean=false         # remove executable
 asm=false;          # assemble z80 obj
 
 src=$(find . -name '*.vhd')
-asm_src=""
+asm_src="tests/asm/"
 entity=""
 args=""
 wave="wave.ghw"
@@ -50,7 +50,7 @@ while getopts hAM:S:Cf:z:u:at:w: OPT; do
         S) analyze=true; make=true; sim=true entity=$OPTARG ;;
         C) clean=true ;;
         f) src=$OPTARG ;;
-        z) asm=true; asm_src=$OPTARG ;;
+        z) asm=true; asm_src=${asm_src}${OPTARG} ;;
         u) 
             src=$(cat build/srclists/$OPTARG);
             if [ -z "$src" ]; then
