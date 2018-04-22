@@ -1,0 +1,3 @@
+ld bc,(0x01)
+ld (0x3f), bc
+halt

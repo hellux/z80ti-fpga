@@ -1760,8 +1760,8 @@ begin
                     end case;
                 when 3 =>
                     case s.q is
-                    when 0 => f := nop(state, f); -- TODO LD (nn), rp[p]
-                    when 1 => f := nop(state, f); -- TODO LD rp[p], (nn)
+                    when 0 => f := ld_nnx_rp(state, f, rp(s.p)); -- TODO LD (nn), rp[p]
+                    when 1 => f := ld_rp_nnx(state, f, rp(s.p)); -- TODO LD rp[p], (nn)
                     end case;
                 when 4 => f := alu_af(state, f, neg_i);
                 when 5 =>
