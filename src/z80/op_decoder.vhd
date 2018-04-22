@@ -471,6 +471,45 @@ architecture arch of op_decoder is
         return f;
     end alu_a_rpx;
 
+    function alu_rpx(state : state_t; f_in : id_frame_t;
+                     op : instr_t; reg : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := reg;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.cw.tmp_rd := '1';
+            when t4 =>
+                f.cw.alu_op := op;
+                f.cw.dbus_src := alu_o;
+                f.cw.f_rd := '1';
+                f.cw.data_rdo := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := reg;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end alu_rpx;
+
     function alu_af(state : state_t; f_in : id_frame_t;
                     op : instr_t)
     return id_frame_t is variable f : id_frame_t; begin
@@ -917,6 +956,37 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end ld_rpx_r;
+
+    function ld_rpx_n(state : state_t; f_in : id_frame_t;
+                      rp : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.data_rdo := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := rp;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ld_rpx_n;
 
     function ld_nnx_a(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
@@ -1592,9 +1662,21 @@ begin
                     when 0 => f := inc_dec_rp(state, f, inc, rp(s.p));
                     when 1 => f := inc_dec_rp(state, f, dec, rp(s.p));
                     end case;
-                when 4 => f := alu_r(state, f, inc_i, s.y);
-                when 5 => f := alu_r(state, f, dec_i, s.y);
-                when 6 => f := ld_r_n(state, f, s.y);
+                when 4 => 
+                    case s.y is
+                    when 6 => f := alu_rpx(state, f, inc_i, regHL);
+                    when others => f := alu_r(state, f, inc_i, s.y);
+                    end case;
+                when 5 =>
+                    case s.y is
+                    when 6 => f := alu_rpx(state, f, dec_i, regHL);
+                    when others => f := alu_r(state, f, dec_i, s.y);
+                    end case;
+                when 6 =>
+                    case s.y is
+                    when 6 => f := ld_rpx_n(state, f, regHL);
+                    when others => f := ld_r_n(state, f, s.y);
+                    end case;
                 when 7 => f := alu_af(state, f, afi(s.y));
                 end case;
             when 1 =>
