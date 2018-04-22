@@ -26,14 +26,22 @@ architecture arch of memory is
         data_out : out std_logic_vector(7 downto 0));
     end component;
 
+    type mem_route_t is (none, rom_r);
+
+    signal route : mem_route_t;
     signal rom_ce : std_logic;
+    signal rom_addr : std_logic_vector(13 downto 0);
     signal data_rom : std_logic_vector(7 downto 0);
 begin
-    -- static mapping
-    rom_ce <= cbo.mreq and not addr(15) and not addr(14); -- 0-3fff
+    route <= none  when cbo.mreq = '0' else
+             rom_r when addr(15 downto 14) = "00" else -- 0-3fff
+             none;
+
+    rom_addr <= addr(13 downto 0) when route = rom_r else (others => '0');
+    rom_ce <= '1' when route = rom_r else '0';
 
     rom : mem_rom port map(clk, cbo.wr, cbo.rd, rom_ce,
-                           addr(13 downto 0), data_in, data_rom);
+                           rom_addr, data_in, data_rom);
 
     data_out <= data_rom;
 
