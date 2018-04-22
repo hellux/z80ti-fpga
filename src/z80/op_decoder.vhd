@@ -603,6 +603,34 @@ architecture arch of op_decoder is
         return f;
     end inc_dec_rp;
 
+    function ld_a_i_r(state : state_t; f_in : id_frame_t;
+                      src : dbus_src_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.dbus_src := src;
+                f.cw.rf_addr := regA;
+                f.cw.rf_rdd := '1';
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            case state.t is
+            when t1 =>
+                f.cw.alu_op := ld_i;
+                f.cw.f_rd := '1';
+                f.cw.f_iff2 := '1'; -- use iff2 as pv
+            when t5 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ld_a_i_r;
+
     function ld_r_r(state : state_t; f_in : id_frame_t;
                     src, dst : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
@@ -1529,12 +1557,12 @@ begin
                 when 6 => f := nop(state, f); -- TODO IM im[y]
                 when 7 =>
                     case s.y is
-                    when 0 => f := nop(state, f); -- TODO LD I, A
-                    when 1 => f := nop(state, f); -- TODO LD R, A
-                    when 2 => f := nop(state, f); -- TODO LD A, I
-                    when 3 => f := nop(state, f); -- TODO LD A, R
-                    when 4 => f := nop(state, f); -- TODO RRD
-                    when 5 => f := nop(state, f); -- TODO RLD
+                    when 0 => --f := ld_i_a(state, f);
+                    when 1 => --f := ld_r_a(state, f);
+                    when 2 => f := ld_a_i_r(state, f, i_o);
+                    when 3 => f := ld_a_i_r(state, f, r_o);
+                    when 4 => f := rld_rrd(state, f, rrd1_i, rrd2_i);
+                    when 5 => f := rld_rrd(state, f, rld1_i, rld2_i);
                     when 6|7 => f := nop(state, f);
                     end case;
                 end case;

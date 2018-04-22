@@ -79,7 +79,7 @@ architecture arch of z80 is
     signal flags_in, flags_out : std_logic_vector(7 downto 0); -- rel to alu
 
     -- dbus/abus src
-    signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_out, i_out
+    signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_out, i_out, r_out
         : std_logic_vector(7 downto 0);
     signal rf_ao, tmpa_out, pc_out, dis_in, dis_out, int_addr, rst_addr
         : std_logic_vector(15 downto 0);
@@ -100,6 +100,8 @@ begin
         dbg.regs);
     i : reg generic map(8)
             port map(clk, cbi.reset, cw.i_rd, dbus, i_out);
+    r : reg generic map(8)
+            port map(clk, cbi.reset, cw.r_rd, dbus, r_out);
     pc : reg generic map(16)
              port map(clk, cbi.reset, cw.pc_rd, addr_in, pc_out);
     tmpa : reg generic map(16)
@@ -132,7 +134,8 @@ begin
                 alu_out             when alu_o,
                 pc_out(15 downto 8) when pch_o,
                 pc_out(7 downto 0)  when pcl_o,
-                i_out               when i_o;
+                i_out               when i_o,
+                r_out               when r_o;
     with cw.abus_src select
         abus <= (others => '-') when none,
                 pc_out          when pc_o,

@@ -179,7 +179,7 @@ begin
         '0'             when scf_i|xor_i|or_i|
                              rlc_i|rl_i|sla_i|sll_i|
                              rrc_i|rr_i|sra_i|srl_i|
-                             in_i|rld2_i|rrd2_i,
+                             in_i|rld2_i|rrd2_i|ld_i,
         '1'             when and_i|bit_i|cpl_i,
         flags_in(H_f)   when res_i|set_i,
         '-'             when others;

@@ -10,7 +10,8 @@ package z80_comm is
                      rlc_i, rl_i, sla_i, sll_i,
                      rrc_i, rr_i, sra_i, srl_i,
                      daa_i, cpl_i, scf_i, ccf_i,
-                     in_i, rld1_i, rld2_i, rrd1_i, rrd2_i);
+                     in_i, rld1_i, rld2_i, rrd1_i, rrd2_i,
+                     ld_i);
     type rf_swap_t is (none, af, reg, dehl);
     type addr_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
@@ -52,7 +53,10 @@ package z80_comm is
         busack : std_logic;
     end record;
 
-    type dbus_src_t is (none, pch_o, pcl_o, ext_o, rf_o, tmp_o, alu_o, i_o);
+    type dbus_src_t is (none,
+                        pch_o, pcl_o,
+                        ext_o, rf_o, tmp_o, alu_o,
+                        i_o, r_o);
     type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o, rst_o);
 
     type ctrlword is record 
@@ -64,7 +68,8 @@ package z80_comm is
         rf_swp : rf_swap_t;
         rst_addr : std_logic_vector(2 downto 0);
         f_rd : std_logic;
-        i_rd : std_logic;
+        f_iff2 : std_logic;
+        i_rd, r_rd : std_logic;
         ir_rd : std_logic;
         tmpa_rd : std_logic;
         pc_rd : std_logic;
