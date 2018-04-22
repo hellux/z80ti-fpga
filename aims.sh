@@ -30,8 +30,10 @@ analyze=false       # analyze src files
 make=false          # make executable
 sim=false           # run simulation
 clean=false         # remove executable
+asm=false;          # assemble z80 obj
 
 src=$(find . -name '*.vhd')
+asm_src=""
 entity=""
 args=""
 wave="wave.ghw"
@@ -40,7 +42,7 @@ args_ghdl="--workdir=build --ieee=synopsys --warn-reserved --warn-default-bindin
 --warn-body --warn-specs --warn-unused --warn-error --warn-nested-comment
 --warn-parenthesis --warn-runtime-error"
 
-while getopts hAM:S:Cf:u:at:w: OPT; do
+while getopts hAM:S:Cf:z:u:at:w: OPT; do
     case $OPT in
         h) quit=true ;;
         A) analyze=true ;;
@@ -48,6 +50,7 @@ while getopts hAM:S:Cf:u:at:w: OPT; do
         S) analyze=true; make=true; sim=true entity=$OPTARG ;;
         C) clean=true ;;
         f) src=$OPTARG ;;
+        z) asm=true; asm_src=$OPTARG ;;
         u) 
             src=$(cat build/srclists/$OPTARG);
             if [ -z "$src" ]; then
@@ -64,6 +67,13 @@ done
 if [ "$quit" = true ]; then
     echo "$USAGE"
     exit 1
+fi
+
+if [ "$asm" = true ]; then
+    z80asm $asm_src --list
+    if [ $? != '0' ]; then
+        exit 1
+    fi
 fi
 
 if [ "$analyze" = true ]; then
