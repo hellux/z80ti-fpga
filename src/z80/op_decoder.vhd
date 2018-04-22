@@ -18,6 +18,8 @@ architecture arch of op_decoder is
         cw : ctrlword;
     end record;
 
+    -- CYCLES --
+
     function int_rd(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -36,7 +38,7 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cb.iorq := '1';       -- signal addr is ready on abus
+            f.cb.iorq := '1';
         when t2 =>
             f.cw.data_rdi := '1';   -- store instr to data buf
             f.cb.iorq := '1';       -- keep request until byte retrieved
@@ -53,10 +55,10 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cb.iorq := '1';       -- signal addr is ready on abus
+            f.cb.iorq := '1';
         when t2 =>
         when t3 =>
-            f.cb.iorq := '1';       -- keep request until byte read
+            f.cb.iorq := '1';       -- signal addr ready on bus
             f.cb.wr := '1';         -- signal write
             f.cw.data_wro := '1';   -- send data
         when others => null; end case;
@@ -69,10 +71,9 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cb.mreq := '1';       -- signal addr is ready on abus
         when t2 =>
             f.cw.data_rdi := '1';   -- store instr to data buf
-            f.cb.mreq := '1';       -- keep request until byte retrieved
+            f.cb.mreq := '1';       -- signal addr ready on bus
             f.cb.rd := '1';         -- read
         when t3 =>
             f.cw.dbus_src := ext_o; -- write byte to inner dbus from buf
@@ -86,11 +87,8 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
-            f.cb.mreq := '1';       -- signal addr is ready on abus
         when t2 =>
-            --f.cw.data_wro := '1';   -- send data
-            --f.cb.mreq := '1';       -- signal addr ready
-            --f.cb.wr := '1';         -- keep reading
+            f.cb.mreq := '1';       -- signal addr is ready on abus
         when t3 =>
             f.cb.mreq := '1';
             f.cb.wr := '1';         -- write byte to mem
@@ -172,6 +170,8 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end mem_rd_xy_d;
+
+    -- INSTRUCTIONS --
 
     function nop(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
@@ -1135,7 +1135,7 @@ architecture arch of op_decoder is
         return f;
     end in_r_c;
 
-    function in_a_nx(state : state_t; f_in : id_frame_t)
+    function in_a_n(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1168,7 +1168,7 @@ architecture arch of op_decoder is
             when others => null; end case;
         when others => null; end case;
         return f;
-    end in_a_nx;
+    end in_a_n;
 
     function out_n_a(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
@@ -1203,6 +1203,58 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end out_n_a;
+
+    function out_c_r(state : state_t; f_in : id_frame_t;
+                     reg : integer range 0 to 7)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 => f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            f := io_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regBC;
+                f.cw.abus_src := rf_o;
+            when t2 =>
+                f.cw.rf_addr := reg;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t4 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end out_c_r;
+
+    function out_c_0(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 => f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            f := io_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regBC;
+                f.cw.abus_src := rf_o;
+            when t2 =>
+                f.cw.dbus_src := zero_o;
+                f.cw.data_rdo := '1';
+            when t4 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end out_c_0;
 
     function push_rp(state : state_t; f_in : id_frame_t;
                       reg : integer range 0 to 15)
@@ -1765,7 +1817,7 @@ begin
                     when 0 => f := jp_nn(state, f);
                     when 1 => f := mem_rd_multi(state, f, cb);
                     when 2 => f := out_n_a(state, f);
-                    when 3 => f := in_a_nx(state, f);
+                    when 3 => f := in_a_n(state, f);
                     when 4 => f := unimp(state, f); -- TODO EX (SP), HL
                     when 5 => f := ex(state, f, dehl);
                     when 6 => f := unimp(state, f); -- TODO DI
@@ -1798,8 +1850,8 @@ begin
                     end case;
                 when 1 =>
                     case s.y is
-                    when 6 => f := unimp(state, f); -- TODO OUT (C), 0
-                    when others => f := unimp(state, f); -- TODO OUT r[y], (C)
+                    when 6 => f := out_c_0(state, f);
+                    when others => f := out_c_r(state, f, s.y);
                     end case;
                 when 2 =>
                     case s.q is

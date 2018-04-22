@@ -53,7 +53,7 @@ package z80_comm is
         busack : std_logic;
     end record;
 
-    type dbus_src_t is (none,
+    type dbus_src_t is (none, zero_o,
                         pch_o, pcl_o,
                         ext_o, rf_o, tmp_o, alu_o,
                         i_o, r_o);

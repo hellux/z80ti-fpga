@@ -57,7 +57,8 @@ begin
         x"4" when alu_o,
         x"5" when i_o,
         x"6" when r_o,
-        x"7" when pch_o|pcl_o;
+        x"7" when pch_o|pcl_o,
+        x"8" when zero_o;
 
     with selected select seg_value <=
         dbg.regs.bc                 when "0000",

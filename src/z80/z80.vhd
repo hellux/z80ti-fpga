@@ -128,6 +128,7 @@ begin
     -- mux bus input
     with cw.dbus_src select
         dbus <= (others => '-')     when none,
+                (others => '0')     when zero_o,
                 dbufi_out           when ext_o,
                 rf_do               when rf_o,
                 tmp_out             when tmp_o,
