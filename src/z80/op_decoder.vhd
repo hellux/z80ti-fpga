@@ -1436,6 +1436,19 @@ architecture arch of op_decoder is
         return f;
     end ret_cc;
 
+    function unimp(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        report "UNIMPLEMENTED INSTRUCTION";
+        case state.t is
+        when t4 => 
+            f.ct.mode_next := halt;
+            f.ct.cycle_end := '1';
+            f.ct.instr_end := '1';
+        when others => null; end case;
+        return f;
+    end unimp;
+
     function halt(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -1631,14 +1644,14 @@ begin
                     case s.y is
                     when 0 => f := nop(state, f);
                     when 1 => f := ex(state, f, af);
-                    when 2 => f := nop(state, f); -- TODO DJNZ d
+                    when 2 => f := unimp(state, f); -- TODO DJNZ d
                     when 3 => f := jr_d(state, f);
                     when 4|5|6|7 => f := jr_cc_d(state, f, s.y-4);
                     end case;
                 when 1 =>
                     case s.q is
                     when 0 => f := ld_rp_nn(state, f, rp(s.p));
-                    when 1 => f := nop(state, f); -- TODO ADD hl, rp[p]
+                    when 1 => f := unimp(state, f); -- TODO ADD hl, rp[p]
                     end case;
                 when 2 =>
                     case s.q is
@@ -1716,12 +1729,12 @@ begin
                     case s.y is
                     when 0 => f := jp_nn(state, f);
                     when 1 => f := mem_rd_multi(state, f, cb);
-                    when 2 => f := out_n_a(state, f); -- TODO OUT (n), A
-                    when 3 => f := nop(state, f); -- TODO IN A, (n)
-                    when 4 => f := nop(state, f); -- TODO EX (SP), HL
+                    when 2 => f := out_n_a(state, f);
+                    when 3 => f := unimp(state, f); -- TODO IN A, (n)
+                    when 4 => f := unimp(state, f); -- TODO EX (SP), HL
                     when 5 => f := ex(state, f, dehl);
-                    when 6 => f := nop(state, f); -- TODO DI
-                    when 7 => f := nop(state, f); -- TODO EI
+                    when 6 => f := unimp(state, f); -- TODO DI
+                    when 7 => f := unimp(state, f); -- TODO EI
                     end case;
                 when 4 => f := call_cc_nn(state, f, s.y);
                 when 5 =>
@@ -1750,13 +1763,13 @@ begin
                     end case;
                 when 1 =>
                     case s.y is
-                    when 6 => f := nop(state, f); -- TODO OUT (C), 0
-                    when others => f := nop(state, f); -- TODO OUT r[y], (C)
+                    when 6 => f := unimp(state, f); -- TODO OUT (C), 0
+                    when others => f := unimp(state, f); -- TODO OUT r[y], (C)
                     end case;
                 when 2 =>
                     case s.q is
-                    when 0 => f := nop(state, f); -- TODO SBC HL, rp[p]
-                    when 1 => f := nop(state, f); -- TODO ADC HL, rp[p]
+                    when 0 => f := unimp(state, f); -- TODO SBC HL, rp[p]
+                    when 1 => f := unimp(state, f); -- TODO ADC HL, rp[p]
                     end case;
                 when 3 =>
                     case s.q is
@@ -1766,10 +1779,10 @@ begin
                 when 4 => f := alu_af(state, f, neg_i);
                 when 5 =>
                     case s.y is
-                    when 1 => f := nop(state, f); -- TODO RETI
-                    when others => f := nop(state, f); -- TODO RETN
+                    when 1 => f := unimp(state, f); -- TODO RETI
+                    when others => f := unimp(state, f); -- TODO RETN
                     end case;
-                when 6 => f := nop(state, f); -- TODO IM im[y]
+                when 6 => f := unimp(state, f); -- TODO IM im[y]
                 when 7 =>
                     case s.y is
                     when 0 => --f := ld_i_a(state, f);
@@ -1783,7 +1796,7 @@ begin
                 end case;
             when 2 =>
                 case s.y is
-                when 4|5|6|7 => f := nop(state, f); -- TODO bli[y,z]
+                when 4|5|6|7 => f := unimp(state, f); -- TODO bli[y,z]
                 when others => f := nop(state, f); -- NONI
                 end case;
             when 0|3 => f := nop(state, f); end case; -- NONI
@@ -1801,18 +1814,18 @@ begin
             when 0 =>
                 case s.z is
                 when 6 => f := bit_xy_d(state, f, rot(s.y), 0, rxy(xy));
-                when others => f := nop(state, f); -- TODO LD r[z], rot[y] (IX/Y+d)
+                when others => f := unimp(state, f); -- TODO LD r[z], rot[y] (IX/Y+d)
                 end case;
             when 1 => f := bit_xy_d(state, f, bit_i, 0, rxy(xy));
             when 2 =>
                 case s.z is
                 when 6 => f := bit_xy_d(state, f, res_i, s.y, rxy(xy));
-                when others => f := nop(state, f); -- TODO LD r[z], res y, (IX/Y+d)
+                when others => f := unimp(state, f); -- TODO LD r[z], res y, (IX/Y+d)
                 end case;
             when 3 =>
                 case s.z is
                 when 6 => f := bit_xy_d(state, f, set_i, s.y, rxy(xy));
-                when others => f := nop(state, f); -- TODO LD r[z], set y, (IX/Y+d)
+                when others => f := unimp(state, f); -- TODO LD r[z], set y, (IX/Y+d)
                 end case;
             end case;
         when dd|fd =>
@@ -1826,7 +1839,7 @@ begin
                         case s.z is
                         when 2 => f := ld_rp_nn(state, f, rxy(xy));
                         when others => null; end case;
-                    when 1 => f := nop(state, f); -- TODO ADD ix/iy, rp[p]
+                    when 1 => f := unimp(state, f); -- TODO ADD ix/iy, rp[p]
                     end case;
                 when 2 =>
                     case s.q is
@@ -1846,9 +1859,9 @@ begin
                     when 0 => f := inc_dec_rp(state, f, inc, rxy(xy));
                     when 1 => f := inc_dec_rp(state, f, dec, rxy(xy));
                     end case;
-                when 4 => f := nop(state, f); -- TODO inc (ix/y+d) (undoc?)
-                when 5 => f := nop(state, f); -- TODO dec (ix/y+d) (undoc?)
-                when 6 => f := nop(state, f); -- TODO ld (ix+d), n (undoc?)
+                when 4 => f := unimp(state, f); -- TODO inc (ix/y+d) (undoc?)
+                when 5 => f := unimp(state, f); -- TODO dec (ix/y+d) (undoc?)
+                when 6 => f := unimp(state, f); -- TODO ld (ix+d), n (undoc?)
                 when 7 => f := nop(state, f);
                 end case;
             when 1 =>
@@ -1858,9 +1871,9 @@ begin
                     when 6 =>
                         case s.z is
                         when 6 => f := nop(state, f);
-                        when others => f := nop(state, f); -- TODO ld (ix/y+d), r
+                        when others => f := unimp(state, f); -- TODO ld (ix/y+d), r
                         end case;
-                    when others => f := nop(state, f); -- TODO ld (ix/y+d), r
+                    when others => f := unimp(state, f); -- TODO ld (ix/y+d), r
                     end case;
                 when others => f := nop(state, f);
                 end case;
