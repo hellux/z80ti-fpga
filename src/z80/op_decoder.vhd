@@ -1846,9 +1846,9 @@ begin
                     when 0 => f := inc_dec_rp(state, f, inc, rxy(xy));
                     when 1 => f := inc_dec_rp(state, f, dec, rxy(xy));
                     end case;
-                when 4 => f := alu_rpx(state, f, inc_i, rxy(xy));
-                when 5 => f := alu_rpx(state, f, dec_i, rxy(xy));
-                when 6 => f := ld_rpx_n(state, f, rxy(xy));
+                when 4 => f := nop(state, f); -- TODO inc (ix/y+d) (undoc?)
+                when 5 => f := nop(state, f); -- TODO dec (ix/y+d) (undoc?)
+                when 6 => f := nop(state, f); -- TODO ld (ix+d), n (undoc?)
                 when 7 => f := nop(state, f);
                 end case;
             when 1 =>
