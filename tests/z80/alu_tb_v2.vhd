@@ -144,8 +144,6 @@ begin
 
         report "sub";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"29", x"11", sub_i, 0, "00000001", "00-0-010", x"18");
-        test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"ff", x"ff", sub_i, 0, "11111111", "01-0-010", x"00");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"ff", x"7f", sub_i, 0, "11111111", "10-0-010", x"80");
@@ -155,6 +153,9 @@ begin
              x"00", x"00", sub_i, 0, "00000010", "01-0-010", x"00");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"7f", x"81", sub_i, 0, "00000010", "10-0-111", x"fe");
+        -- man ex
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"29", x"11", sub_i, 0, "00000001", "00-0-010", x"18");
 
         report "sbc";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
