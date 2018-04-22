@@ -33,8 +33,8 @@ architecture arch of lcd_ctrl is
     signal control : unsigned(7 downto 0);
 
     signal mode, mode_next : lcd_mode_t;
-    signal x, x_next : integer range 0 to 63; -- row
-    signal y, y_next : integer range 0 to 19; -- column page
+    signal x, x_next : integer range 0 to LCD_ROWS-1; -- row
+    signal y, y_next : integer range 0 to LCD_COLS/6-1; -- column page
 begin
     control <= unsigned(status_in);
 
@@ -87,17 +87,17 @@ begin
             when "10" => y_tmp := y - 1;
             when "11" => y_tmp := y + 1;
             when others => null; end case;
-            -- limit (values from t6a04 data sheet)
+            -- limit
             if mode.wl = '1' then
-                if y_tmp > 14 then y_tmp := 0; end if;
-                if y_tmp < 0 then y_tmp := 14; end if;
-                if x_tmp > 63 then x_tmp := 0; end if;
-                if x_tmp < 0 then x_tmp := 63; end if;
+                if y_tmp > LCD_COLS/8-1 then y_tmp := 0;            end if;
+                if y_tmp < 0            then y_tmp := LCD_COLS/8-1; end if;
+                if x_tmp > LCD_ROWS-1   then x_tmp := 0;            end if;
+                if x_tmp < 0            then x_tmp := LCD_ROWS-1;   end if;
             else
-                if y_tmp > 19 then y_tmp := 0; end if;
-                if y_tmp < 0 then y_tmp := 19; end if;
-                if x_tmp > 63 then x_tmp := 0; end if;
-                if x_tmp < 0 then x_tmp := 63; end if;
+                if y_tmp > LCD_COLS/6-1 then y_tmp := 0;            end if;
+                if y_tmp < 0            then y_tmp := LCD_COLS/6-1; end if;
+                if x_tmp > LCD_ROWS-1   then x_tmp := 0;            end if;
+                if x_tmp < 0            then x_tmp := LCD_ROWS-1;   end if;
             end if;
         elsif status_wr = '1' then
             if control(7 downto 5) = "001" then

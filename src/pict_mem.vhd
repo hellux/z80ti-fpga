@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.cmp_comm.all;
 
 -- TODO do_lcd
 
@@ -28,9 +29,6 @@ architecture arch of pict_mem is
         data_outa, data_outb : out std_logic_vector(dwidth-1 downto 0));
     end component;
 
-    constant COLUMNS : integer := 120;
-    constant ROWS : integer := 64;
-
     type gmem_state_t is (idle, load);
 
     signal gmem_we_lcd : std_logic;
@@ -41,7 +39,7 @@ architecture arch of pict_mem is
     signal bit_sel : integer range 0 to 7;
     signal state : gmem_state_t;
 begin
-    gmem : bram generic map(1, COLUMNS*ROWS, 13)
+    gmem : bram generic map(1, LCD_COLS*LCD_ROWS, 13)
         port map(clk, rst,
                  gmem_we_lcd, '0',
                  gmem_a_lcd, gmem_a_vga,
@@ -49,8 +47,8 @@ begin
                  gmem_do_lcd, gmem_do_vga);
 
     process(x_lcd, y_lcd, wl, bit_sel)
-        variable xl : integer range 0 to ROWS-1;
-        variable yl : integer range 0 to COLUMNS/6-1;
+        variable xl : integer range 0 to LCD_ROWS-1;
+        variable yl : integer range 0 to LCD_COLS/6-1;
         variable wordl : integer range 6 to 8;
         variable bit_seldex : integer range 0 to 7;
     begin
@@ -58,17 +56,17 @@ begin
         yl := to_integer(unsigned(y_lcd));
         if wl = '1' then wordl := 8; else wordl := 6; end if;
         gmem_a_lcd <= std_logic_vector(to_unsigned(
-            xl*COLUMNS+yl*wordl + bit_sel, 13
+            xl*LCD_COLS+yl*wordl + bit_sel, 13
         ));
     end process;
 
     process(x_vga, y_vga)
-        variable xv : integer range 0 to COLUMNS-1;
-        variable yv : integer range 0 to ROWS-1;
+        variable xv : integer range 0 to LCD_COLS-1;
+        variable yv : integer range 0 to LCD_ROWS-1;
     begin
         xv := to_integer(unsigned(x_vga));
         yv := to_integer(unsigned(y_vga));
-        gmem_a_vga <= std_logic_vector(to_unsigned(yv*COLUMNS+xv, 13));
+        gmem_a_vga <= std_logic_vector(to_unsigned(yv*LCD_COLS+xv, 13));
     end process;
 
     gmem_we_lcd <= '1' when state = load else '0';
