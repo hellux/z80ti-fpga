@@ -37,10 +37,7 @@ asm_src="tests/asm/"
 entity=""
 args="--ieee-asserts=disable"
 wave="wave.ghw"
-args_ghdl="--workdir=build --ieee=synopsys --warn-reserved --warn-default-binding
---warn-binding --warn-library --warn-vital-generic --warn-delayed-checks
---warn-body --warn-specs --warn-unused --warn-error --warn-nested-comment
---warn-parenthesis --warn-runtime-error"
+args_ghdl="--workdir=build --ieee=synopsys"
 
 while getopts hAM:S:Cf:z:u:at:w: OPT; do
     case $OPT in
