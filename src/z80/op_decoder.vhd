@@ -1984,7 +1984,7 @@ begin
                 when 1 =>
                     case s.q is
                     when 0 =>
-                        case s.z is
+                        case s.p is
                         when 2 => f := ld_rp_nn(state, f, rxy(xy));
                         when others => null; end case;
                     when 1 => f :=

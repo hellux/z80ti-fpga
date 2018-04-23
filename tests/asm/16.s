@@ -9,4 +9,9 @@ ld de, 0x5b69
 scf
 ccf
 sbc hl, de
+ld ix, 0xd6c3
+ld sp, 0x5b69
+scf
+ccf
+sbc hl, sp
 halt
