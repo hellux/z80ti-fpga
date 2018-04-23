@@ -537,6 +537,64 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end alu_af;
+    -----------------------------------------------------------
+    
+    function alu_rp_rp(state : state_t; f_in : id_frame_t;
+                     op1 : instr_t;
+                     op2 : instr_t;
+                     reg1 : integer range 0 to 15;
+                     reg2 : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := reg1 + 1;
+                f.cw.dbus_src := rf_o;
+                f.cw.act_rd_dbus := '1';
+            when t2 =>
+                f.cw.rf_addr := reg2 + 1;
+                f.cw.dbus_src := rf_o;
+                f.cw.tmp_rd := '1';     
+            when t4 =>
+                f.cw.alu_op := op1;
+                f.cw.dbus_src := alu_o;
+                f.cw.rf_addr := reg1 + 1;
+                f.cw.rf_rdd := '1';
+                f.cw.f_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := reg1;
+                f.cw.dbus_src := rf_o;
+                f.cw.act_rd_dbus := '1';
+            when t2 =>
+                f.cw.rf_addr := reg2;
+                f.cw.dbus_src := rf_o;
+                f.cw.tmp_rd := '1';     
+            when t3 =>
+                f.cw.alu_op := op2;
+                f.cw.dbus_src := alu_o;
+                f.cw.rf_addr := reg1;
+                f.cw.rf_rdd := '1';
+                f.cw.f_rd := '1';
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+                
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end alu_rp_rp;
+    
+    ----------------------------------------------------------
 
     function bit_r(state : state_t; f_in : id_frame_t;
                    op : instr_t; bs : integer range 0 to 7;
