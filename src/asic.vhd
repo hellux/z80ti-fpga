@@ -24,10 +24,9 @@ architecture arch of asic is
     -- helpers
     signal a : integer range 0 to 255 := 0;
 
-    -- arrays of input / output of ports
-    signal darr_in, darr_out : data_array_t;
+    -- array of input/output to external ports
     signal parr_out : io_ports_array_t;
-    signal rd_arr, wr_arr : rw_array_t;
+    signal darr_in : data_array_t;
 
     -- internal states
     signal int_on_key : std_logic; -- on key will trigger interrupt
@@ -50,26 +49,15 @@ begin
                    "---";
 
     -- connect all outputs to port array
-    port_array : process(darr_out, rd_arr, wr_arr) begin
+    port_array : process(a, data_in, cbo.rd, cbo.wr) begin
         for i in parr_out'range loop
-            parr_out(i) <= (data => darr_out(i),
-                            rd => rd_arr(i),
-                            wr => wr_arr(i));
+            parr_out(i) <= (data => (others => '0'),
+                            rd => '0',
+                            wr => '0');
         end loop;
-    end process;
-
-    -- set output signals for selected port in array, zero rest
-    port_data : process(a, data_in) begin
-        darr_out <= (others => (others => '0'));
-        darr_out(a) <= data_in;
-    end process;
-    port_rd : process(a, cbo.rd) begin
-        rd_arr <= (others => '-');
-        rd_arr(a) <= cbo.iorq and cbo.rd;
-    end process;
-    port_wr : process(a, cbo.wr) begin
-        wr_arr <= (others => '0');
-        wr_arr(a) <= cbo.iorq and cbo.wr;
+        parr_out(a) <= (data => data_in,
+                        rd => cbo.iorq and cbo.rd,
+                        wr => cbo.iorq and cbo.wr);
     end process;
 
     cbi.reset <= '0';
