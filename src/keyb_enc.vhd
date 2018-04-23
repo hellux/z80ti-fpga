@@ -119,6 +119,7 @@ begin
                 ps2_state <= break;
             end if;
           elsif ps2_state = make then
+            keys_down(keycode(7 downto 4))(keycode(3 downto 0) <= '1';
             ps2_state <= idle;
           elsif ps2_state = break then
             if ps2bitcounter = 11 then 
