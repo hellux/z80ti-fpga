@@ -537,7 +537,6 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end alu_af;
-    -----------------------------------------------------------
     
     function alu_rp_rp(state : state_t; f_in : id_frame_t;
                      op1 : instr_t;
@@ -593,8 +592,6 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end alu_rp_rp;
-    
-    ----------------------------------------------------------
 
     function bit_r(state : state_t; f_in : id_frame_t;
                    op : instr_t; bs : integer range 0 to 7;
@@ -735,6 +732,71 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end inc_dec_rp;
+
+----------------------------------------------------------------------
+    function bli_op(state : state_t; f_in : id_frame_t; op : instr_t;)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                -- Load (HL) to Z 
+                f.cw.rf_addr := regHL;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.cw.rf_addr := regZ;
+                f.cw.rf_rdd := '1';
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            case state.t is
+            f := mem_wr(state, f);
+            when t1 =>
+                -- Store Z to (DE)
+                f.cw.rf_addr := regDE;
+                f.cw.abus_src := rf_o;
+            when t2 =>
+                f.cw.rf_addr := regZ;
+                f.dw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+        when m4 =>
+            case state.t is
+            when t1 =>
+                -- inc HL
+                f.cw.rf_addr := regHL;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := inc;
+                f.cw.rf_rda := '1';
+            when t2 =>
+                -- inc DE
+                f.cw.rf_addr := regDE;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := inc;
+                f.cw.rf_rda := '1';
+            when t3 =>
+                -- dec BC
+                f.cw.rf_addr := regBC;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+            when t5 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end bli_op;
+-------------------------------------------------------------------------
 
     function ld_a_i_r(state : state_t; f_in : id_frame_t;
                       src : dbus_src_t)
@@ -1944,7 +2006,7 @@ begin
                 end case;
             when 2 =>
                 case s.y is
-                when 4|5|6|7 => f := unimp(state, f); -- TODO bli[y,z]
+                when 4|5|6|7 => f := bli_op(state, f, bli(y, z)); -- TODO bli[y,z]
                 when others => f := nop(state, f); -- NONI
                 end case;
             when 0|3 => f := nop(state, f); end case; -- NONI
