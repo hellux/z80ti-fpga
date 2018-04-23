@@ -1152,6 +1152,67 @@ architecture arch of op_decoder is
         return f;
     end ld_nnx_rp;
 
+    function ex_spx_rp(state : state_t; f_in : id_frame_t;
+                       reg : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 => -- L -> dbufo
+                f.cw.rf_addr := reg+1;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- (SP) --> L
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.cw.rf_addr := reg+1;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- dbufo -> (SP), SP+1 -> tmpa, H -> dbufo
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := inc;
+                f.cw.tmpa_rd := '1';
+            when t4 =>
+                f.cw.rf_addr := reg;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 => -- (tmpa) -> H
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.abus_src := tmpa_o;
+            when t3 =>
+                f.cw.rf_addr := reg;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m5 => -- tmp -> (tmpa)
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.abus_src := tmpa_o;
+            when t5 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ex_spx_rp;
+
     function in_c(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -1935,7 +1996,7 @@ begin
                     when 1 => f := mem_rd_multi(state, f, cb);
                     when 2 => f := out_n_a(state, f);
                     when 3 => f := in_a_n(state, f);
-                    when 4 => f := unimp(state, f); -- TODO EX (SP), HL
+                    when 4 => f := ex_spx_rp(state, f, regHL);
                     when 5 => f := ex(state, f, dehl);
                     when 6 => f := unimp(state, f); -- TODO DI
                     when 7 => f := unimp(state, f); -- TODO EI
@@ -2107,6 +2168,7 @@ begin
                 when 3 =>
                     case s.y is
                     when 1 => f := mem_rd_xy_d(state, f, pxy_d(xy));
+                    when 4 => f := ex_spx_rp(state, f, rxy(xy));
                     when others => f := nop(state, f);
                     end case;
                 when 5 =>
