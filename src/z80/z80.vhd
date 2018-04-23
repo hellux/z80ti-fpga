@@ -75,8 +75,9 @@ architecture arch of z80 is
     signal addr_in : std_logic_vector(15 downto 0);
     signal rf_dis_out : std_logic_vector(15 downto 0);
 
-    signal acc, act_out : std_logic_vector(7 downto 0);
-    signal flags_in, flags_out : std_logic_vector(7 downto 0); -- rel to alu
+    signal act_rd : std_logic;
+    signal acc, act_in, act_out : std_logic_vector(7 downto 0);
+    signal flags_in, flags_out, fi_out : std_logic_vector(7 downto 0);
 
     -- dbus/abus src
     signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_out, i_out
@@ -116,9 +117,14 @@ begin
                             cw.alu_op, cw.alu_bs,
                             alu_out, flags_out);
     act : reg generic map(8)
-              port map(clk, cbi.reset, cw.act_rd, acc, act_out);
+              port map(clk, cbi.reset, act_rd, act_in, act_out);
+    act_rd <= cw.act_rd or cw.act_rd_dbus;
+    act_in <= dbus when f.cw.act_rd_dbus = '1' else acc;
     tmp : reg generic map(8)
               port map(clk, cbi.reset, cw.tmp_rd, dbus, tmp_out);
+    fi : reg generic map(8) -- flags internal
+                port map(clk, cbi.reset, fi_rd, flags_out, fi_out);
+    fi_rd <= cw.fi_rd or cw.f_rd;
 
     -- -- BUSES -- --
     -- mux bus input
