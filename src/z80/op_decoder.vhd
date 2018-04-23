@@ -30,6 +30,7 @@ architecture arch of op_decoder is
             f.cw.data_rdi := '1';
             f.cb.iorq := '1';
         when others => null; end case;
+        return f;
     end int_rd;
 
     function io_rd(state : state_t; f_in : id_frame_t)
