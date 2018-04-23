@@ -93,7 +93,7 @@ begin
     ir : reg generic map(8)
              port map(clk, cbi.reset, cw.ir_rd, dbus, ir_out);
     id : op_decoder port map(state, ir_out, ctrl, cbo, cw);
-    sm : state_machine port map(clk, cbi, flags_in, ctrl, state);
+    sm : state_machine port map(clk, cbi, fi_out, ctrl, state);
 
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset,
