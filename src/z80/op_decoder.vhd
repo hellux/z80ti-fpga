@@ -1796,7 +1796,8 @@ begin
                 when 1 =>
                     case s.q is
                     when 0 => f := ld_rp_nn(state, f, rp(s.p));
-                    when 1 => f := unimp(state, f); -- TODO ADD hl, rp[p]
+                    when 1 => f :=
+                        alu_rp_rp(state, f, add_i, adc_i, regHL, rp(s.p));
                     end case;
                 when 2 =>
                     case s.q is
@@ -1913,8 +1914,10 @@ begin
                     end case;
                 when 2 =>
                     case s.q is
-                    when 0 => f := unimp(state, f); -- TODO SBC HL, rp[p]
-                    when 1 => f := unimp(state, f); -- TODO ADC HL, rp[p]
+                    when 0 => f :=
+                        alu_rp_rp(state, f, sbc_i, sbc_i, regHL, rp(s.p));
+                    when 1 => f :=
+                        alu_rp_rp(state, f, adc_i, adc_i, regHL, rp(s.p));
                     end case;
                 when 3 =>
                     case s.q is
@@ -1984,7 +1987,8 @@ begin
                         case s.z is
                         when 2 => f := ld_rp_nn(state, f, rxy(xy));
                         when others => null; end case;
-                    when 1 => f := unimp(state, f); -- TODO ADD ix/iy, rp[p]
+                    when 1 => f :=
+                        alu_rp_rp(state, f, add_i, adc_i, rxy(xy), rp(s.p));
                     end case;
                 when 2 =>
                     case s.q is
