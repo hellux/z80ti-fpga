@@ -132,6 +132,7 @@ architecture arch of op_decoder is
             else 
                 f.cw.abus_src := pc_o; -- keep pc on abus
             end if;
+            f.cw.addr_op := inc;
             f.cw.pc_rd := '1';      -- read incremented address to pc
         when t3 =>
             f.cw.ir_rd := '1';      -- read instr from dbus to ir
@@ -292,6 +293,7 @@ architecture arch of op_decoder is
                 f.cw.dbus_src := tmp_o;
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := dis_o;
+                f.cw.addr_op := inc;
                 f.cw.pc_rd := '1';
             when t2 =>
             when t3 =>
@@ -1212,6 +1214,67 @@ architecture arch of op_decoder is
         return f;
     end ld_nnx_rp;
 
+    function ex_spx_rp(state : state_t; f_in : id_frame_t;
+                       reg : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 => -- L -> dbufo
+                f.cw.rf_addr := reg+1;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- (SP) --> L
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.cw.rf_addr := reg+1;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- dbufo -> (SP), SP+1 -> tmpa, H -> dbufo
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := inc;
+                f.cw.tmpa_rd := '1';
+            when t4 =>
+                f.cw.rf_addr := reg;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 => -- (tmpa) -> H
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.abus_src := tmpa_o;
+            when t3 =>
+                f.cw.rf_addr := reg;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m5 => -- tmp -> (tmpa)
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.abus_src := tmpa_o;
+            when t5 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ex_spx_rp;
+
     function in_c(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -1643,6 +1706,55 @@ architecture arch of op_decoder is
         return f;
     end ret_cc;
 
+    function djnz_d(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 => -- decrement b
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := regB;
+                f.cw.dbus_src := rf_o;
+                f.cw.tmp_rd := '1';
+            when t5 =>
+                f.cw.alu_op := dec_i;
+                f.cw.dbus_src := alu_o;
+                f.cw.fi_rd := '1'; -- read to internal flags only
+                f.cw.rf_addr := regB;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- fetch d to tmp
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+                if state.cc(Z_c) then
+                    f.ct.instr_end := '1';
+                end if;
+            when others => null; end case;
+        when m3 => -- load pc+d to pc
+            case state.t is
+            when t1 => -- pc -> wz
+                f.cw.abus_src := pc_o;
+                f.cw.rf_addr := regWZ;
+                f.cw.addr_op := none;
+                f.cw.rf_rda := '1';
+            when t2 => -- wz + d -> pc
+                f.cw.rf_addr := regWZ;
+                f.cw.dbus_src := tmp_o;
+                f.cw.abus_src := dis_o;
+                f.cw.addr_op := none;
+                f.cw.pc_rd := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end djnz_d;
+
     function unimp(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -1771,10 +1883,17 @@ architecture arch of op_decoder is
         return f;
     end im2;
 
+    type bli_row_t is array(0 to 3) of instr_t;
+    type bli_table_t is array(4 to 7) of bli_row_t;
     type rp_table_t is array(0 to 3) of integer range 0 to 15;
     type alu_table_t is array(0 to 7) of instr_t;
     type xy_table_t is array(0 to 1) of integer range 0 to 15;
     type prefix_table_t is array(0 to 1) of id_prefix_t;
+    constant bli4 : bli_row_t := (ldi_i, cpi_i, ini_i, outi_i);
+    constant bli5 : bli_row_t := (ldd_i, cpd_i, ind_i, outd_i);
+    constant bli6 : bli_row_t := (ldir_i, cpir_i, inir_i, outir_i);
+    constant bli7 : bli_row_t := (lddr_i, cpdr_i, indr_i, outdr_i);
+    constant bli : bli_table_t := (bli4, bli5, bli6, bli7);
     constant rp  : rp_table_t := (regBC, regDE, regHL, regSP);
     constant rp2 : rp_table_t := (regBC, regDE, regHL, regAF);
     constant alu : alu_table_t := (add_i, adc_i, sub_i, sbc_i,
@@ -1851,7 +1970,7 @@ begin
                     case s.y is
                     when 0 => f := nop(state, f);
                     when 1 => f := ex(state, f, af);
-                    when 2 => f := unimp(state, f); -- TODO DJNZ d
+                    when 2 => f := djnz_d(state, f);
                     when 3 => f := jr_d(state, f);
                     when 4|5|6|7 => f := jr_cc_d(state, f, s.y-4);
                     end case;
@@ -1939,7 +2058,7 @@ begin
                     when 1 => f := mem_rd_multi(state, f, cb);
                     when 2 => f := out_n_a(state, f);
                     when 3 => f := in_a_n(state, f);
-                    when 4 => f := unimp(state, f); -- TODO EX (SP), HL
+                    when 4 => f := ex_spx_rp(state, f, regHL);
                     when 5 => f := ex(state, f, dehl);
                     when 6 => f := unimp(state, f); -- TODO DI
                     when 7 => f := unimp(state, f); -- TODO EI
@@ -2111,6 +2230,7 @@ begin
                 when 3 =>
                     case s.y is
                     when 1 => f := mem_rd_xy_d(state, f, pxy_d(xy));
+                    when 4 => f := ex_spx_rp(state, f, rxy(xy));
                     when others => f := nop(state, f);
                     end case;
                 when 5 =>
