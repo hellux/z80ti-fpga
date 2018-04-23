@@ -9,10 +9,11 @@ entity asic is port(
     cbi : out ctrlbus_in;
     cbo : in ctrlbus_out;
     addr : in std_logic_vector(7 downto 0);
-    data_in : in std_logic_vector(7 downto 0);
-    data_out : out std_logic_vector(7 downto 0);
-    ports_in : in io_data_t;
-    ports_out : out io_ports_t);
+    data_in : in std_logic_vector(7 downto 0);   -- from dbus
+    data_out : out std_logic_vector(7 downto 0); -- to dbus
+    ports_in : in io_data_t;                     -- (port -> cpu) from ctrl
+    ports_out : out io_ports_t;                  -- (cpu -> port) to ctrl 
+    on_key_down : in std_logic);
 end asic;
 
 architecture arch of asic is
@@ -20,17 +21,36 @@ architecture arch of asic is
     type data_array_t is array(0 to 255) of std_logic_vector(7 downto 0);
     type rw_array_t is array(0 to 255) of std_logic;
 
+    -- helpers
     signal a : integer range 0 to 255 := 0;
+
+    -- arrays of input / output of ports
     signal darr_in, darr_out : data_array_t;
     signal parr_out : io_ports_array_t;
     signal rd_arr, wr_arr : rw_array_t;
-    signal port_rd_data : std_logic_vector(7 downto 0);
+
+    -- internal states
+    signal int_on_key : std_logic; -- on key will trigger interrupt
+    signal int_hwt0, int_hwt1 : std_logic; -- hardware timers will trigger
+
+    -- internal asic ports
+    signal p03_intmask : std_logic_vector(7 downto 0);
 begin
     a <= to_integer(unsigned(addr));
-    data_out <= port_rd_data when cbo.iorq = '1' and cbo.rd = '1' else x"00";
-    port_rd_data <= darr_in(a);
 
-    process(darr_out, rd_arr, wr_arr) begin
+    -- port -> cpu data
+    data_out <= darr_in(a) when cbo.iorq = '1' and cbo.rd = '1' else x"00";
+
+    -- internal ports
+    p03_intmask <= int_on_key &
+                   int_hwt0 &
+                   int_hwt1 &
+                   "-" &
+                   '0' & -- linkport will gen interrupt
+                   "---";
+
+    -- connect all outputs to port array
+    port_array : process(darr_out, rd_arr, wr_arr) begin
         for i in parr_out'range loop
             parr_out(i) <= (data => darr_out(i),
                             rd => rd_arr(i),
@@ -38,35 +58,35 @@ begin
         end loop;
     end process;
 
-    process(a, data_in) begin
+    -- set output signals for selected port in array, zero rest
+    port_data : process(a, data_in) begin
         darr_out <= (others => (others => '0'));
         darr_out(a) <= data_in;
     end process;
-
-    process(a, cbo.rd) begin
+    port_rd : process(a, cbo.rd) begin
         rd_arr <= (others => '-');
         rd_arr(a) <= cbo.iorq and cbo.rd;
     end process;
-
-    process(a, cbo.wr) begin
+    port_wr : process(a, cbo.wr) begin
         wr_arr <= (others => '0');
         wr_arr(a) <= cbo.iorq and cbo.wr;
     end process;
 
     cbi.reset <= '0';
     cbi.wt <= '0';
-    cbi.int <= '0';
+    cbi.int <= int_on_key and on_key_down;
     cbi.nmi <= '0';
     cbi.busrq <= '0';
 
-    ports_out.lcd_status <= parr_out(16);
-    ports_out.lcd_data <= parr_out(17);
+    -- connect port array to ports
+    ports_out.p10_lcd_status <= parr_out(16);
+    ports_out.p11_lcd_data <= parr_out(17);
 
     darr_in <= (
         16#00# => x"00",               -- lines
         16#01# => x"00",               -- TODO keypad read keys
         16#02# => x"e1",               -- battery level
-        16#03# => x"00",               -- TODO interrupt mask
+        16#03# => p03_intmask,         -- TODO interrupt mask
         16#04# => x"00",               -- TODO interrupt trigger device
         16#05# => x"00",               -- TODO current RAM page
         16#06# => x"00",               -- TODO mem page A
@@ -79,10 +99,10 @@ begin
         16#0d# => x"00",               -- link assist output buffer
         16#0e# => x"00",               -- TODO mem a high flash addr
         16#0f# => x"00",               -- TODO mem b high flash addr
-        16#10# => ports_in.lcd_status,
-        16#11# => ports_in.lcd_data,
-        16#12# => ports_in.lcd_status,
-        16#13# => ports_in.lcd_data,
+        16#10# => ports_in.p10_lcd_status,
+        16#11# => ports_in.p11_lcd_data,
+        16#12# => ports_in.p10_lcd_status,
+        16#13# => ports_in.p11_lcd_data,
         16#14# => x"00",               -- flash control
         16#15# => x"45",               -- asic version
         16#16# => x"00",               -- flash page exclusion

@@ -11,11 +11,11 @@ package cmp_comm is
     end record;
 
     type io_ports_t is record
-        lcd_data, lcd_status : port_t;
+        p10_lcd_status, p11_lcd_data : port_t;
     end record;
 
     type io_data_t is record
-        lcd_data, lcd_status : std_logic_vector(7 downto 0);
+        p10_lcd_status, p11_lcd_data : std_logic_vector(7 downto 0);
     end record;
 
     type keys_down_t is array(7 downto 0) of std_logic_vector(7 downto 0);

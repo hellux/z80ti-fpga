@@ -736,7 +736,8 @@ architecture arch of op_decoder is
     end inc_dec_rp;
 
 ----------------------------------------------------------------------
-    function bli_op(state : state_t; f_in : id_frame_t; op : instr_t;)
+    function bli_op(state : state_t; f_in : id_frame_t;
+                    op : instr_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -759,18 +760,19 @@ architecture arch of op_decoder is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            case state.t is
             f := mem_wr(state, f);
+            case state.t is
             when t1 =>
                 -- Store Z to (DE)
                 f.cw.rf_addr := regDE;
                 f.cw.abus_src := rf_o;
             when t2 =>
                 f.cw.rf_addr := regZ;
-                f.dw.dbus_src := rf_o;
+                f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t3 =>
                 f.ct.cycle_end := '1';
+            when others => null; end case;
         when m4 =>
             case state.t is
             when t1 =>
@@ -2125,7 +2127,7 @@ begin
                 end case;
             when 2 =>
                 case s.y is
-                when 4|5|6|7 => f := bli_op(state, f, bli(y, z)); -- TODO bli[y,z]
+                when 4|5|6|7 => f := bli_op(state, f, bli(s.y)(s.z)); -- TODO bli[y,z]
                 when others => f := nop(state, f); -- NONI
                 end case;
             when 0|3 => f := nop(state, f); end case; -- NONI
