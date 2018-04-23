@@ -1,2 +1,0 @@
-src/z80/registers.vhd
-tests/z80/swap_tb.vhd
