@@ -47,14 +47,18 @@ begin
         x"2" when rf_o,
         x"3" when tmpa_o,
         x"4" when dis_o,
-        x"5" when int_o;
+        x"5" when int_o,
+        x"6" when rst_o;
     with dbg.cw.dbus_src select dbus_src <= 
         x"0" when none,
         x"1" when ext_o,
         x"2" when rf_o,
         x"3" when tmp_o,
         x"4" when alu_o,
-        x"5" when i_o;
+        x"5" when i_o,
+        x"6" when r_o,
+        x"7" when pch_o|pcl_o,
+        x"8" when zero_o;
 
     with selected select seg_value <=
         dbg.regs.bc                 when "0000",

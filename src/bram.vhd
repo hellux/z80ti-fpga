@@ -16,7 +16,7 @@ end bram;
 architecture arch of bram is
     type bram_mem_t is array(0 to size-1) of
         std_logic_vector(dwidth-1 downto 0); 
-    signal mem : bram_mem_t;
+    signal mem : bram_mem_t := (others => (others => '0'));
 begin
     process(clk) begin
         if rising_edge(clk) then

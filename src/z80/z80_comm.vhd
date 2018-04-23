@@ -10,29 +10,28 @@ package z80_comm is
                      rlc_i, rl_i, sla_i, sll_i,
                      rrc_i, rr_i, sra_i, srl_i,
                      daa_i, cpl_i, scf_i, ccf_i,
-                     in_i, rld1_i, rld2_i, rrd1_i, rrd2_i);
+                     in_i, rld1_i, rld2_i, rrd1_i, rrd2_i,
+                     ld_i);
     type rf_swap_t is (none, af, reg, dehl);
     type addr_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
 
-    type id_mode_t is (
-        main, ed, cb, dd, ddcb, fd, fdcb, -- exec prefixes
-        wz,                               -- use wz instead of pc on fetch
-        halt,                             -- halted
-        int                               -- interrupt init
-    );
+    type id_prefix_t is (main, ed, cb, dd, ddcb, fd, fdcb, ddcb_d, fdcb_d);
+    type id_mode_t is (exec, wz, halt, int);
 
     -- control signals for id
     type id_ctrl_t is record
         cycle_end : std_logic;      -- last state of current cycle
         instr_end : std_logic;      -- last state of current instr
         mode_next : id_mode_t;      -- mode for next cp
+        prefix_next : id_prefix_t;  -- prefix for next cp
     end record;
 
     -- current state/context of cpu
     type state_t is record
-        int_mode : integer range 0 to 2;
         mode : id_mode_t;
+        prefix : id_prefix_t;
+        im : integer range 0 to 2;
         cc : cond_t;
         m : integer range 1 to 6;
         t : integer range 1 to 6;
@@ -47,15 +46,18 @@ package z80_comm is
 
     type ctrlbus_out is record
         -- system control
-        m1, mreq, iorq, rd, wr, rfsh : std_logic;
+        m1, mreq, iorq, rd, wr : std_logic;
         -- cpu control
         halt : std_logic;
         -- cpu bus control
         busack : std_logic;
     end record;
 
-    type dbus_src_t is (none, ext_o, rf_o, tmp_o, alu_o, i_o);
-    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o);
+    type dbus_src_t is (none, zero_o,
+                        pch_o, pcl_o,
+                        ext_o, rf_o, tmp_o, alu_o,
+                        i_o, r_o);
+    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o, rst_o);
 
     type ctrlword is record 
         -- buses / registers
@@ -64,12 +66,15 @@ package z80_comm is
         rf_addr : integer range 0 to 15; -- addr to reg in regfile
         rf_rdd, rf_rda : std_logic;      -- rd to regfile from dbus/abus
         rf_swp : rf_swap_t;              -- swap regs in regfile
-        f_rd : std_logic;                -- read from alu to F
-        i_rd : std_logic;                -- dbus -> I
+        f_rd : std_logic;                -- alu -> F
+        fi_rd : std_logic;               -- alu -> internal flags
+        f_iff2 : std_logic;              -- TODO use iff2 as pv
+        i_rd, r_rd : std_logic;          -- dbus -> I, dbus -> R
         ir_rd : std_logic;               -- dbus -> IR
         tmpa_rd : std_logic;             -- addr_in -> tmpa
         pc_rd : std_logic;               -- add_in -> pc
         addr_op : addr_op_t;             -- op for addr_in
+        rst_addr : std_logic_vector(2 downto 0); -- addr for RST instr
         -- alu
         alu_op : instr_t;                -- op for alu
         alu_bs : integer range 0 to 7;   -- bit select for alu
@@ -151,7 +156,7 @@ package z80_comm is
         state : state_t;
         ct : id_ctrl_t;
         cw : ctrlword;
-        pc, abus : std_logic_vector(15 downto 0);
+        pc, abus, tmpa : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
     end record;
 end z80_comm;

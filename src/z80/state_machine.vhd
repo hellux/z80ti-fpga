@@ -6,7 +6,7 @@ use work.z80_comm.all;
 entity state_machine is port(
     clk : in std_logic;
     cbi : in ctrlbus_in;
-    instr, flags : in std_logic_vector(7 downto 0);
+    flags : in std_logic_vector(7 downto 0);
     ctrl : in id_ctrl_t;
     state_out : out state_t);
 end state_machine;
@@ -16,8 +16,6 @@ architecture arch of state_machine is
 begin 
     process(clk) begin
         if rising_edge(clk) then
-            state.mode <= ctrl.mode_next;
-
             if ctrl.cycle_end = '1' then
                 state.t <= t1;
             elsif cbi.wt /= '1' then
@@ -26,20 +24,20 @@ begin
 
             if ctrl.instr_end = '1' then
                 state.m <= m1;
-                if ctrl.mode_next /= wz and
-                   ctrl.mode_next /= halt then
-                    state.mode <= main;
-                end if;
-                if cbi.int = '1' then
-                    state.mode <= int;
-                end if;
             elsif ctrl.cycle_end = '1' then
                 state.m <= state.m + 1;
             end if;
 
+            state.mode <= ctrl.mode_next;
+
+            if ctrl.instr_end = '1' then
+                state.prefix <= ctrl.prefix_next;
+            end if;
+
             if cbi.reset = '1' then
-                state.int_mode <= 0;
-                state.mode <= main;
+                state.im <= 0;
+                state.mode <= exec;
+                state.prefix <= main;
                 state.m <= m1;
                 state.t <= t1;
             end if;
