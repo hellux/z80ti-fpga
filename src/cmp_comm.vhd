@@ -19,4 +19,6 @@ package cmp_comm is
     end record;
 
     type keys_down_t is array(7 downto 0) of std_logic_vector(7 downto 0);
+
+    type int_dev_t is (none, on_key, hwt0, hwt1);
 end cmp_comm;

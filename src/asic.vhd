@@ -3,6 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
 use work.cmp_comm.all;
+use work.util.all;
 
 entity asic is port(
     clk : in std_logic;
@@ -31,22 +32,34 @@ architecture arch of asic is
     -- internal states
     signal int_on_key : std_logic; -- on key will trigger interrupt
     signal int_hwt0, int_hwt1 : std_logic; -- hardware timers will trigger
+    signal int_dev : int_dev_t; -- interrupt device
+    signal cry0_exp, cry1_exp, cry2_exp : std_logic; -- crystal timer expired
 
     -- internal asic ports
-    signal p03_intmask : std_logic_vector(7 downto 0);
+    signal p03_intmask, p03_intmask_out : std_logic_vector(7 downto 0);
+    signal p04_mmap_int, p04_mmap_int_out : std_logic_vector(7 downto 0);
 begin
     a <= to_integer(unsigned(addr));
 
     -- port -> cpu data
     data_out <= darr_in(a) when cbo.iorq = '1' and cbo.rd = '1' else x"00";
 
-    -- internal ports
+    -- internal ports read signals
     p03_intmask <= int_on_key &
                    int_hwt0 &
                    int_hwt1 &
                    "-" &
-                   '0' & -- linkport will gen interrupt
+                   '0' & -- linkport will gen interrupt (never)
                    "---";
+    p04_mmap_int_out <= bool_sl(int_dev = on_key) &
+                        bool_sl(int_dev = hwt0) &
+                        bool_sl(int_dev = hwt1) &
+                        '-' &
+                        '0' & -- link caused int
+                        cry0_exp &
+                        cry1_exp &
+                        cry2_exp;
+                        
 
     -- connect all outputs to port array
     port_array : process(a, data_in, cbo.rd, cbo.wr) begin
@@ -66,10 +79,13 @@ begin
     cbi.nmi <= '0';
     cbi.busrq <= '0';
 
-    -- connect port array to ports
-    ports_out.p10_lcd_status <= parr_out(16);
-    ports_out.p11_lcd_data <= parr_out(17);
+    -- connect port write signals from array to ports
+    p03_intmask_out <= parr_out(16#03#).data;
 
+    ports_out.p10_lcd_status <= parr_out(16#10#);
+    ports_out.p11_lcd_data <= parr_out(16#11#);
+
+    -- connect port read data to array
     darr_in <= (
         16#00# => x"00",               -- lines
         16#01# => x"00",               -- TODO keypad read keys
