@@ -43,7 +43,8 @@ architecture arch of comp is
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
         ports_in : in io_data_t;
-        ports_out : out io_ports_t);
+        ports_out : out io_ports_t;
+        on_key_down : in std_logic);
     end component;
 
     component lcd_ctrl port(
@@ -96,6 +97,7 @@ architecture arch of comp is
     signal addr : std_logic_vector(15 downto 0);
     signal cbi, cbi_mem, cbi_ext, cbi_asic : ctrlbus_in;
     signal data, data_z80, data_rom, data_asic : std_logic_vector(7 downto 0);
+
     signal io_ports : io_ports_t;
     signal io_data : io_data_t;
     signal x_vga : std_logic_vector(6 downto 0);
@@ -105,6 +107,7 @@ architecture arch of comp is
     signal gmem_lcd_data, lcd_gmem_data : std_logic_vector(7 downto 0);
     signal gmem_vga_data : std_logic;
     signal gmem_rst, gmem_rd, gmem_wl : std_logic;
+    signal on_key_down : std_logic;
 
     signal rst : std_logic;
     signal clk_z80, clk_vga : std_logic;
@@ -151,6 +154,7 @@ begin
     cbi_ext <= (reset => rst, others => '0');
 
     -- OR common buses instead of tristate
+    -- TODO not connect whole cbus to everyone
     data <= data_z80 or data_rom or data_asic;
     cbi.wt    <= cbi_mem.wt    or cbi_ext.wt    or cbi_asic.wt;
     cbi.int   <= cbi_mem.int   or cbi_ext.int   or cbi_asic.int;
@@ -165,14 +169,15 @@ begin
     -- IO
     asic_c : asic port map(clk_z80, cbi_asic, cbo,
                            addr(7 downto 0), data, data_asic,
-                           io_data, io_ports);
+                           io_data, io_ports,
+                           on_key_down);
     lcd : lcd_ctrl port map(clk_z80, rst,
-                            gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd,
-                            gmem_rst, gmem_rd, gmem_wl,
-                            io_ports.lcd_status.rd, io_ports.lcd_data.rd,
-                            io_ports.lcd_status.wr, io_ports.lcd_data.wr,
-                            io_ports.lcd_status.data, io_ports.lcd_data.data,
-                            io_data.lcd_status, io_data.lcd_data);
+        gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd,
+        gmem_rst, gmem_rd, gmem_wl,
+        io_ports.p10_lcd_status.rd, io_ports.p11_lcd_data.rd,
+        io_ports.p10_lcd_status.wr, io_ports.p11_lcd_data.wr,
+        io_ports.p10_lcd_status.data, io_ports.p11_lcd_data.data,
+        io_data.p10_lcd_status, io_data.p11_lcd_data);
     gmem : pict_mem port map(clk, clk_z80, gmem_rst, gmem_rd, gmem_wl,
                              lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,
                              gmem_vga_data, gmem_lcd_data);

@@ -1,8 +1,0 @@
-tests/util.vhd
-src/z80/common.vhd
-src/z80/instr.vhd
-src/z80/registers.vhd
-src/z80/regfile.vhd
-src/z80/alu.vhd
-src/z80/z80.vhd
-src/z80/op_decoder.vhd
