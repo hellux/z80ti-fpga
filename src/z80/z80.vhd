@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
+use work.util.all;
 
 entity z80 is port(
     clk : in std_logic;
@@ -73,12 +74,17 @@ architecture arch of z80 is
     signal cw : ctrlword;
 
     signal addr_in : std_logic_vector(15 downto 0);
+    signal addr_zero : std_logic;
     signal rf_dis : std_logic_vector(15 downto 0);
+    signal iff : std_logic;
 
     signal act_rd : std_logic;
     signal acc, act_in, act_out : std_logic_vector(7 downto 0);
     signal fi_rd : std_logic;
-    signal flags_in, flags_out, fi_out : std_logic_vector(7 downto 0);
+    signal f_pv : std_logic;
+    signal f_alu_in, f_alu_out, fi_out : std_logic_vector(7 downto 0);
+    signal flags : std_logic_vector(7 downto 0);
+    signal pv_src : pv_src_t;
 
     -- dbus/abus src
     signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_out, i_out, r_out
@@ -98,7 +104,7 @@ begin
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset,
         cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_swp,
-        dbus, addr_in, flags_out, rf_do, rf_ao, rf_dis, acc, flags_in,
+        dbus, addr_in, flags, rf_do, rf_ao, rf_dis, acc, f_alu_in,
         dbg.regs);
     i : reg generic map(8)
             port map(clk, cbi.reset, cw.i_rd, dbus, i_out);
@@ -114,13 +120,14 @@ begin
         std_logic_vector(unsigned(abus) + 1) when inc,
         abus                                 when none,
         std_logic_vector(unsigned(abus) - 1) when dec;
+    addr_zero <= bool_sl(unsigned(addr_in) = 0);
     int_addr <= i_out & dbus(7 downto 1) & '0';
     rst_addr <= x"00" & "00" & cw.rst_addr & "000";
 
     -- -- ALU section -- --
-    alu_comp : alu port map(act_out, tmp_out, flags_in,
+    alu_comp : alu port map(act_out, tmp_out, f_alu_in,
                             cw.alu_op, cw.alu_bs,
-                            alu_out, flags_out);
+                            alu_out, f_alu_out);
     act : reg generic map(8)
               port map(clk, cbi.reset, act_rd, act_in, act_out);
     act_rd <= cw.act_rd or cw.act_rd_dbus;
@@ -128,8 +135,15 @@ begin
     tmp : reg generic map(8)
               port map(clk, cbi.reset, cw.tmp_rd, dbus, tmp_out);
     fi : reg generic map(8) -- flags internal
-                port map(clk, cbi.reset, fi_rd, flags_out, fi_out);
+                port map(clk, cbi.reset, fi_rd, flags, fi_out);
     fi_rd <= cw.fi_rd or cw.f_rd;
+    flags(7 downto PV_f+1) <= f_alu_out(7 downto PV_f+1);
+    flags(PV_f) <= f_pv;
+    flags(PV_f-1 downto 0) <= f_alu_out(PV_f-1 downto 0);
+    with cw.pv_src select
+        f_pv <= f_alu_out(PV_f) when alu_f,
+                iff             when iff_f,
+                addr_zero       when az_f;
 
     -- -- BUSES -- --
     -- mux bus input

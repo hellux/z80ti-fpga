@@ -30,14 +30,16 @@ architecture arch of asic is
     signal darr_in : data_array_t;
 
     -- internal states
+    signal mem_mode : std_logic; -- memory mode 0 or 1
+    signal hwt_freq : std_logic_vector(1 downto 0);
     signal int_on_key : std_logic; -- on key will trigger interrupt
     signal int_hwt0, int_hwt1 : std_logic; -- hardware timers will trigger
     signal int_dev : int_dev_t; -- interrupt device
     signal cry0_exp, cry1_exp, cry2_exp : std_logic; -- crystal timer expired
 
     -- internal asic ports
-    signal p03_intmask, p03_intmask_out : std_logic_vector(7 downto 0);
-    signal p04_mmap_int, p04_mmap_int_out : std_logic_vector(7 downto 0);
+    signal p03_intmask : std_logic_vector(7 downto 0);
+    signal p04_mmap_int : std_logic_vector(7 downto 0);
 begin
     a <= to_integer(unsigned(addr));
 
@@ -51,17 +53,37 @@ begin
                    "-" &
                    '0' & -- linkport will gen interrupt (never)
                    "---";
-    p04_mmap_int_out <= bool_sl(int_dev = on_key) &
-                        bool_sl(int_dev = hwt0) &
-                        bool_sl(int_dev = hwt1) &
-                        '-' &
-                        '0' & -- link caused int
-                        cry0_exp &
-                        cry1_exp &
-                        cry2_exp;
-                        
+    p04_mmap_int <= bool_sl(int_dev = on_key) &
+                    bool_sl(int_dev = hwt0) &
+                    bool_sl(int_dev = hwt1) &
+                    '-' &
+                    '0' & -- link caused int
+                    cry0_exp &
+                    cry1_exp &
+                    cry2_exp;
 
-    -- connect all outputs to port array
+    -- internal ports write ctrl
+    p03 : process(clk)
+        variable p : port_t;
+    begin
+        p := parr_out(16#03#);
+        if rising_edge(clk) and p.wr = '1' then
+            int_on_key <= p.data(0);
+            int_hwt0 <= p.data(1);
+            int_hwt1 <= p.data(2);
+        end if;
+    end process;
+    p04 : process(clk)
+        variable p : port_t;
+    begin
+        p := parr_out(16#04#);
+        if rising_edge(clk) and p.wr = '1' then
+            mem_mode <= p.data(0);
+            hwt_freq <= p.data(2 downto 1);
+        end if;
+    end process;
+
+    -- connect all outputs to port array (mux to selected)
     port_array : process(a, data_in, cbo.rd, cbo.wr) begin
         for i in parr_out'range loop
             parr_out(i) <= (data => (others => '0'),
@@ -80,8 +102,6 @@ begin
     cbi.busrq <= '0';
 
     -- connect port write signals from array to ports
-    p03_intmask_out <= parr_out(16#03#).data;
-
     ports_out.p10_lcd_status <= parr_out(16#10#);
     ports_out.p11_lcd_data <= parr_out(16#11#);
 
@@ -90,7 +110,7 @@ begin
         16#00# => x"00",               -- lines
         16#01# => x"00",               -- TODO keypad read keys
         16#02# => x"e1",               -- battery level
-        16#03# => p03_intmask,         -- TODO interrupt mask
+        16#03# => p03_intmask,
         16#04# => x"00",               -- TODO interrupt trigger device
         16#05# => x"00",               -- TODO current RAM page
         16#06# => x"00",               -- TODO mem page A
