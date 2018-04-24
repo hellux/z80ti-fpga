@@ -1946,6 +1946,7 @@ begin
                  alu_op => unknown,
                  alu_bs => 0,
                  addr_op => inc,
+                 pv_src => alu_f,
                  others => '0');
 
         if state.mode = int then
