@@ -2,6 +2,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;            -- basic IEEE library
 use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
                                         -- and various arithmetic operations
+use work.cmp_comm.all;
 
 -- entity
 entity kbd_enc is
@@ -31,6 +32,7 @@ architecture behavioral of KBD_ENC is
 
   signal scancode		      : std_logic_vector(7 downto 0);	-- scan code
   signal keycode              : std_logic_vector(7 downto 0);   -- key code
+  signal keys_down            : keys_down_t;                    -- keys_down mtrx
 
 
 	
@@ -107,19 +109,23 @@ begin
   -- *                                 *
   -- ***********************************
       process(clk)
+        variable grp : integer range 0 to 6;
+        variable key : integer range 0 to 7;
       begin
+        grp := to_integer(unsigned(keycode(7 downto 4)));
+        key := to_integer(unsigned(keycode(3 downto 0)));
         if rising_edge(clk) then
           if rst='1' then
             ps2_state <= idle;
           elsif ps2_state = idle then 
             if ps2bitcounter = 11 and scancode /= X"F0" then
                 ps2_state <= make;
-                keys_down(keycode(7 downto 4))(keycode(3 downto 0) <= '0'; -- declare key pressed down
+                keys_down(grp)(key) <= '0'; -- declare key pressed down
             elsif ps2bitcounter = 11 and scancode = X"F0" then 
                 ps2_state <= break;
             end if;
           elsif ps2_state = make then
-            keys_down(keycode(7 downto 4))(keycode(3 downto 0) <= '1';
+            keys_down(grp)(key) <= '1';
             ps2_state <= idle;
           elsif ps2_state = break then
             if ps2bitcounter = 11 then 
@@ -163,6 +169,6 @@ begin
         '1';
   
   -- set as keycode
-  data <=  scancode;
+  data <= keycode;
 
 end behavioral;
