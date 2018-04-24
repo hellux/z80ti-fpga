@@ -11,6 +11,7 @@ src/mem/bram.vhd
 src/mem/mem_rom.vhd
 src/mem/memory.vhd
 src/io/asic.vhd
+src/io/kbd_ctrl.vhd
 src/io/lcd_ctrl.vhd
 src/io/vga_motor.vhd
 src/io/pict_mem.vhd
