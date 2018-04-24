@@ -34,36 +34,17 @@ architecture arch of key_fb is
         
     signal data   : std_logic_vector(7 downto 0);
     signal we     : std_logic;
-    signal clk_key : std_logic;
-    signal ClkDiv : integer := 0;	 
     signal seg_value : std_logic_vector(15 downto 0);
     signal keys_down : keys_down_t;
 begin
  
-    k_enc : kbd_enc port map(clk_key, btns(1), PS2KeyboardCLK, PS2KeyboardData, data, we);
+    k_enc : kbd_enc port map(clk, btns(1), PS2KeyboardCLK, PS2KeyboardData, data, we);
     we <= '1';
     led <= keys_down(1);
-    --seg_value <= x"AAAA";
-  --  smt : segment port map(clk, seg_value, x"0", seg, an);
-     -- Clock divisor
-  -- Divide system clock (100 MHz) by 4
-  --process(clk)
- -- begin
-   -- if rising_edge(clk) then
-     -- if btns(1)='1' then
-	  --  ClkDiv <= 0;
-      --elsif clkDiv = 10000 then
-       -- ClkDiv <= 0;
-      --else
-	   -- ClkDiv <= ClkDiv + 1;
-     --end if;
-    --end if;
-  --end process;
-	
-  -- 25 MHz clock (one system clock pulse width)
- -- Clk_key <= '1' when (ClkDiv = 10000) else '0';
-    
-    process(clk_key) begin
+     
+    smt : segment port map(clk, seg_value, x"0", seg, an);
+      
+    process(clk) begin
         if rising_edge(clk) then
             seg_value <= x"00" & data;
 
