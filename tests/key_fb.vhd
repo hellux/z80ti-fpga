@@ -1,13 +1,14 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
+use work.cmp_comm.all;
 
 entity key_fb is port (
     clk                 : in std_logic;
     btns                : in std_logic_vector(4 downto 0);
     PS2KeyboardCLK	    : in std_logic; 		-- USB keyboard PS2 clock
     PS2KeyboardData     : in std_logic;			-- USB keyboard PS2 data
-    seg, led             : out std_logic_vector(7 downto 0);
+    seg, led            : out std_logic_vector(7 downto 0);
     an                  : out std_logic_vector(3 downto 0));
 end key_fb;
 
@@ -26,7 +27,7 @@ architecture arch of key_fb is
         clk : in std_logic;
         value : in std_logic_vector(15 downto 0);
         dp_num : in unsigned(3 downto 0);
-        seg : out std_logic_vector(7 downto 0);
+        seg, led : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
 
@@ -36,6 +37,7 @@ architecture arch of key_fb is
     signal clk_key : std_logic;
     signal ClkDiv : integer := 0;	 
     signal seg_value : std_logic_vector(15 downto 0);
+    signal keys_down : keys_down_t;
 begin
  
     k_enc : kbd_enc port map(clk_key, btns(1), PS2KeyboardCLK, PS2KeyboardData, data, we);
