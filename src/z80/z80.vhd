@@ -16,7 +16,7 @@ entity z80 is port(
 end z80;
 
 architecture arch of z80 is
-    component ff generic(size : integer); port(
+    component ff port(
         clk, rst : in std_logic;
         rd : in std_logic;
         di : in std_logic;

@@ -833,7 +833,7 @@ architecture arch of op_decoder is
                     f.cw.addr_op := dec;
                 when others => f.cw.addr_op := none; end case;
                 
-                f.cw.pv_src := az_f;
+                f.cw.pv_src := anz_f;
                 f.cw.rf_rda := '1';
             when t2 =>
                 -- inc DE
@@ -847,7 +847,7 @@ architecture arch of op_decoder is
                     f.cw.addr_op := dec;
                 when others => f.cw.addr_op := none; end case;
                 
-                f.cw.pv_src := az_f;
+                f.cw.pv_src := anz_f;
                 f.cw.rf_rda := '1';
             when t3 =>
                 -- dec BC
@@ -857,7 +857,7 @@ architecture arch of op_decoder is
                 case op is
                 when ldi_i|cpi_i|ldd_i|cpd_i =>
                     f.cw.addr_op := dec;
-                    f.cw.pv_src := az_f;
+                    f.cw.pv_src := anz_f;
                 when ini_i|outi_i|ind_i|outd_i =>
                     f.cw.addr_op := none;
                     f.cw.rf_addr := regB;

@@ -54,9 +54,8 @@ architecture arch of comp is
         gmem_x : out std_logic_vector(5 downto 0);
         gmem_y : out std_logic_vector(4 downto 0);
         gmem_rst, gmem_rd, gmem_wl : out std_logic;
-        status_rd, data_rd : in std_logic;
-        status_wr, data_wr : in std_logic;
-        status_in, data_in : in std_logic_vector(7 downto 0);
+        ctrl : in port_t;
+        data_in : in port_t;
         status_out, data_out : out std_logic_vector(7 downto 0));
     end component;
 
@@ -174,9 +173,7 @@ begin
     lcd : lcd_ctrl port map(clk_z80, rst,
         gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd,
         gmem_rst, gmem_rd, gmem_wl,
-        io_ports.p10_lcd_status.rd, io_ports.p11_lcd_data.rd,
-        io_ports.p10_lcd_status.wr, io_ports.p11_lcd_data.wr,
-        io_ports.p10_lcd_status.data, io_ports.p11_lcd_data.data,
+        io_ports.p10_lcd_status, io_ports.p11_lcd_data,
         io_data.p10_lcd_status, io_data.p11_lcd_data);
     gmem : pict_mem port map(clk, clk_z80, gmem_rst, gmem_rd, gmem_wl,
                              lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,

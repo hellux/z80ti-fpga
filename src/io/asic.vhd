@@ -102,13 +102,14 @@ begin
     cbi.busrq <= '0';
 
     -- connect port write signals from array to ports
+    ports_out.p01_kbd <= parr_out(16#01#);
     ports_out.p10_lcd_status <= parr_out(16#10#);
     ports_out.p11_lcd_data <= parr_out(16#11#);
 
     -- connect port read data to array
     darr_in <= (
         16#00# => x"00",               -- lines
-        16#01# => x"00",               -- TODO keypad read keys
+        16#01# => ports_in.p01_kbd,
         16#02# => x"e1",               -- battery level
         16#03# => p03_intmask,
         16#04# => x"00",               -- TODO interrupt trigger device
@@ -154,7 +155,7 @@ begin
         16#2d# => x"00",               -- TODO crystal control
         16#2e# => x"00",               -- TODO mem access delay
         16#2f# => x"00",               -- TODO lcd wait delay
-        16#30# => x"00",               -- TODO timer 0 freq
+        16#30# => x"00",               -- TODO timer 0 fre
         16#31# => x"00",               -- TODO timer 0 status
         16#32# => x"00",               -- TODO timer 0 value
         16#33# => x"00",               -- TODO timer 1 freq
