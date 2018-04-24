@@ -27,13 +27,14 @@ architecture arch of key_fb is
         clk : in std_logic;
         value : in std_logic_vector(15 downto 0);
         dp_num : in unsigned(3 downto 0);
-        seg, led : out std_logic_vector(7 downto 0);
+        seg : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
 
         
     signal data   : std_logic_vector(7 downto 0);
     signal we     : std_logic;
+
     signal seg_value : std_logic_vector(15 downto 0);
     signal keys_down : keys_down_t;
 begin
@@ -43,12 +44,13 @@ begin
     led <= keys_down(1);
      
     smt : segment port map(clk, seg_value, x"0", seg, an);
-      
-    process(clk) begin
-        if rising_edge(clk) then
-            seg_value <= x"00" & data;
+    process(clk) begin 
+        if rising_edge(clk) then             
+            seg_value <= x"00" & data;         
+  
+      end if;   
+    end process;
 
-        end if;
-    end process;   
-    
 end arch;
+
+

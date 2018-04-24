@@ -109,23 +109,23 @@ begin
   -- *                                 *
   -- ***********************************
       process(clk)
-        variable grp : integer range 0 to 6;
-        variable key : integer range 0 to 7;
+        --variable grp : integer range 0 to 6;
+        --variable key : integer range 0 to 7;
       begin
-        grp := to_integer(unsigned(keycode(7 downto 4)));
-        key := to_integer(unsigned(keycode(3 downto 0)));
+        --grp := to_integer(unsigned(keycode(7 downto 4)));
+        --key := to_integer(unsigned(keycode(3 downto 0)));
         if rising_edge(clk) then
           if rst='1' then
             ps2_state <= idle;
           elsif ps2_state = idle then 
             if ps2bitcounter = 11 and scancode /= X"F0" then
                 ps2_state <= make;
-                keys_down(grp)(key) <= '0'; -- declare key pressed down
+                --keys_down(grp)(key) <= '0'; -- declare key pressed down
             elsif ps2bitcounter = 11 and scancode = X"F0" then 
                 ps2_state <= break;
             end if;
           elsif ps2_state = make then
-            keys_down(grp)(key) <= '1';
+            --keys_down(grp)(key) <= '1';
             ps2_state <= idle;
           elsif ps2_state = break then
             if ps2bitcounter = 11 then 
@@ -169,6 +169,6 @@ begin
         '1';
   
   -- set as keycode
-  data <= keycode;
+  data <= scancode;
 
 end behavioral;
