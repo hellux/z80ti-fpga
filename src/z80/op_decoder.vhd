@@ -1784,6 +1784,19 @@ architecture arch of op_decoder is
         return f;
     end halt;
 
+    function si(state : state_t; f_in : id_frame_t;
+                iff : std_logic)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.t is
+        when t4 => 
+            f.cw.iff_next := iff;
+            f.ct.cycle_end := '1';
+            f.ct.instr_end := '1';
+        when others => null; end case;
+        return f;
+    end si;
+
     function im0(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -1947,6 +1960,7 @@ begin
                  alu_bs => 0,
                  addr_op => inc,
                  pv_src => alu_f,
+                 iff_next => state.iff,
                  others => '0');
 
         if state.mode = int then
@@ -2064,8 +2078,8 @@ begin
                     when 3 => f := in_a_n(state, f);
                     when 4 => f := ex_spx_rp(state, f, regHL);
                     when 5 => f := ex(state, f, dehl);
-                    when 6 => f := unimp(state, f); -- TODO DI
-                    when 7 => f := unimp(state, f); -- TODO EI
+                    when 6 => f := si(state, f, '0');
+                    when 7 => f := si(state, f, '1');
                     end case;
                 when 4 => f := call_cc_nn(state, f, s.y);
                 when 5 =>

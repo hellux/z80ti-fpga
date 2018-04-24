@@ -35,6 +35,7 @@ package z80_comm is
         mode : id_mode_t;
         prefix : id_prefix_t;
         im : integer range 0 to 2;
+        iff : std_logic;
         cc : cond_t;
         m : integer range 1 to 6;
         t : integer range 1 to 6;
@@ -79,6 +80,7 @@ package z80_comm is
         pc_rd : std_logic;               -- add_in -> pc
         addr_op : addr_op_t;             -- op for addr_in
         rst_addr : std_logic_vector(2 downto 0); -- addr for RST instr
+        iff_next : std_logic;            -- next value for iff
         -- alu
         alu_op : instr_t;                -- op for alu
         alu_bs : integer range 0 to 7;   -- bit select for alu
