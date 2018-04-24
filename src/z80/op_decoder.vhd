@@ -748,29 +748,74 @@ architecture arch of op_decoder is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 =>
-            f := mem_rd(state, f);
+            case op is
+            when ldi_i|cpi_i|ldd_i|cpd_i|outi_i|outd_i =>
+                f := mem_rd(state, f);
+            when ini_i|ind_i =>
+                f := io_rd(state, f);
+            when others => null; end case;
+            
             case state.t is
             when t1 =>
-                -- Load (HL) to Z 
-                f.cw.rf_addr := regHL;
-                f.cw.abus_src := rf_o;
+
+                case op is
+                when ldi_i|ldd_i|cpi_i|cpd_i|outi_i|outd_i => 
+                    -- Load (HL)
+                    f.cw.rf_addr := regHL;
+                    f.cw.abus_src := rf_o;
+                when ini_i|ind_i =>
+                    f.cw.rf_addr := regBC;
+                    f.cw.abus_src := rf_o;
+                when others => null; end case;
             when t3 =>
-                f.cw.rf_addr := regZ;
-                f.cw.rf_rdd := '1';
+                case op is
+                when ldi_i|ldd_i|ini_i|ind_i|outi_i|outd_i => 
+                    f.cw.rf_addr := regZ;
+                    f.cw.rf_rdd := '1';
+                when cpi_i|cpd_i => 
+                    f.cw.tmp_rd := '1';
+                    f.cw.act_rd := '1';
+                when others => null; end case;
+                     
+                
             when t4 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            f := mem_wr(state, f);
+        
+            case op is
+            when ldi_i|cpi_i|ldd_i|cpd_i|ini_i|ind_i =>
+                f := mem_wr(state, f);
+            when outi_i|outd_i =>
+                f := io_wr(state, f);
+            when others => null; end case;
+            
             case state.t is
             when t1 =>
-                -- Store Z to (DE)
-                f.cw.rf_addr := regDE;
-                f.cw.abus_src := rf_o;
+                
+                case op is
+                when ldi_i|ldd_i => 
+                    -- Store Z to (DE)
+                    f.cw.rf_addr := regDE;
+                    f.cw.abus_src := rf_o;
+                when cpi_i|cpd_i =>
+                    f.cw.alu_op := cp_i;
+                    f.cw.dbus_src := alu_o;
+                    f.cw.f_rd := '1';
+                when ini_i|ind_i =>
+                    f.cw.rf_addr := regHL;
+                    f.cw.abus_src := rf_o;
+                when outi_i|outd_i => 
+                    f.cw.rf_addr := regBC;
+                    f.cw.abus_src := rf_o;
+                when others => null; end case;
             when t2 =>
-                f.cw.rf_addr := regZ;
-                f.cw.dbus_src := rf_o;
-                f.cw.data_rdo := '1';
+                case op is
+                when ldi_i|ldd_i|ini_i|ind_i|outi_i|outd_i => 
+                    f.cw.rf_addr := regZ;
+                    f.cw.dbus_src := rf_o;
+                    f.cw.data_rdo := '1';    
+                when others => null; end case;
             when t3 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
@@ -780,20 +825,56 @@ architecture arch of op_decoder is
                 -- inc HL
                 f.cw.rf_addr := regHL;
                 f.cw.abus_src := rf_o;
-                f.cw.addr_op := inc;
+                
+                case op is
+                when ldi_i|cpi_i|ini_i|outi_i =>
+                    f.cw.addr_op := inc;
+                when ldd_i|cpd_i|ind_i|outd_i =>
+                    f.cw.addr_op := dec;
+                when others => f.cw.addr_op := none; end case;
+                
+                f.cw.pv_src := az_f;
                 f.cw.rf_rda := '1';
             when t2 =>
                 -- inc DE
                 f.cw.rf_addr := regDE;
                 f.cw.abus_src := rf_o;
-                f.cw.addr_op := inc;
+                
+                case op is
+                when ldi_i =>
+                    f.cw.addr_op := inc;
+                when ldd_i =>
+                    f.cw.addr_op := dec;
+                when others => f.cw.addr_op := none; end case;
+                
+                f.cw.pv_src := az_f;
                 f.cw.rf_rda := '1';
             when t3 =>
                 -- dec BC
                 f.cw.rf_addr := regBC;
                 f.cw.abus_src := rf_o;
-                f.cw.addr_op := dec;
+                
+                case op is
+                when ldi_i|cpi_i|ldd_i|cpd_i =>
+                    f.cw.addr_op := dec;
+                    f.cw.pv_src := az_f;
+                when ini_i|outi_i|ind_i|outd_i =>
+                    f.cw.addr_op := none;
+                    f.cw.rf_addr := regB;
+                    f.cw.dbus_src := rf_o;
+                    f.cw.tmp_rd := '1';
+                when others => f.cw.addr_op := none; end case;
+                
                 f.cw.rf_rda := '1';
+            when t4 =>
+                case op is
+                when ini_i|outi_i|ind_i|outd_i =>
+                    f.cw.alu_op := dec_i;
+                    f.cw.dbus_src := alu_o;
+                    f.cw.rf_addr := regB;
+                    f.cw.rf_rdd := '1';
+                    f.cw.f_rd := '1';
+                when others => null; end case; 
             when t5 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
@@ -802,6 +883,12 @@ architecture arch of op_decoder is
         return f;
     end bli_op;
 -------------------------------------------------------------------------
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+
 
     function ld_a_i_r(state : state_t; f_in : id_frame_t;
                       src : dbus_src_t)
