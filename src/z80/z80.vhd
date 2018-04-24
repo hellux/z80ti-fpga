@@ -16,6 +16,13 @@ entity z80 is port(
 end z80;
 
 architecture arch of z80 is
+    component ff generic(size : integer); port(
+        clk, rst : in std_logic;
+        rd : in std_logic;
+        di : in std_logic;
+        do : out std_logic);
+    end component;
+
     component reg generic(size : integer); port(
         clk, rst : in std_logic;
         rd : in std_logic;
@@ -64,6 +71,7 @@ architecture arch of z80 is
         clk : in std_logic;
         cbi : in ctrlbus_in;
         flags : in std_logic_vector(7 downto 0);
+        iff : in std_logic;
         ctrl : in id_ctrl_t;
         state_out : out state_t);
     end component;
@@ -99,7 +107,7 @@ begin
     ir : reg generic map(8)
              port map(clk, cbi.reset, cw.ir_rd, dbus, ir_out);
     id : op_decoder port map(state, ir_out, ctrl, cbo, cw);
-    sm : state_machine port map(clk, cbi, fi_out, ctrl, state);
+    sm : state_machine port map(clk, cbi, fi_out, iff, ctrl, state);
 
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset,
@@ -135,7 +143,8 @@ begin
     tmp : reg generic map(8)
               port map(clk, cbi.reset, cw.tmp_rd, dbus, tmp_out);
     fi : reg generic map(8) -- flags internal
-                port map(clk, cbi.reset, fi_rd, flags, fi_out);
+             port map(clk, cbi.reset, fi_rd, flags, fi_out);
+    iff_r : ff port map(clk, cbi.reset, '1', cw.iff_next, iff);
     fi_rd <= cw.fi_rd or cw.f_rd;
     flags(7 downto PV_f+1) <= f_alu_out(7 downto PV_f+1);
     flags(PV_f) <= f_pv;
@@ -143,7 +152,7 @@ begin
     with cw.pv_src select
         f_pv <= f_alu_out(PV_f) when alu_f,
                 iff             when iff_f,
-                addr_zero       when az_f;
+                not addr_zero   when anz_f;
 
     -- -- BUSES -- --
     -- mux bus input

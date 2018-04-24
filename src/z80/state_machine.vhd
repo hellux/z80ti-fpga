@@ -7,6 +7,7 @@ entity state_machine is port(
     clk : in std_logic;
     cbi : in ctrlbus_in;
     flags : in std_logic_vector(7 downto 0);
+    iff : in std_logic;
     ctrl : in id_ctrl_t;
     state_out : out state_t);
 end state_machine;
@@ -52,6 +53,8 @@ begin
     state.cc(PE_c) <= flags(PV_f) = '1';
     state.cc(P_c)  <= flags(S_f) = '0';
     state.cc(M_c)  <= flags(S_f) = '1';
+
+    state.iff <= iff;
 
     state_out <= state;
 end arch;

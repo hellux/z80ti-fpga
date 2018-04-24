@@ -35,6 +35,7 @@ package z80_comm is
         mode : id_mode_t;
         prefix : id_prefix_t;
         im : integer range 0 to 2;
+        iff : std_logic;
         cc : cond_t;
         m : integer range 1 to 6;
         t : integer range 1 to 6;
@@ -61,7 +62,7 @@ package z80_comm is
                         ext_o, rf_o, tmp_o, alu_o,
                         i_o, r_o);
     type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o, rst_o);
-    type pv_src_t is (alu_f, iff_f, az_f);
+    type pv_src_t is (alu_f, iff_f, anz_f);
 
     type ctrlword is record 
         -- buses / registers
@@ -72,7 +73,6 @@ package z80_comm is
         rf_swp : rf_swap_t;              -- swap regs in regfile
         f_rd : std_logic;                -- alu -> F
         fi_rd : std_logic;               -- alu -> internal flags
-        f_iff2 : std_logic;              -- TODO use iff2 as pv
         pv_src : pv_src_t;               -- signal to use for pv flag
         i_rd, r_rd : std_logic;          -- dbus -> I, dbus -> R
         ir_rd : std_logic;               -- dbus -> IR
@@ -80,6 +80,7 @@ package z80_comm is
         pc_rd : std_logic;               -- add_in -> pc
         addr_op : addr_op_t;             -- op for addr_in
         rst_addr : std_logic_vector(2 downto 0); -- addr for RST instr
+        iff_next : std_logic;            -- next value for iff
         -- alu
         alu_op : instr_t;                -- op for alu
         alu_bs : integer range 0 to 7;   -- bit select for alu
