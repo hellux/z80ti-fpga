@@ -143,7 +143,7 @@ begin
     with cw.pv_src select
         f_pv <= f_alu_out(PV_f) when alu_f,
                 iff             when iff_f,
-                addr_zero       when az_f;
+                not addr_zero   when anz_f;
 
     -- -- BUSES -- --
     -- mux bus input

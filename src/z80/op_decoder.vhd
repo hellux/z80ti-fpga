@@ -822,7 +822,7 @@ architecture arch of op_decoder is
             when t1 =>
                 f.cw.alu_op := ld_i;
                 f.cw.f_rd := '1';
-                f.cw.f_iff2 := '1'; -- use iff2 as pv
+                f.cw.pv_src := iff_f; -- use iff2 as pv
             when t5 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
