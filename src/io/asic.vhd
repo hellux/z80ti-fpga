@@ -33,9 +33,9 @@ architecture arch of asic is
     signal mem_mode : std_logic; -- memory mode 0 or 1
     signal hwt_freq : std_logic_vector(1 downto 0);
     signal int_on_key : std_logic; -- on key will trigger interrupt
-    signal int_hwt0, int_hwt1 : std_logic; -- hardware timers will trigger
+    signal int_hwt1, int_hwt2 : std_logic; -- hardware timers will trigger
     signal int_dev : int_dev_t; -- interrupt device
-    signal cry0_exp, cry1_exp, cry2_exp : std_logic; -- crystal timer expired
+    signal cry_exp : std_logic_vector(1 to 3); -- crystal timer expired
 
     -- internal asic ports
     signal p03_intmask : std_logic_vector(7 downto 0);
@@ -48,19 +48,19 @@ begin
 
     -- internal ports read signals
     p03_intmask <= int_on_key &
-                   int_hwt0 &
                    int_hwt1 &
+                   int_hwt2 &
                    "-" &
                    '0' & -- linkport will gen interrupt (never)
                    "---";
     p04_mmap_int <= bool_sl(int_dev = on_key) &
-                    bool_sl(int_dev = hwt0) &
                     bool_sl(int_dev = hwt1) &
+                    bool_sl(int_dev = hwt2) &
                     '-' &
                     '0' & -- link caused int
-                    cry0_exp &
-                    cry1_exp &
-                    cry2_exp;
+                    cry_exp(1) &
+                    cry_exp(2) &
+                    cry_exp(3);
 
     -- internal ports write ctrl
     p03 : process(clk)
@@ -69,8 +69,8 @@ begin
         p := parr_out(16#03#);
         if rising_edge(clk) and p.wr = '1' then
             int_on_key <= p.data(0);
-            int_hwt0 <= p.data(1);
-            int_hwt1 <= p.data(2);
+            int_hwt1 <= p.data(1);
+            int_hwt2 <= p.data(2);
         end if;
     end process;
     p04 : process(clk)
@@ -155,15 +155,15 @@ begin
         16#2d# => x"00",               -- TODO crystal control
         16#2e# => x"00",               -- TODO mem access delay
         16#2f# => x"00",               -- TODO lcd wait delay
-        16#30# => x"00",               -- TODO timer 0 fre
-        16#31# => x"00",               -- TODO timer 0 status
-        16#32# => x"00",               -- TODO timer 0 value
-        16#33# => x"00",               -- TODO timer 1 freq
-        16#34# => x"00",               -- TODO timer 1 status
-        16#35# => x"00",               -- TODO timer 1 value
-        16#36# => x"00",               -- TODO timer 2 freq
-        16#37# => x"00",               -- TODO timer 2 status
-        16#38# => x"00",               -- TODO timer 2 value
+        16#30# => x"00",               -- TODO timer 1 freq
+        16#31# => x"00",               -- TODO timer 1 status
+        16#32# => x"00",               -- TODO timer 1 value
+        16#33# => x"00",               -- TODO timer 2 freq
+        16#34# => x"00",               -- TODO timer 2 status
+        16#35# => x"00",               -- TODO timer 2 value
+        16#36# => x"00",               -- TODO timer 3 freq
+        16#37# => x"00",               -- TODO timer 3 status
+        16#38# => x"00",               -- TODO timer 3 value
         16#39# => x"f0",               -- GPIO conf
         16#40# => x"00",               -- TODO clock mode
         16#41# => x"00",               -- TODO clock input
