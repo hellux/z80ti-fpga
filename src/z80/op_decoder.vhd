@@ -789,7 +789,6 @@ architecture arch of op_decoder is
             
             case state.t is
             when t1 =>
-                
                 case op is
                 when ldi_i|ldd_i => 
                     -- Store Z to (DE)
@@ -827,7 +826,9 @@ architecture arch of op_decoder is
                     f.cw.addr_op := inc;
                 when ldd_i|cpd_i|ind_i|outd_i =>
                     f.cw.addr_op := dec;
-                when others => f.cw.addr_op := none; end case;
+                when others =>
+                    f.cw.addr_op := none;
+                end case;
                 f.cw.pv_src := anz_f;
                 f.cw.rf_rda := '1';
             when t2 =>
@@ -839,7 +840,9 @@ architecture arch of op_decoder is
                     f.cw.addr_op := inc;
                 when ldd_i =>
                     f.cw.addr_op := dec;
-                when others => f.cw.addr_op := none; end case;
+                when others =>
+                    f.cw.addr_op := none;
+                end case;
                 f.cw.pv_src := anz_f;
                 f.cw.rf_rda := '1';
             when t3 =>
@@ -856,12 +859,12 @@ architecture arch of op_decoder is
                     f.cw.rf_addr := regB;
                     f.cw.dbus_src := rf_o;
                     f.cw.tmp_rd := '1';
-                when others => f.cw.addr_op := none; end case;
-                
+                when others =>
+                    f.cw.addr_op := none;
+                end case;
                 f.cw.rf_rda := '1';
             when t4 =>
-                case op is
-                -- dec B
+                case op is -- dec B
                 when ini_i|outi_i|ind_i|outd_i =>
                     f.cw.alu_op := dec_i;
                     f.cw.dbus_src := alu_o;
@@ -880,19 +883,19 @@ architecture arch of op_decoder is
                         f.ct.instr_end := '1';
                     end if;
                 --when inir_i|inid_i|outi_i|outd_i => 
-                           
                 when others => null; end case;
                 f.ct.cycle_end := '1';
+            when others => null; end case;
         when m5 =>
             case state.t is
             when t1 =>
-                f.cw.rf_addr := regPC;
+                --f.cw.rf_addr := regPC; FIXME pc är inget reg
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
                 f.cw.pv_src := anz_f;
                 f.cw.rf_rda := '1';
             when t2 =>
-                f.cw.rf_addr := regPC;
+                --f.cw.rf_addr := regPC; FIXME
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
                 f.cw.pv_src := anz_f;
