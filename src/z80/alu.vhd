@@ -132,19 +132,37 @@ begin
         half_sub when '1',
         '-'      when others;
 
-    with op select flags_out(C_f) <=
-    '0'                 when and_i|or_i|xor_i,
-    result_sum(8)       when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|daa_i,
-    op2(7)              when rlc_i|rl_i|sla_i|sll_i,
-    op2(0)              when rrc_i|rr_i|sra_i|srl_i,
-    '1'                 when scf_i,
-    not flags_in(C_f)   when ccf_i,
-    flags_in(C_f)       when others;
+    with op select flags_out(S_f) <= 
+        flags_in(S_f) when scf_i|ccf_i|cpl_i|res_i|set_i|
+                           ldi_i|ldir_i|ldd_i|lddr_i,
+        result_buf(7) when cpi_i|cpir_i|cpd_i|cpdr_i,
+        result_buf(7) when others;
 
-    with op select flags_out(N_f) <=
-        '1'             when sub_i|sbc_i|cp_i|neg_i|cpl_i,
-        flags_in(N_f)   when daa_i|res_i|set_i,
-        '0'             when others;
+    with op select flags_out(Z_f) <=
+        not result_buf(bit_select)        when bit_i,
+        flags_in(Z_f)                     when scf_i|ccf_i|cpl_i|res_i|set_i|
+                                               ldi_i|ldir_i|ldd_i|lddr_i,
+        bool_sl(unsigned(result_buf) = 0) when cpi_i|cpir_i|cpd_i|cpdr_i,
+        bool_sl(unsigned(result_buf) = 0) when others;
+
+    flags_out(f5_f) <= result_buf(5);
+
+    with op select flags_out(H_f) <=
+        half_add        when add_i|adc_i|inc_i|dec_i,
+        half_sub        when sub_i|sbc_i|cp_i|neg_i|
+                             cpi_i|cpir_i|cpd_i|cpdr_i,
+        half_daa        when daa_i,
+        flags_in(C_f)   when ccf_i,
+        '0'             when scf_i|xor_i|or_i|
+                             rlc_i|rl_i|sla_i|sll_i|
+                             rrc_i|rr_i|sra_i|srl_i|
+                             in_i|rld2_i|rrd2_i|ld_i|
+                             ldi_i|ldir_i|ldd_i|lddr_i,
+        '1'             when and_i|bit_i|cpl_i,
+        flags_in(H_f)   when res_i|set_i,
+        '-'             when others;
+
+    flags_out(f3_f) <= result_buf(3);
 
     with op select flags_out(PV_f) <=
         overflow        when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i,
@@ -155,29 +173,22 @@ begin
                              daa_i|in_i|rld2_i|rrd2_i,
         flags_in(PV_f)  when others;
 
-    flags_out(f3_f) <= result_buf(3);
+    with op select flags_out(N_f) <=
+        '1'             when sub_i|sbc_i|cp_i|neg_i|cpl_i|
+                             cpi_i|cpir_i|cpd_i|cpdr_i,
+        flags_in(N_f)   when daa_i|res_i|set_i,
+        '0'             when ldi_i|ldir_i|ldd_i|lddr_i,
+        '0'             when others;
 
-    with op select flags_out(H_f) <=
-        half_add        when add_i|adc_i|inc_i|dec_i,
-        half_sub        when sub_i|sbc_i|cp_i|neg_i,
-        half_daa        when daa_i,
-        flags_in(C_f)   when ccf_i,
-        '0'             when scf_i|xor_i|or_i|
-                             rlc_i|rl_i|sla_i|sll_i|
-                             rrc_i|rr_i|sra_i|srl_i|
-                             in_i|rld2_i|rrd2_i|ld_i,
-        '1'             when and_i|bit_i|cpl_i,
-        flags_in(H_f)   when res_i|set_i,
-        '-'             when others;
+    with op select flags_out(C_f) <=
+    '0'                 when and_i|or_i|xor_i,
+    result_sum(8)       when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|daa_i,
+    op2(7)              when rlc_i|rl_i|sla_i|sll_i,
+    op2(0)              when rrc_i|rr_i|sra_i|srl_i,
+    '1'                 when scf_i,
+    not flags_in(C_f)   when ccf_i,
+    flags_in(C_f)       when ldi_i|ldir_i|ldd_i|
+                             cpi_i|cpir_i|cpd_i|cpdr_i,
+    flags_in(C_f)       when others;
 
-    flags_out(f5_f) <= result_buf(5);
-
-    with op select flags_out(Z_f) <=
-        not result_buf(bit_select)        when bit_i,
-        flags_in(Z_f)                     when scf_i|ccf_i|cpl_i|res_i|set_i,
-        bool_sl(unsigned(result_buf) = 0) when others;
-
-    with op select flags_out(S_f) <= 
-        flags_in(S_f) when scf_i|ccf_i|cpl_i|res_i|set_i,
-        result_buf(7) when others;
 end arch;
