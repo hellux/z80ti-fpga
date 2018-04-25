@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
+use work.util.all;
 
 -- TODO
 --  * rest of instructions
@@ -23,16 +24,8 @@ architecture arch of alu is
     -- calculation
     signal with_carry, daa_v : signed(8 downto 0);
     signal result_sum : signed(8 downto 0);
-    signal result_xor, result_and, result_or : signed(8 downto 0);
-    signal calc_result : signed(8 downto 0);
-    signal result_buf : signed(7 downto 0);
+    signal result_buf : std_logic_vector(7 downto 0);
     
-    --rld | rrd
-    signal rld1_hl : std_logic_vector(7 downto 0);
-    signal rld2_a : std_logic_vector(7 downto 0);
-    signal rrd1_hl : std_logic_vector(7 downto 0);
-    signal rrd2_a : std_logic_vector(7 downto 0);
-
     -- flags
     signal half_add, half_sub, half_daa : std_logic;
     signal overflow, overflow_neg, parity : std_logic;
@@ -95,32 +88,25 @@ begin
         to_signed(1, 9)
             when flags_in(C_f) = '1' and (op = adc_i or op = sbc_i) else
         to_signed(0, 9);
-    result_and <= op1_ext and op2_ext;
-    result_xor <= op1_ext xor op2_ext;
-    result_or  <= op1_ext or  op2_ext;
     result_sum <= op1_ext + op2sn;
     
-    -- rld,rrd 
-    rld1_hl <= op2(3 downto 0) & op1(3 downto 0); 
-    rld2_a  <= op1(7 downto 4) & op2(7 downto 4);
-    rrd1_hl <= op1(3 downto 0) & op2(7 downto 4);
-    rrd2_a  <= op1(7 downto 4) & op2(7 downto 4);
-    with op select calc_result <=
-        result_sum when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i|neg_i|daa_i,
-        result_and when and_i,
-        result_xor when xor_i,
-        result_or  when or_i,
-        op2sn      when others;
     with op select result_buf <=
-        signed(rld1_hl)                    when rld1_i,
-        signed(rld2_a)                     when rld2_i,
-        signed(rrd1_hl)                    when rrd1_i,
-        signed(rrd2_a)                     when rrd2_i,
-        calc_result(7 downto 0)            when others;
+        op2(3 downto 0) & op1(3 downto 0)        when rld1_i,
+        op1(7 downto 4) & op2(7 downto 4)        when rld2_i,
+        op1(3 downto 0) & op2(7 downto 4)        when rrd1_i,
+        op1(7 downto 4) & op2(7 downto 4)        when rrd2_i,
+        op1 and op2                              when and_i,
+        op1 xor op2                              when xor_i,
+        op1 or  op2                              when or_i,
+        std_logic_vector(result_sum(7 downto 0)) when add_i|adc_i|
+                                                      sub_i|sbc_i|
+                                                      inc_i|dec_i|
+                                                      neg_i|cp_i|daa_i,
+        std_logic_vector(op2sn(7 downto 0))      when others;
     with op select result <=
-        not(op2)                           when cpl_i,
-        op1                                when cp_i,
-        std_logic_vector(result_buf)       when others;
+        not(op2)   when cpl_i,
+        op1        when cp_i,
+        result_buf when others;
 
     -- flags
     calc_parity : process(result_buf)
@@ -133,9 +119,9 @@ begin
         parity <= not p;
     end process;
     with op select overflow <=
-        (op1_ext(7) xnor op2_ext(7)) and (op1_ext(7) xor calc_result(7))
+        (op1_ext(7) xnor op2_ext(7)) and (op1_ext(7) xor result_sum(7))
             when add_i|adc_i|inc_i|dec_i,
-        (op1_ext(7) xor op2_ext(7)) and (op1_ext(7) xor calc_result(7))
+        (op1_ext(7) xor op2_ext(7)) and (op1_ext(7) xor result_sum(7))
             when sub_i|sbc_i|cp_i,
         '-' when others;
     overflow_neg <= '1' when op2 = x"80" else '0';
@@ -146,52 +132,63 @@ begin
         half_sub when '1',
         '-'      when others;
 
-    with op select flags_out(C_f) <=
-    '0'                 when and_i|or_i|xor_i,
-    calc_result(8)      when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|daa_i,
-    op2(7)              when rlc_i|rl_i|sla_i|sll_i,
-    op2(0)              when rrc_i|rr_i|sra_i|srl_i,
-    '1'                 when scf_i,
-    not flags_in(C_f)   when ccf_i,
-    flags_in(C_f)       when others;
+    with op select flags_out(S_f) <= 
+        flags_in(S_f) when scf_i|ccf_i|cpl_i|res_i|set_i|
+                           ldi_i|ldir_i|ldd_i|lddr_i,
+        result_buf(7) when cpi_i|cpir_i|cpd_i|cpdr_i,
+        result_buf(7) when others;
 
-    with op select flags_out(N_f) <=
-        '1'             when sub_i|sbc_i|cp_i|neg_i|cpl_i,
-        flags_in(N_f)   when daa_i|res_i,
-        '0'             when others;
+    with op select flags_out(Z_f) <=
+        not result_buf(bit_select)        when bit_i,
+        flags_in(Z_f)                     when scf_i|ccf_i|cpl_i|res_i|set_i|
+                                               ldi_i|ldir_i|ldd_i|lddr_i,
+        bool_sl(unsigned(result_buf) = 0) when cpi_i|cpir_i|cpd_i|cpdr_i,
+        bool_sl(unsigned(result_buf) = 0) when others;
 
-    with op select flags_out(PV_f) <=
-        overflow        when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i,
-        overflow_neg    when neg_i,
-        parity          when and_i|or_i|xor_i|bit_i|res_i|set_i|
-                             rlc_i|rl_i|sla_i|sll_i|
-                             rrc_i|rr_i|sra_i|srl_i|
-                             daa_i|in_i|rld2_i|rrd2_i,
-        flags_in(PV_f)  when others;
-
-    flags_out(f3_f) <= result_buf(3);
+    flags_out(f5_f) <= result_buf(5);
 
     with op select flags_out(H_f) <=
         half_add        when add_i|adc_i|inc_i|dec_i,
-        half_sub        when sub_i|sbc_i|cp_i|neg_i,
+        half_sub        when sub_i|sbc_i|cp_i|neg_i|
+                             cpi_i|cpir_i|cpd_i|cpdr_i,
         half_daa        when daa_i,
         flags_in(C_f)   when ccf_i,
         '0'             when scf_i|xor_i|or_i|
                              rlc_i|rl_i|sla_i|sll_i|
                              rrc_i|rr_i|sra_i|srl_i|
-                             in_i|rld2_i|rrd2_i,
+                             in_i|rld2_i|rrd2_i|ld_i|
+                             ldi_i|ldir_i|ldd_i|lddr_i,
         '1'             when and_i|bit_i|cpl_i,
-        flags_in(H_f)   when res_i,
+        flags_in(H_f)   when res_i|set_i,
         '-'             when others;
 
-    flags_out(f5_f) <= result_buf(5);
+    flags_out(f3_f) <= result_buf(3);
 
-    with op select flags_out(Z_f) <=
-        not result_buf(bit_select)  when bit_i,
-        flags_in(Z_f)               when scf_i|ccf_i|cpl_i|res_i,
-        bool_sl(result_buf = 0)     when others;
+    with op select flags_out(PV_f) <=
+        overflow        when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i,
+        overflow_neg    when neg_i,
+        parity          when and_i|or_i|xor_i|bit_i|res_i|
+                             rlc_i|rl_i|sla_i|sll_i|
+                             rrc_i|rr_i|sra_i|srl_i|
+                             daa_i|in_i|rld2_i|rrd2_i,
+        flags_in(PV_f)  when others;
 
-    with op select flags_out(S_f) <= 
-        flags_in(S_f) when scf_i|ccf_i|cpl_i|res_i,
-        result_buf(7) when others;
+    with op select flags_out(N_f) <=
+        '1'             when sub_i|sbc_i|cp_i|neg_i|cpl_i|
+                             cpi_i|cpir_i|cpd_i|cpdr_i,
+        flags_in(N_f)   when daa_i|res_i|set_i,
+        '0'             when ldi_i|ldir_i|ldd_i|lddr_i,
+        '0'             when others;
+
+    with op select flags_out(C_f) <=
+    '0'                 when and_i|or_i|xor_i,
+    result_sum(8)       when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|daa_i,
+    op2(7)              when rlc_i|rl_i|sla_i|sll_i,
+    op2(0)              when rrc_i|rr_i|sra_i|srl_i,
+    '1'                 when scf_i,
+    not flags_in(C_f)   when ccf_i,
+    flags_in(C_f)       when ldi_i|ldir_i|ldd_i|
+                             cpi_i|cpir_i|cpd_i|cpdr_i,
+    flags_in(C_f)       when others;
+
 end arch;

@@ -11,6 +11,7 @@ Options:
     -u SRC_LIST             unit, name of file with list of src files in
                             build/srclists, all .vhd files in below tree will
                             be used if -f not specified
+    -z Z80 ASM FILE         compile and run z80 asm file
     -a                      abort simulation on assertion error
     -t TIME                 simulation time
     -w FILENAME             name of generated wave file -- default: wave.ghw
@@ -30,13 +31,16 @@ analyze=false       # analyze src files
 make=false          # make executable
 sim=false           # run simulation
 clean=false         # remove executable
+asm=false;          # assemble z80 obj
 
 src=$(find . -name '*.vhd')
+asm_src=""
 entity=""
-args=""
+args="--ieee-asserts=disable"
 wave="wave.ghw"
+args_ghdl="--workdir=build --ieee=synopsys"
 
-while getopts hAM:S:Cf:u:at:w: OPT; do
+while getopts hAM:S:Cf:z:u:at:w: OPT; do
     case $OPT in
         h) quit=true ;;
         A) analyze=true ;;
@@ -44,6 +48,7 @@ while getopts hAM:S:Cf:u:at:w: OPT; do
         S) analyze=true; make=true; sim=true entity=$OPTARG ;;
         C) clean=true ;;
         f) src=$OPTARG ;;
+        z) asm=true; asm_src=$OPTARG ;;
         u) 
             src=$(cat build/srclists/$OPTARG);
             if [ -z "$src" ]; then
@@ -62,11 +67,18 @@ if [ "$quit" = true ]; then
     exit 1
 fi
 
+if [ "$asm" = true ]; then
+    z80asm $asm_src --list
+    if [ $? != '0' ]; then
+        exit 1
+    fi
+fi
+
 if [ "$analyze" = true ]; then
-    ghdl -a --ieee=synopsys $src        # analyze designs
+    ghdl -a $args_ghdl $src # analyze designs
     if [ "$make" = true -a $? = '0' ]; then
-        ghdl -i $src    # import designs
-        ghdl -m $entity # make executable
+        ghdl -i $args_ghdl $src    # import designs
+        ghdl -m $args_ghdl $entity # make executable
 
         if [ "$sim" = true -a $? = '0' ]; then
             ./$entity $args --wave=$wave
@@ -79,3 +91,4 @@ if [ "$clean" = true ]; then
 fi
 
 rm -f *.o *.cf
+ghdl --clean --workdir=build

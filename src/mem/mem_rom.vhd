@@ -20,16 +20,14 @@ architecture arch of mem_rom is
         file file_p : charfile;
         variable word : character;
         variable mem : mem_t;
-        variable i : integer range mem_t'range;
         use ieee.numeric_std.all;
     begin
         mem := (others => x"00");
-        i := 0;
         file_open(file_p, filename, READ_MODE);
-        while not endfile(file_p) loop
+        for i in mem_t'range loop
+            if endfile(file_p) then exit; end if;
             read(file_p, word);
             mem(i) := std_logic_vector(to_unsigned(character'pos(word), 8));
-            i := i + 1;
         end loop;
         file_close(file_p);
         return mem;

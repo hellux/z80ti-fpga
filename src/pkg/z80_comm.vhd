@@ -2,7 +2,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 package z80_comm is
-    function bool_sl(b : boolean) return std_logic;
     type instr_t is (unknown, 
                      add_i, adc_i, sub_i, sbc_i, cp_i, inc_i, dec_i, neg_i,
                      and_i, or_i, xor_i,
@@ -10,29 +9,33 @@ package z80_comm is
                      rlc_i, rl_i, sla_i, sll_i,
                      rrc_i, rr_i, sra_i, srl_i,
                      daa_i, cpl_i, scf_i, ccf_i,
-                     in_i, rld1_i, rld2_i, rrd1_i, rrd2_i);
+                     in_i, ld_i,
+                     rld1_i, rld2_i, rrd1_i, rrd2_i,
+                     ldi_i, cpi_i, ini_i, outi_i,
+                     ldd_i, cpd_i, ind_i, outd_i,
+                     ldir_i, cpir_i, inir_i, outir_i,
+                     lddr_i, cpdr_i, indr_i, outdr_i);
     type rf_swap_t is (none, af, reg, dehl);
     type addr_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
 
-    type id_mode_t is (
-        main, ed, cb, dd, ddcb, fd, fdcb, -- exec prefixes
-        wz,                               -- use wz instead of pc on fetch
-        halt,                             -- halted
-        int                               -- interrupt init
-    );
+    type id_prefix_t is (main, ed, cb, dd, ddcb, fd, fdcb, ddcb_d, fdcb_d);
+    type id_mode_t is (exec, wz, halt, int);
 
     -- control signals for id
     type id_ctrl_t is record
         cycle_end : std_logic;      -- last state of current cycle
         instr_end : std_logic;      -- last state of current instr
         mode_next : id_mode_t;      -- mode for next cp
+        prefix_next : id_prefix_t;  -- prefix for next cp
     end record;
 
     -- current state/context of cpu
     type state_t is record
-        int_mode : integer range 0 to 2;
         mode : id_mode_t;
+        prefix : id_prefix_t;
+        im : integer range 0 to 2;
+        iff : std_logic;
         cc : cond_t;
         m : integer range 1 to 6;
         t : integer range 1 to 6;
@@ -47,38 +50,47 @@ package z80_comm is
 
     type ctrlbus_out is record
         -- system control
-        m1, mreq, iorq, rd, wr, rfsh : std_logic;
+        m1, mreq, iorq, rd, wr : std_logic;
         -- cpu control
         halt : std_logic;
         -- cpu bus control
         busack : std_logic;
     end record;
 
-    type dbus_src_t is (none, ext_o, rf_o, tmp_o, alu_o, i_o);
-    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o);
+    type dbus_src_t is (none, zero_o,
+                        pch_o, pcl_o,
+                        ext_o, rf_o, tmp_o, alu_o,
+                        i_o, r_o);
+    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o, rst_o);
+    type pv_src_t is (alu_f, iff_f, anz_f);
 
     type ctrlword is record 
         -- buses / registers
-        dbus_src : dbus_src_t;
-        abus_src : abus_src_t;
-        rf_addr : integer range 0 to 15;
-        rf_rdd, rf_rda : std_logic;
-        rf_swp : rf_swap_t;
-        f_rd : std_logic;
-        i_rd : std_logic;
-        ir_rd : std_logic;
-        tmpa_rd : std_logic;
-        pc_rd : std_logic;
-        pc_dis : std_logic;
-        addr_op : addr_op_t;
+        dbus_src : dbus_src_t;           -- mux addr to dbus
+        abus_src : abus_src_t;           -- mux addr to abus
+        rf_addr : integer range 0 to 15; -- addr to reg in regfile
+        rf_rdd, rf_rda : std_logic;      -- rd to regfile from dbus/abus
+        rf_swp : rf_swap_t;              -- swap regs in regfile
+        f_rd : std_logic;                -- alu -> F
+        fi_rd : std_logic;               -- alu -> internal flags
+        pv_src : pv_src_t;               -- signal to use for pv flag
+        i_rd, r_rd : std_logic;          -- dbus -> I, dbus -> R
+        ir_rd : std_logic;               -- dbus -> IR
+        tmpa_rd : std_logic;             -- addr_in -> tmpa
+        pc_rd : std_logic;               -- add_in -> pc
+        addr_op : addr_op_t;             -- op for addr_in
+        rst_addr : std_logic_vector(2 downto 0); -- addr for RST instr
+        iff_next : std_logic;            -- next value for iff
         -- alu
-        alu_op : instr_t;
-        alu_bs : integer range 0 to 7;
-        act_rd : std_logic;
-        tmp_rd : std_logic;
+        alu_op : instr_t;                -- op for alu
+        alu_bs : integer range 0 to 7;   -- bit select for alu
+        act_rd : std_logic;              -- a -> act
+        act_rd_dbus : std_logic;         -- dbus -> act
+        tmp_rd : std_logic;              -- dbus -> tmp
         -- buffers
-        data_rdi, data_rdo, data_wro : std_logic;
-        addr_rd : std_logic;
+        data_rdi, data_rdo : std_logic;  -- data->dbufi, dbus->dbufo
+        data_wro : std_logic;            -- dbufo->data
+        addr_rd : std_logic;             -- abus->abuf
     end record;
 
     -- flags
@@ -150,18 +162,7 @@ package z80_comm is
         state : state_t;
         ct : id_ctrl_t;
         cw : ctrlword;
-        pc, abus : std_logic_vector(15 downto 0);
+        pc, abus, tmpa : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
     end record;
-end z80_comm;
-
-package body z80_comm is
-    function bool_sl(b : boolean) return std_logic is 
-    begin
-        if b then
-            return '1';
-        else
-            return '0';
-        end if;
-    end bool_sl;
 end z80_comm;

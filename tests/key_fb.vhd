@@ -1,13 +1,14 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
+use work.cmp_comm.all;
 
 entity key_fb is port (
     clk                 : in std_logic;
     btns                : in std_logic_vector(4 downto 0);
     PS2KeyboardCLK	    : in std_logic; 		-- USB keyboard PS2 clock
     PS2KeyboardData     : in std_logic;			-- USB keyboard PS2 data
-    seg                 : out std_logic_vector(7 downto 0);
+    seg, led            : out std_logic_vector(7 downto 0);
     an                  : out std_logic_vector(3 downto 0));
 end key_fb;
 
@@ -35,19 +36,21 @@ architecture arch of key_fb is
     signal we     : std_logic;
 
     signal seg_value : std_logic_vector(15 downto 0);
+    signal keys_down : keys_down_t;
 begin
  
     k_enc : kbd_enc port map(clk, btns(1), PS2KeyboardCLK, PS2KeyboardData, data, we);
     we <= '1';
-    
-    --seg_value <= x"AAAA";
+    led <= keys_down(1);
+     
     smt : segment port map(clk, seg_value, x"0", seg, an);
+    process(clk) begin 
+        if rising_edge(clk) then             
+            seg_value <= x"00" & data;         
+  
+      end if;   
+    end process;
 
-    process(clk) begin
-        if rising_edge(clk) then
-            seg_value <= x"00" & data;
-
-        end if;
-    end process;   
-    
 end arch;
+
+

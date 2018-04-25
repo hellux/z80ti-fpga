@@ -1,0 +1,11 @@
+ld sp, 0x20
+ld bc, 0x1234
+ld (0x20), bc
+ld hl, 0x5678
+ex (sp), hl
+ld sp, 0x30
+ld bc, 0x4321
+ld (0x30), bc
+ld iy, 0x8765
+ex (sp), iy
+halt
