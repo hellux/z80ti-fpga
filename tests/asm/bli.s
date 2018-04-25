@@ -1,8 +1,11 @@
-ld hl, 4
-ld de, 3
+ld hl, 6
+ld de, 50
 ldi
+ld c, 2
+ld h, d
+ld l, e
 ini
-ld hl,de
-ini
-
+ld c, 1
+ld (hl), 0x33
+outi
 halt

@@ -2055,7 +2055,8 @@ begin
         -- fetch phase
         if state.m = m1 then
             f.cb.m1 := '1';
-            if state.mode /= halt then
+            if state.mode /= halt and
+               state.mode /= repeat then
                 f := mem_rd_instr(state, f);
             end if;
         end if;
