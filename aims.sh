@@ -11,6 +11,7 @@ Options:
     -u SRC_LIST             unit, name of file with list of src files in
                             build/srclists, all .vhd files in below tree will
                             be used if -f not specified
+    -z Z80 ASM FILE         compile and run z80 asm file
     -a                      abort simulation on assertion error
     -t TIME                 simulation time
     -w FILENAME             name of generated wave file -- default: wave.ghw
@@ -33,7 +34,7 @@ clean=false         # remove executable
 asm=false;          # assemble z80 obj
 
 src=$(find . -name '*.vhd')
-asm_src="tests/asm/"
+asm_src=""
 entity=""
 args="--ieee-asserts=disable"
 wave="wave.ghw"
@@ -47,7 +48,7 @@ while getopts hAM:S:Cf:z:u:at:w: OPT; do
         S) analyze=true; make=true; sim=true entity=$OPTARG ;;
         C) clean=true ;;
         f) src=$OPTARG ;;
-        z) asm=true; asm_src=${asm_src}${OPTARG} ;;
+        z) asm=true; asm_src=$OPTARG ;;
         u) 
             src=$(cat build/srclists/$OPTARG);
             if [ -z "$src" ]; then
