@@ -2,7 +2,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;            -- basic IEEE library
 use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
                                         -- and various arithmetic operations
-
+use work.cmp_comm.all;
 -- entity
 entity kbd_enc is
   port ( clk	              : in std_logic;			        -- system clock(100 MHz)
@@ -10,7 +10,8 @@ entity kbd_enc is
          PS2KeyboardCLK	      : in std_logic; 		            -- USB keyboard PS2 clock
          PS2KeyboardData	  : in std_logic;			        -- USB keyboard PS2 data
          data			      : out std_logic_vector(7 downto 0); -- scan code data
-         we			          : out std_logic);		            -- write enable
+         we			          : out std_logic;		            -- write enable
+         keys_down            : out keys_down_t);
 end kbd_enc;
 
 -- architecture
@@ -31,8 +32,7 @@ architecture behavioral of KBD_ENC is
 
   signal scancode		      : std_logic_vector(7 downto 0);	-- scan code
   signal keycode              : std_logic_vector(7 downto 0);   -- key code
-
-
+  signal keys_down_int        : keys_down_t := (others => x"ff"); -- keys_down mtrx set to 1 in evert group
 	
   type wr_type is (standby, wrchar, wrcur);			            -- declare state types for write cycle
   signal wrstate : wr_type;					                    -- write cycle state
@@ -105,20 +105,26 @@ begin
   -- *                                 *
   -- ***********************************
       process(clk)
+        variable grp : integer range 0 to 6;
+        variable key : integer range 0 to 7;
       begin
+        grp := to_integer(unsigned(keycode(7 downto 4)));
+        key := to_integer(unsigned(keycode(3 downto 0)));
         if rising_edge(clk) then
           if rst='1' then
             ps2_state <= idle;
           elsif ps2_state = idle then 
             if ps2bitcounter = 11 and scancode /= X"F0" then
                 ps2_state <= make;
+                keys_down_int(grp)(key) <= '0'; -- declare key pressed down
             elsif ps2bitcounter = 11 and scancode = X"F0" then 
                 ps2_state <= break;
             end if;
-          elsif ps2_state = make then
-            ps2_state <= idle;
+          elsif ps2_state = make then 
+                ps2_state <= idle;
           elsif ps2_state = break then
             if ps2bitcounter = 11 then 
+                keys_down_int(grp)(key) <= '1';  
                 ps2_state <= idle;
             end if;
           end if;
@@ -128,30 +134,29 @@ begin
 
   -- Scan Code -> Key Code mapping
   with scancode select
-    keycode <=   x"01" when x"72",	-- KEY DOWN  | KP_Down
-                 x"02" when x"6B",	-- KEY LEFT  | KP_Left
-                 x"03" when x"74",	-- KEY RIGHT | KP_Right
-                 x"04" when x"75",	-- KEY UP    | KP_Up
-                 x"09" when x"5A",	-- ENTER     | ENTER
-                 x"0A" when x"79",	-- ADD +     | KP_Add 
-                 x"0B" when x"7B",	-- SUB -     | KP_Sub
-                 x"0C" when x"7C",	-- MULT x    | 
-                 x"0D" when x"4E",	-- DIV \     | (+ ? \)   
-                 x"0E" when x"5B",	-- POWER ^   | (Key next to Å)
-                 x"0F" when x"77",	-- CLEAR     | Num Lock
-                 x"22" when x"16",	-- 1         | 1
-                 x"1A" when x"1E",	-- 2         | 2
-                 x"12" when x"26",	-- 3         | 3
-                 x"23" when x"25",	-- 4         | 4
-                 x"1B" when x"2E",	-- 5         | 5
-                 x"13" when x"36",	-- 6         | 6
-                 x"24" when x"3D",	-- 7         | 7
-                 x"1C" when x"3E",	-- 8         | 8
-                 x"14" when x"46",	-- 9         | 9
-                 x"21" when x"45",	-- 0         | 0
-		         x"36" when x"0D",	-- 2ND       | TAB
-		         x"29" when x"0E",	-- ON        | Button next to 1
-                 x"00" when others;
+   keycode <=    x"00" when x"72",	-- KEY DOWN  | KP_Down
+                 x"01" when x"6B",	-- KEY LEFT  | KP_Left
+                 x"02" when x"74",	-- KEY RIGHT | KP_Right
+                 x"03" when x"75",	-- KEY UP    | KP_Up
+                 x"10" when x"5A",	-- ENTER     | ENTER
+                 x"11" when x"79",	-- ADD +     | KP_Add 
+                 x"12" when x"7B",	-- SUB -     | KP_Sub
+                 x"13" when x"7C",	-- MULT x    | 
+                 x"14" when x"4E",	-- DIV \     | (+ ? \)   
+                 x"15" when x"5B",	-- POWER ^   | (Key next to Å)
+                 x"16" when x"77",	-- CLEAR     | Num Lock
+                 x"41" when x"16",	-- 1         | 1
+                 x"31" when x"1E",	-- 2         | 2
+                 x"21" when x"26",	-- 3         | 3
+                 x"42" when x"25",	-- 4         | 4
+                 x"32" when x"2E",	-- 5         | 5
+                 x"22" when x"36",	-- 6         | 6
+                 x"43" when x"3D",	-- 7         | 7
+                 x"33" when x"3E",	-- 8         | 8
+                 x"23" when x"46",	-- 9         | 9
+                 x"40" when x"45",	-- 0         | 0
+		         x"65" when x"0D",	-- 2ND       | TAB
+                 x"FF" when others;
   -- we will be enabled ('1') for two consecutive clock 
   -- cycles during WRCHAR and WRCUR states
   -- and disabled ('0') otherwise at STANDBY state
@@ -159,6 +164,7 @@ begin
         '1';
   
   -- set as keycode
-  data <=  scancode;
+  data <=  keycode;
+  keys_down <= keys_down_int;
 
 end behavioral;

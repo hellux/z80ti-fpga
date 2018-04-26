@@ -23,7 +23,7 @@ package cmp_comm is
         p10_lcd_status, p11_lcd_data : std_logic_vector(7 downto 0);
     end record;
 
-    type keys_down_t is array(7 downto 0) of std_logic_vector(7 downto 0);
+    type keys_down_t is array(0 to 6) of std_logic_vector(7 downto 0);
 
     type int_dev_t is (none, on_key, hwt1, hwt2);
 end cmp_comm;
