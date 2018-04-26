@@ -672,6 +672,45 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end bit_xy_d;
+    
+    function ld_r_xy_d(state : state_t; f_in : id_frame_t; 
+                        r : integer range 0 to 7;
+                        rp : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.dbus_src := tmp_o; 
+                f.cw.rf_addr := rp;
+                f.cw.abus_src := dis_o;
+            when t3 =>
+                f.cw.rf_addr := r;
+                f.cw.rf_rdd := '1';
+            when t5 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 =>
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1'; 
+        when others => null; end case;
+        return f;
+    end ld_r_xy_d;
 
     function rld_rrd(state : state_t; f_in : id_frame_t;
                      op1 : instr_t; op2 : instr_t)
@@ -736,7 +775,6 @@ architecture arch of op_decoder is
         return f;
     end inc_dec_rp;
 
-----------------------------------------------------------------------
     function bli_op(state : state_t; f_in : id_frame_t;
                     op : instr_t)
     return id_frame_t is variable f : id_frame_t; begin
@@ -892,11 +930,11 @@ architecture arch of op_decoder is
         when m5 =>
             case state.t is
             when t1 =>
-                f.cw.pc_rd;
+                f.cw.pc_rd = '1';
                 f.cw.abus_src := pc_o;
                 f.cw.addr_op := dec;
             when t2 =>
-                f.cw.pc_rd;
+                f.cw.pc_rd = '1';
                 f.cw.abus_src := pc_o;
                 f.cw.addr_op := dec;
             when t3 =>
@@ -911,7 +949,7 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end bli_op;
--------------------------------------------------------------------------
+
 
     function ld_a_i_r(state : state_t; f_in : id_frame_t;
                       src : dbus_src_t)
@@ -2253,7 +2291,7 @@ begin
                 end case;
             when 2 =>
                 case s.y is
-                when 4|5|6|7 => f := bli_op(state, f, bli(s.y)(s.z)); -- TODO bli[y,z]
+                when 4|5|6|7 => f := bli_op(state, f, bli(s.y)(s.z));
                 when others => f := nop(state, f); -- NONI
                 end case;
             when 0|3 => f := nop(state, f); end case; -- NONI
@@ -2331,7 +2369,7 @@ begin
                         when 6 => f := nop(state, f);
                         when others => f := unimp(state, f); -- TODO ld (ix/y+d), r
                         end case;
-                    when others => f := unimp(state, f); -- TODO ld (ix/y+d), r
+                    when others => f := ld_r_xy_d(state, f, s.y, rxy(xy));
                     end case;
                 when others => f := nop(state, f);
                 end case;
