@@ -15,9 +15,9 @@ entity lcd_ctrl is port(
     gmem_x : out std_logic_vector(5 downto 0);
     gmem_y : out std_logic_vector(4 downto 0);
     gmem_rst, gmem_rd, gmem_wl : out std_logic;
-    ctrl : in port_t;
-    data_in : in port_t;
-    status_out, data_out : out std_logic_vector(7 downto 0));
+    ctrl : in port_out_t;
+    data_in : in port_out_t;
+    status_out, data_out : out port_in_t);
 end lcd_ctrl;
 
 architecture arch of lcd_ctrl is
@@ -39,8 +39,8 @@ begin
     gmem_rd <= '1' when data_in.wr = '1' else '0';
     gmem_wl <= mode.wl;
 
-    data_out <= gmem_data_in;
-    status_out <= mode.busy & mode.wl & mode.active & "0--" & mode.inc;
+    data_out <= (gmem_data_in, '0');
+    status_out <= (mode.busy & mode.wl & mode.active & "0--" & mode.inc, '0');
 
     update : process(clk) begin
         if rising_edge(clk) then

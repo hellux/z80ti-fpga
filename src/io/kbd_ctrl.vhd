@@ -7,8 +7,8 @@ use work.util.all;
 entity kbd_ctrl is port(
     clk, rst : in std_logic;
     keys_down : in keys_down_t;
-    kbd_in : port_t;
-    kbd_out : out std_logic_vector(7 downto 0));
+    kbd_in : in port_out_t;
+    kbd_out : out port_in_t);
 end kbd_ctrl;
 
 -- kbd_in --
@@ -43,6 +43,6 @@ begin
                 result := result and keys_down(i);
             end if;
         end loop;
-        kbd_out <= result;
+        kbd_out <= (result, '0');
     end process;
 end arch;

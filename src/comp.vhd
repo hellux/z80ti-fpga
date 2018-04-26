@@ -42,8 +42,8 @@ architecture arch of comp is
         addr : in std_logic_vector(7 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
-        ports_in : in io_data_t;
-        ports_out : out io_ports_t;
+        ports_in : in ports_in_t;
+        ports_out : out ports_out_t;
         on_key_down : in std_logic);
     end component;
 
@@ -54,16 +54,16 @@ architecture arch of comp is
         gmem_x : out std_logic_vector(5 downto 0);
         gmem_y : out std_logic_vector(4 downto 0);
         gmem_rst, gmem_rd, gmem_wl : out std_logic;
-        ctrl : in port_t;
-        data_in : in port_t;
-        status_out, data_out : out std_logic_vector(7 downto 0));
+        ctrl : in port_out_t;
+        data_in : in port_out_t;
+        status_out, data_out : out port_in_t);
     end component;
 
     component kbd_ctrl port(
         clk, rst : in std_logic;
         keys_down : in keys_down_t;
-        kbd_in : port_t;
-        kbd_out : out std_logic_vector(7 downto 0));
+        kbd_in : in port_out_t;
+        kbd_out : out port_in_t);
     end component;
 
     component pict_mem port(
@@ -104,8 +104,8 @@ architecture arch of comp is
     signal cbi, cbi_mem, cbi_ext, cbi_asic : ctrlbus_in;
     signal data, data_z80, data_rom, data_asic : std_logic_vector(7 downto 0);
 
-    signal io_ports : io_ports_t;
-    signal io_data : io_data_t;
+    signal ports_out : ports_out_t;
+    signal ports_in : ports_in_t;
     signal x_vga : std_logic_vector(6 downto 0);
     signal y_vga : std_logic_vector(5 downto 0);
     signal x_lcd : std_logic_vector(5 downto 0);
@@ -176,15 +176,15 @@ begin
     -- IO
     asic_c : asic port map(clk_z80, cbi_asic, cbo,
                            addr(7 downto 0), data, data_asic,
-                           io_data, io_ports,
+                           ports_in, ports_out,
                            on_key_down);
     lcd : lcd_ctrl port map(clk_z80, rst,
         gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd,
         gmem_rst, gmem_rd, gmem_wl,
-        io_ports.p10_lcd_status, io_ports.p11_lcd_data,
-        io_data.p10_lcd_status, io_data.p11_lcd_data);
+        ports_out.p10_lcd_status, ports_out.p11_lcd_data,
+        ports_in.p10_lcd_status, ports_in.p11_lcd_data);
     kbd : kbd_ctrl port map(clk_z80, rst, keys_down,
-                            io_ports.p01_kbd, io_data.p01_kbd);
+                            ports_out.p01_kbd, ports_in.p01_kbd);
     gmem : pict_mem port map(clk, clk_z80, gmem_rst, gmem_rd, gmem_wl,
                              lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,
                              gmem_vga_data, gmem_lcd_data);
