@@ -19,8 +19,7 @@ architecture arch of key_fb is
 	     rst		        : in std_logic;			-- reset signal
          PS2KeyboardCLK	    : in std_logic; 		-- USB keyboard PS2 clock
          PS2KeyboardData	: in std_logic;			-- USB keyboard PS2 data
-         data			    : out std_logic_vector(7 downto 0);		-- tile data
-         we			        : out std_logic;		-- write enable
+         data			    : out std_logic_vector(15 downto 0);		-- tile data
          keys_down          : out keys_down_t);
     end component;
 
@@ -33,19 +32,18 @@ architecture arch of key_fb is
     end component;
 
         
-    signal data   : std_logic_vector(7 downto 0);
-    signal we     : std_logic;
+    signal data   : std_logic_vector(15 downto 0);
     signal keys_down : keys_down_t;
     signal seg_value : std_logic_vector(15 downto 0);
 begin
 
-    k_enc : kbd_enc port map(clk, btns(1), PS2KeyboardCLK, PS2KeyboardData, data, we, keys_down);
-    we <= '1';
-    led <= keys_down(1);
+    k_enc : kbd_enc port map(clk, btns(1), PS2KeyboardCLK, PS2KeyboardData, data, keys_down);
+
+    led <= keys_down(0);
      
     smt : segment port map(clk, seg_value, x"0", seg, an);
                
-    seg_value <= x"00" & data;         
+    seg_value <= data;         
   
      
 
