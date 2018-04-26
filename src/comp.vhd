@@ -49,21 +49,20 @@ architecture arch of comp is
 
     component lcd_ctrl port(
         clk, rst : in std_logic;
-        gmem_data_in : in std_logic_vector(7 downto 0);
-        gmem_data_out : out std_logic_vector(7 downto 0);
+        gmem_data_o : in std_logic_vector(7 downto 0);
+        gmem_data_i : out std_logic_vector(7 downto 0);
         gmem_x : out std_logic_vector(5 downto 0);
         gmem_y : out std_logic_vector(4 downto 0);
         gmem_rst, gmem_rd, gmem_wl : out std_logic;
-        ctrl : in port_out_t;
-        data_in : in port_out_t;
-        status_out, data_out : out port_in_t);
+        status_o, data_o : in port_out_t;
+        status_i, data_i : out port_in_t);
     end component;
 
     component kbd_ctrl port(
         clk, rst : in std_logic;
         keys_down : in keys_down_t;
-        kbd_in : in port_out_t;
-        kbd_out : out port_in_t);
+        kbd_o : in port_out_t;
+        kbd_i : out port_in_t);
     end component;
 
     component pict_mem port(
@@ -165,9 +164,7 @@ begin
     data <= data_z80 or data_rom or data_asic;
     cbi.wt    <= cbi_mem.wt    or cbi_ext.wt    or cbi_asic.wt;
     cbi.int   <= cbi_mem.int   or cbi_ext.int   or cbi_asic.int;
-    cbi.nmi   <= cbi_mem.nmi   or cbi_ext.nmi   or cbi_asic.nmi;
     cbi.reset <= cbi_mem.reset or cbi_ext.reset or cbi_asic.reset;
-    cbi.busrq <= cbi_mem.busrq or cbi_ext.busrq or cbi_asic.busrq;
 
     -- CPU / MEM
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);

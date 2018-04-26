@@ -60,7 +60,7 @@ begin
                          bool_sl(int_dev = hwt1) &
                          bool_sl(int_dev = hwt2) &
                          '-' &
-                         '0' & -- link caused int
+                         '0' & -- link caused int (never)
                          cry_exp(1) &
                          cry_exp(2) &
                          cry_exp(3);
@@ -101,9 +101,15 @@ begin
 
     cbi.reset <= '0';
     cbi.wt <= '0';
-    cbi.int <= int_on_key and on_key_down;
-    cbi.nmi <= '0';
-    cbi.busrq <= '0';
+    interrupt : process(parr_in) begin
+        cbi.int <= '0';
+        for i in parr_in'range loop
+            if parr_in(i).int = '1' then
+                cbi.int <= '1';
+                exit;
+            end if;
+        end loop;
+    end process;
 
     -- connect port write signals from array to ports
     ports_out.p01_kbd <= parr_out(16#01#);

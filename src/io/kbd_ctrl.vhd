@@ -7,16 +7,16 @@ use work.util.all;
 entity kbd_ctrl is port(
     clk, rst : in std_logic;
     keys_down : in keys_down_t;
-    kbd_in : in port_out_t;
-    kbd_out : out port_in_t);
+    kbd_o : in port_out_t;
+    kbd_i : out port_in_t);
 end kbd_ctrl;
 
--- kbd_in --
+-- kbd_o --
 -- ff -> rst kbd
 -- else -> bits 6-0 mask for selected groups (0 to enable group)
 -- eg "0000_0001" to select only group 0
 
--- kbd_out --
+-- kbd_i --
 -- keys pressed in selected groups (0 is pressed)
 
 architecture arch of kbd_ctrl is
@@ -31,8 +31,8 @@ architecture arch of kbd_ctrl is
     signal grp_rst : std_logic;
 begin
     grp_reg : reg generic map(8)
-                  port map(clk, grp_rst, kbd_in.wr, kbd_in.data, grp);
-    grp_rst <= rst or (kbd_in.wr and bool_sl(kbd_in.data = x"ff"));
+                  port map(clk, grp_rst, kbd_o.wr, kbd_o.data, grp);
+    grp_rst <= rst or (kbd_o.wr and bool_sl(kbd_o.data = x"ff"));
 
     and_groups : process(grp, keys_down)
         variable result : std_logic_vector(7 downto 0);
@@ -43,6 +43,6 @@ begin
                 result := result and keys_down(i);
             end if;
         end loop;
-        kbd_out <= (result, '0');
+        kbd_i <= (result, '0');
     end process;
 end arch;

@@ -43,9 +43,7 @@ package z80_comm is
 
     type ctrlbus_in is record
         -- cpu control
-        wt, int, nmi, reset : std_logic;
-        -- cpu bus control
-        busrq : std_logic;
+        wt, int, reset : std_logic;
     end record;
 
     type ctrlbus_out is record
