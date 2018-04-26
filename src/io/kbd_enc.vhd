@@ -5,37 +5,38 @@ use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
 use work.cmp_comm.all;
 -- entity
 entity kbd_enc is
-  port ( clk	              : in std_logic;			        -- system clock(100 MHz)
-	     rst		              : in std_logic;			    -- reset signal
-         PS2KeyboardCLK	      : in std_logic; 		            -- USB keyboard PS2 clock
-         PS2KeyboardData	  : in std_logic;			        -- USB keyboard PS2 data
+  port ( clk	              : in std_logic;			          -- system clock(100 MHz)
+	     rst		              : in std_logic;			      -- reset signal
+         PS2KeyboardCLK	      : in std_logic; 		              -- USB keyboard PS2 clock
+         PS2KeyboardData	  : in std_logic;			          -- USB keyboard PS2 data
          data			      : out std_logic_vector(7 downto 0); -- scan code data
-         we			          : out std_logic;		            -- write enable
-         keys_down            : out keys_down_t);
+         keys_down            : out keys_down_t;
+         on_key_down          : out std_logic);
 end kbd_enc;
 
 -- architecture
 architecture behavioral of KBD_ENC is
-  signal ps2clk			      : std_logic;			            -- synchronized ps2 clock
-  signal ps2data		      : std_logic;			            -- synchronized ps2 data
-  signal ps2clk_q1, ps2clk_q2 : std_logic;			            -- ps2 clock one pulse flip flop
-  signal ps2clk_op 		      : std_logic;			            -- ps2 clock one pulse 
+  signal ps2clk			      : std_logic;			              -- synchronized ps2 clock
+  signal ps2data		      : std_logic;			              -- synchronized ps2 data
+  signal ps2clk_q1, ps2clk_q2 : std_logic;			              -- ps2 clock one pulse flip flop
+  signal ps2clk_op 		      : std_logic;			              -- ps2 clock one pulse 
 	
-  signal ps2data_sr 	      : std_logic_vector(10 downto 0);  -- ps2 data shift register
+  signal ps2data_sr 	      : std_logic_vector(10 downto 0);    -- ps2 data shift register
 	
-  signal ps2bitcounter	      : unsigned(3 downto 0);		    -- ps2 bit counter
-  signal make_q			      : std_logic;			            -- make one pulselse flip flop
-  signal make_op		      : std_logic;			            -- make one pulse
+  signal ps2bitcounter	      : unsigned(3 downto 0);		      -- ps2 bit counter
+  signal make_q			      : std_logic;			              -- make one pulselse flip flop
+  signal make_op		      : std_logic;			              -- make one pulse
 
-  type state_type is (idle, make, break);			            -- declare state types for ps2
-  signal ps2_state : state_type;					                -- ps2 state
+  type state_type is (idle, make, break);			              -- declare state types for ps2
+  signal ps2_state : state_type;					              -- ps2 state
 
-  signal scancode		      : std_logic_vector(7 downto 0);	-- scan code
-  signal keycode              : std_logic_vector(7 downto 0);   -- key code
+  signal scancode		      : std_logic_vector(15 downto 0); 	  -- scan code
+  signal keycode              : std_logic_vector(7 downto 0);     -- key code
   signal keys_down_int        : keys_down_t := (others => x"ff"); -- keys_down mtrx set to 1 in evert group
-	
-  type wr_type is (standby, wrchar, wrcur);			            -- declare state types for write cycle
-  signal wrstate : wr_type;					                    -- write cycle state
+  signal on_key_down          : std_logic;                        -- On key
+  
+  type wr_type is (standby, wrchar, wrcur);			              -- declare state types for write cycle
+  signal wrstate : wr_type;					                      -- write cycle state
 
 begin
 
@@ -134,29 +135,29 @@ begin
 
   -- Scan Code -> Key Code mapping
   with scancode select
-   keycode <=    x"00" when x"72",	-- KEY DOWN  | KP_Down
-                 x"01" when x"6B",	-- KEY LEFT  | KP_Left
-                 x"02" when x"74",	-- KEY RIGHT | KP_Right
-                 x"03" when x"75",	-- KEY UP    | KP_Up
-                 x"10" when x"5A",	-- ENTER     | ENTER
-                 x"11" when x"79",	-- ADD +     | KP_Add 
-                 x"12" when x"7B",	-- SUB -     | KP_Sub
-                 x"13" when x"7C",	-- MULT x    | 
-                 x"14" when x"4E",	-- DIV \     | (+ ? \)   
-                 x"15" when x"5B",	-- POWER ^   | (Key next to Å)
-                 x"16" when x"77",	-- CLEAR     | Num Lock
-                 x"41" when x"16",	-- 1         | 1
-                 x"31" when x"1E",	-- 2         | 2
-                 x"21" when x"26",	-- 3         | 3
-                 x"42" when x"25",	-- 4         | 4
-                 x"32" when x"2E",	-- 5         | 5
-                 x"22" when x"36",	-- 6         | 6
-                 x"43" when x"3D",	-- 7         | 7
-                 x"33" when x"3E",	-- 8         | 8
-                 x"23" when x"46",	-- 9         | 9
-                 x"40" when x"45",	-- 0         | 0
-		         x"65" when x"0D",	-- 2ND       | TAB
-                 x"FF" when others;
+   keycode <=    x"00" when x"E072",	-- KEY DOWN  | KP_Down
+                 x"01" when x"E06B",	-- KEY LEFT  | KP_Left
+                 x"02" when x"E074",	-- KEY RIGHT | KP_Right
+                 x"03" when x"E075",	-- KEY UP    | KP_Up
+                 x"10" when x"005A",	-- ENTER     | ENTER
+                 x"11" when x"0079",	-- ADD +     | KP_Add 
+                 x"12" when x"007B",	-- SUB -     | KP_Sub
+                 x"13" when x"007C",	-- MULT x    | 
+                 x"14" when x"004E",	-- DIV \     | (+ ? \)   
+                 x"15" when x"005B",	-- POWER ^   | (Key next to Å)
+                 x"16" when x"0077",	-- CLEAR     | Num Lock
+                 x"41" when x"0016",	-- 1         | 1
+                 x"31" when x"001E",	-- 2         | 2
+                 x"21" when x"0026",	-- 3         | 3
+                 x"42" when x"0025",	-- 4         | 4
+                 x"32" when x"002E",	-- 5         | 5
+                 x"22" when x"0036",	-- 6         | 6
+                 x"43" when x"003D",	-- 7         | 7
+                 x"33" when x"003E",	-- 8         | 8
+                 x"23" when x"0046",	-- 9         | 9
+                 x"40" when x"0045",	-- 0         | 0
+		         x"65" when x"000D",	-- 2ND       | TAB
+                 x"00FF" when others;
   -- we will be enabled ('1') for two consecutive clock 
   -- cycles during WRCHAR and WRCUR states
   -- and disabled ('0') otherwise at STANDBY state
