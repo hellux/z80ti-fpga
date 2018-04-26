@@ -1,6 +1,7 @@
 src/pkg/util.vhd
 src/pkg/cmp_comm.vhd
 src/pkg/z80_comm.vhd
+src/prm/counters.vhd
 src/z80/registers.vhd
 src/z80/regfile.vhd
 src/z80/alu.vhd
@@ -11,6 +12,7 @@ src/mem/bram.vhd
 src/mem/mem_rom.vhd
 src/mem/memory.vhd
 src/io/asic.vhd
+src/io/timers.vhd
 src/io/kbd_ctrl.vhd
 src/io/lcd_ctrl.vhd
 src/io/vga_motor.vhd
