@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.cmp_comm.all;
+use work.io_comm.all;
 
 -- TODO do_lcd
 
