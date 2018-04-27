@@ -39,7 +39,6 @@ architecture arch of asic is
     signal int_on_key : std_logic; -- on key will trigger interrupt
     signal int_hwt1, int_hwt2 : std_logic; -- hardware timers will trigger
     signal int_dev : int_dev_t; -- interrupt device
-    signal cry_exp : std_logic_vector(1 to 3); -- crystal timer expired
 
     -- internal asic ports
     signal p03_intmask : port_in_t;
@@ -53,21 +52,21 @@ begin
                 x"00";
 
     -- internal ports in signals
-    p03_intmask.data <= int_on_key &
-                        int_hwt1 &
-                        int_hwt2 &
-                        "-" &
+    p03_intmask.data <= "---" &
                         '0' & -- linkport will gen interrupt (never)
-                        "---";
+                        "-" &
+                        int_hwt2 &
+                        int_hwt1 &
+                        int_on_key;
     p03_intmask.int <= '0';
-    p04_mmap_int.data <= bool_sl(int_dev = on_key) &
-                         bool_sl(int_dev = hwt1) &
-                         bool_sl(int_dev = hwt2) &
-                         '-' &
+    p04_mmap_int.data <= cry_fin(3) &
+                         cry_fin(2) &
+                         cry_fin(1) &
                          '0' & -- link caused int (never)
-                         cry_exp(1) &
-                         cry_exp(2) &
-                         cry_exp(3);
+                         on_key_down &
+                         bool_sl(int_dev = hwt2) &
+                         bool_sl(int_dev = hwt1) &
+                         bool_sl(int_dev = on_key);
     p04_mmap_int.int <= '0';
 
     -- internal ports out ctrl
@@ -120,6 +119,15 @@ begin
     ports_out.p01_kbd <= parr_out(16#01#);
     ports_out.p10_lcd_status <= parr_out(16#10#);
     ports_out.p11_lcd_data <= parr_out(16#11#);
+    ports_out.p30_t1_freq <= parr_out(16#30#);
+    ports_out.p31_t1_status <= parr_out(16#31#);
+    ports_out.p32_t1_value <= parr_out(16#32#);
+    ports_out.p33_t2_freq <= parr_out(16#33#);
+    ports_out.p34_t2_status <= parr_out(16#34#);
+    ports_out.p35_t2_value <= parr_out(16#35#);
+    ports_out.p36_t3_freq <= parr_out(16#36#);
+    ports_out.p37_t3_status <= parr_out(16#37#);
+    ports_out.p38_t3_value <= parr_out(16#38#);
 
     -- connect port / constants to port in array
     parr_in <= (
@@ -127,7 +135,7 @@ begin
         16#01# => ports_in.p01_kbd,
         16#02# => (x"e1", '0'),          -- battery level
         16#03# => p03_intmask,
-        16#04# => (x"00", '0'),          -- TODO interrupt trigger device
+        16#04# => p04_mmap_int,
         16#05# => (x"00", '0'),          -- TODO current RAM page
         16#06# => (x"00", '0'),          -- TODO mem page A
         16#07# => (x"00", '0'),          -- TODO mem page B
@@ -170,15 +178,15 @@ begin
         16#2d# => (x"00", '0'),          -- TODO crystal control
         16#2e# => (x"00", '0'),          -- TODO mem access delay
         16#2f# => (x"00", '0'),          -- TODO lcd wait delay
-        16#30# => (x"00", '0'),          -- TODO timer 1 freq
-        16#31# => (x"00", '0'),          -- TODO timer 1 status
-        16#32# => (x"00", '0'),          -- TODO timer 1 value
-        16#33# => (x"00", '0'),          -- TODO timer 2 freq
-        16#34# => (x"00", '0'),          -- TODO timer 2 status
-        16#35# => (x"00", '0'),          -- TODO timer 2 value
-        16#36# => (x"00", '0'),          -- TODO timer 3 freq
-        16#37# => (x"00", '0'),          -- TODO timer 3 status
-        16#38# => (x"00", '0'),          -- TODO timer 3 value
+        16#30# => ports_in.p30_t1_freq,
+        16#31# => ports_in.p31_t1_status,
+        16#32# => ports_in.p32_t1_value,
+        16#33# => ports_in.p33_t2_freq,
+        16#34# => ports_in.p34_t2_status,
+        16#35# => ports_in.p35_t2_value,
+        16#36# => ports_in.p36_t3_freq,
+        16#37# => ports_in.p37_t3_status,
+        16#38# => ports_in.p38_t3_value,
         16#39# => (x"f0", '0'),          -- GPIO conf
         16#40# => (x"00", '0'),          -- TODO clock mode
         16#41# => (x"00", '0'),          -- TODO clock input

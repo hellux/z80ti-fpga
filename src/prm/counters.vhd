@@ -8,19 +8,20 @@ entity cntr is generic(size : integer); port(
 end cntr;
 
 architecture arch of cntr is
-    signal count : integer range 0 to size-1;
+    signal count, count_next : integer range 0 to size-1;
 begin
     process(clk) begin
-        if rst = '1' then
-            count <= 0;
-        elsif ce = '1' then
-            if count = size-1 then
+        if rising_edge(clk) then
+            if rst = '1' then
                 count <= 0;
             else
-                count <= count + 1;
+                count <= count_next;
             end if;
         end if;
     end process;
+    count_next <= 0         when ce = '1' and count = size-1 else
+                  count + 1 when ce = '1' else
+                  count;
     do <= count;
 end arch;
 
@@ -38,16 +39,19 @@ entity dcntr is generic(bitwidth : integer); port(
 end dcntr;
 
 architecture arch of dcntr is
-    signal count : unsigned(bitwidth-1 downto 0);
+    signal count, count_next : unsigned(bitwidth-1 downto 0);
 begin
     process(clk) begin
-        if rst = '1' then
-            count <= (others => '0');
-        elsif ld = '1' then
-            count <= unsigned(di);
-        elsif ce1 = '1' and ce2 = '1' then
-            count <= count - 1;
+        if rising_edge(clk) then
+            if rst = '1' then
+                count <= (others => '0');
+            else
+                count <= count_next;
+            end if;
         end if;
     end process;
+    count_next <= unsigned(di) when ld = '1' else
+                  count - 1    when ce1 = '1' and ce2 = '1' else
+                  count;
     do <= std_logic_vector(count);
 end arch;

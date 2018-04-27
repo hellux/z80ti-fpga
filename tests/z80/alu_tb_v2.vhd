@@ -285,6 +285,8 @@ begin
              x"00", x"0c", bit_i, 6, x"54", "-1-1--00", x"0c");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"0c", bit_i, 2, x"54", "-0-1--00", x"0c");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"ff", x"fb", bit_i, 2, x"ff", "-1-1--01", x"fb");
 
         report "res";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
