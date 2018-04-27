@@ -3,7 +3,7 @@
    ld a,0
    out ($35),a ; disable/reset timer 2
    out ($38),a ; disable/reset timer 2
-   ld a,$84      ; cpu freq
+   ld a,$40      ; freq
    out ($30),a
    ld a,0        ; no loop, no interrupt
    out ($31),a

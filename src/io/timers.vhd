@@ -89,9 +89,9 @@ architecture arch_timer of timer is
         do : out std_logic);
     end component;
 
-    signal cnt_cry : std_logic_vector(11 downto 0);
-    signal cnt_z80: std_logic_vector(5 downto 0);
-    signal clk_timer, clk_timer_cry, clk_timer_z80 : std_logic;
+    signal cntr_ld, cntr_clk : std_logic;
+    signal cntr_val : std_logic_vector(11 downto 0);
+    signal tim_clk : std_logic;
     signal tim_current : std_logic_vector(7 downto 0);
     signal tim_active : std_logic;
     signal tim_finish, tim_overflow : std_logic;
@@ -107,21 +107,19 @@ architecture arch_timer of timer is
     signal div : std_logic_vector(11 downto 0);
 begin
     -- clock for timer
-    cry_cntr : dcntr generic map(12) port map(clk, count.wr,
-        clk_timer_cry, clk_cry, '1', div, cnt_cry);
-    z80_cntr : dcntr generic map(6) port map(clk, count.wr,
-        clk_timer_z80, clk_z80, '1', div(5 downto 0), cnt_z80);
-    clk_timer_cry <= '1' when clk_cry = '1' and cnt_cry = x"000" else '0';
-    clk_timer_z80 <= '1' when clk_z80 = '1' and cnt_z80 = "000000" else '0';
-    clk_timer <= clk_timer_z80 when sel_cntr = '1' else clk_timer_cry;
+    cntr_clk <= clk_z80 when sel_cntr = '1' else clk_cry;
+    cntr_ld <= count.wr or tim_clk;
+    clk_cntr : dcntr generic map(12)
+                     port map(clk, rst, cntr_ld, cntr_clk, '1', div, cntr_val);
+    tim_clk <= '1' when cntr_val = x"000" and cntr_clk = '1' else '0';
 
     -- timer
     timer_cntr : dcntr generic map(8)
-                       port map(clk, rst, count.wr, tim_active, clk_timer,
+                       port map(clk, rst, count.wr, tim_active, tim_clk,
                                 count_buf, tim_current);
     tim_finish <= '1' when tim_current = x"00" and
                            tim_active = '1' and
-                           clk_timer = '1' else '0';
+                           tim_clk = '1' else '0';
     tim_overflow <= tim_finish and finished_f;
     tim_active <= (freq_buf(7) or freq_buf(6)) and (not finished_f or loop_f);
 
