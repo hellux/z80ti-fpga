@@ -1364,7 +1364,45 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end ld_r_xy_d;
-
+    
+    function ld_xy_d_r(state : state_t; f_in : id_frame_t; 
+                        r : integer range 0 to 7;
+                        rp : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>   
+                f.cw.dbus_src := tmp_o;
+                f.cw.rf_addr := rp;
+                f.cw.abus_src := dis_o; 
+            when t2 =>
+                f.cw.dbus_src := r;
+                f.cw.data_rdo := '1';
+            when t5 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 =>
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1'; 
+        when others => null; end case;
+        return f;
+    end ld_xy_d_r;
 
     function ex_spx_rp(state : state_t; f_in : id_frame_t;
                        reg : integer range 0 to 15)
@@ -2368,7 +2406,7 @@ begin
                     when 6 =>
                         case s.z is
                         when 6 => f := nop(state, f);
-                        when others => f := unimp(state, f); -- TODO ld (ix/y+d), r
+                        when others => f := ld_xy_d_r(state, f, s.y, rxy(xy));
                         end case;
                     when others => f := ld_r_xy_d(state, f, s.y, rxy(xy));
                     end case;
