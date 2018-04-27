@@ -26,7 +26,6 @@ architecture arch of comp is
 
     component memory port(
         clk, rst : in std_logic;
-        cbi : out ctrlbus_in;
         cbo : in ctrlbus_out;
         addr : in std_logic_vector(15 downto 0);
         data_in : in std_logic_vector(7 downto 0);
@@ -35,7 +34,7 @@ architecture arch of comp is
 
     component io port(
         clk, clk_z80, clk_vga, rst : in std_logic;
-        cbi : out ctrlbus_in;
+        int : out std_logic;
         cbo : in ctrlbus_out;
         addr : in std_logic_vector(7 downto 0);
         data_in : in std_logic_vector(7 downto 0);
@@ -56,7 +55,8 @@ architecture arch of comp is
 
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
-    signal cbi, cbi_mem, cbi_ext, cbi_io : ctrlbus_in;
+    signal cbi : ctrlbus_in;
+    signal int : std_logic;
     signal data, data_z80, data_mem, data_io : std_logic_vector(7 downto 0);
 
     signal rst : std_logic;
@@ -101,19 +101,17 @@ begin
 
     -- buses
     rst <= btns(1);
-    cbi_ext <= (reset => rst, others => '0');
+    cbi.wt <= '0';
+    cbi.int <= int;
+    cbi.reset <= rst;
 
-    -- OR common buses instead of tristate
-    -- TODO not connect whole cbus to everyone
+    -- OR data bus instead of tristate
     data <= data_z80 or data_mem or data_io;
-    cbi.wt    <= cbi_mem.wt    or cbi_ext.wt    or cbi_io.wt;
-    cbi.int   <= cbi_mem.int   or cbi_ext.int   or cbi_io.int;
-    cbi.reset <= cbi_mem.reset or cbi_ext.reset or cbi_io.reset;
 
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
-    mem : memory port map(clk, rst, cbi_mem, cbo, addr, data, data_mem);
+    mem : memory port map(clk, rst, cbo, addr, data, data_mem);
     io_comp : io port map(clk, clk_z80, clk_vga, rst,
-                          cbi_io, cbo, addr(7 downto 0), data, data_io);
+                          int, cbo, addr(7 downto 0), data, data_io);
 
     -- DEBUG
     mon : monitor port map(clk, btns_op, dbg_z80, seg, led, an);

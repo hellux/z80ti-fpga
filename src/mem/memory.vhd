@@ -9,7 +9,6 @@ use work.z80_comm.all;
 
 entity memory is port(
     clk, rst : in std_logic;
-    cbi : out ctrlbus_in;
     cbo : in ctrlbus_out;
     addr : in std_logic_vector(15 downto 0);
     data_in : in std_logic_vector(7 downto 0);
@@ -43,6 +42,4 @@ begin
                            rom_addr, data_in, data_rom);
 
     data_out <= data_rom;
-
-    cbi <= (others => '0');
 end arch;

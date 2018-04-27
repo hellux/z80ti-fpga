@@ -8,7 +8,7 @@ use work.util.all;
 entity asic is port(
     clk : in std_logic;
 -- buses
-    cbi : out ctrlbus_in;
+    int : out std_logic;
     cbo : in ctrlbus_out;
     addr : in std_logic_vector(7 downto 0);
     data_in : in std_logic_vector(7 downto 0);   -- from dbus
@@ -103,13 +103,11 @@ begin
     end process;
 
     -- control bus outputs (cpu ctrl)
-    cbi.reset <= '0';
-    cbi.wt <= '0';
     interrupt : process(parr_in) begin
-        cbi.int <= '0';
+        int <= '0';
         for i in parr_in'range loop
             if parr_in(i).int = '1' then
-                cbi.int <= '1';
+                int <= '1';
                 exit;
             end if;
         end loop;
