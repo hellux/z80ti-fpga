@@ -9,7 +9,8 @@ entity timers is port(
     t2_fo, t2_so, t2_do : in port_out_t;
     t2_fi, t2_si, t2_di : out port_in_t;
     t3_fo, t3_so, t3_do : in port_out_t;
-    t3_fi, t3_si, t3_di : out port_in_t);
+    t3_fi, t3_si, t3_di : out port_in_t;
+    cry_fin : out std_logic_vector(1 to 3));
 end timers;
 
 architecture arch_timers of timers is
@@ -21,7 +22,8 @@ architecture arch_timers of timers is
     component timer port(
         clk, clk_cry, clk_z80, rst : in std_logic;
         freq, status, count : in port_out_t;
-        freq_i, status_i, count_i : out port_in_t);
+        freq_i, status_i, count_i : out port_in_t;
+        finished : out std_logic);
     end component;
 
     constant CLK_DIV : integer := 3052; -- 100Mhz / 3052 ~= 32768Hz
@@ -34,13 +36,13 @@ begin
 
     t1 : timer port map(clk, clk_cry, clk_z80, rst,
                         t1_fo, t1_so, t1_do,
-                        t1_fi, t1_si, t1_di);
+                        t1_fi, t1_si, t1_di, cry_fin(1));
     t2 : timer port map(clk, clk_cry, clk_z80, rst,
                         t2_fo, t2_so, t2_do,
-                        t2_fi, t2_si, t2_di);
+                        t2_fi, t2_si, t2_di, cry_fin(2));
     t3 : timer port map(clk, clk_cry, clk_z80, rst,
                         t3_fo, t3_so, t3_do,
-                        t3_fi, t3_si, t3_di);
+                        t3_fi, t3_si, t3_di, cry_fin(3));
 end arch_timers;
 
 library ieee;
@@ -51,7 +53,8 @@ use work.io_comm.all;
 entity timer is port(
     clk, clk_cry, clk_z80, rst : in std_logic;
     freq, status, count : in port_out_t;
-    freq_i, status_i, count_i : out port_in_t);
+    freq_i, status_i, count_i : out port_in_t;
+    finished : out std_logic);
 end timer;
 
 architecture arch_timer of timer is
@@ -147,7 +150,8 @@ begin
         64      when x"a0",
         1       when others;
 
-    -- port in / interrupt
+    -- outputs
+    finished <= finished_f;
     freq_i <= (freq_buf, '0');
     status_i <= ("00000" & overflow_f & int_f & loop_f, int_f and tim_finish);
     count_i <= (count_buf, '0');

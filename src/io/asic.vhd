@@ -17,7 +17,8 @@ entity asic is port(
     ports_in : in ports_in_t;                    -- (port -> cpu) from ctrl
     ports_out : out ports_out_t;                 -- (cpu -> port) to ctrl 
 -- special inter io signals
-    on_key_down : in std_logic);
+    on_key_down : in std_logic;
+    cry_fin : in std_logic_vector(1 to 3));
 end asic;
 
 architecture arch of asic is
