@@ -1360,7 +1360,8 @@ architecture arch of op_decoder is
         when m4 =>
             when t3 =>
                 f.ct.cycle_end := '1';
-                f.ct.instr_end := '1'; 
+                f.ct.instr_end := '1';
+            when others => null; end case;
         when others => null; end case;
         return f;
     end ld_r_xy_d;
@@ -1399,10 +1400,58 @@ architecture arch of op_decoder is
         when m4 =>
             when t3 =>
                 f.ct.cycle_end := '1';
-                f.ct.instr_end := '1'; 
+                f.ct.instr_end := '1';
+            when others => null; end case;
         when others => null; end case;
         return f;
     end ld_xy_d_r;
+    
+    function alu_a_xy_d(state : state_t; f_in : id_frame_t; 
+                        op : instr_t;
+                        rp : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            --Fetch displacement
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                --Fetch value of (IX/y+d)
+                f.cw.dbus_src := tmp_o; 
+                f.cw.rf_addr := rp;
+                f.cw.abus_src := dis_o;
+            when t3 =>
+                f.cw.tmp_rd := '1';
+            when t4 =>
+                f.cw.alu_op := op;
+                f.cw.dbus_src := alu_o;
+                f.cw.rf_addr := regA;
+                f.cw.rf_rdd := '1';
+                f.cw.f_rd := '1';
+            when t5 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 =>
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end alu_a_xy_d;
 
     function ex_spx_rp(state : state_t; f_in : id_frame_t;
                        reg : integer range 0 to 15)
@@ -2414,7 +2463,7 @@ begin
                 end case;
             when 2 => 
                 case s.z is
-                when 6 => f := alu_a_rpx(state, f, alu(s.y), rxy(xy));
+                when 6 => f := alu_a_xy_d(state, f, alu(s.y), rxy(xy));
                 when others => f := nop(state, f);
                 end case;
             when 3 =>
