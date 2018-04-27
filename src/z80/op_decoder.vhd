@@ -1487,12 +1487,11 @@ architecture arch of op_decoder is
                 f.cw.abus_src := dis_o;
             when t3 =>
                 f.cw.tmp_rd := '1';
-                f.cw.act_rd := '1';
             when t4 =>
                 --Perform inc/dec
                 f.cw.alu_op := op;
                 f.cw.dbus_src := alu_o;
-                f.cw.rf_addr := regA;
+                f.cw.rf_addr := regW;
                 f.cw.rf_rdd := '1';
                 f.cw.f_rd := '1';
             when t5 =>
@@ -1511,13 +1510,14 @@ architecture arch of op_decoder is
                 f.cw.rf_addr := rp;
                 f.cw.abus_src := dis_o; 
             when t2 =>
-                f.cw.rf_addr := regA;
+                f.cw.rf_addr := regW;
                 f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t4 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when t5 =>
+            case state.t is
             when t3 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
@@ -2568,7 +2568,8 @@ begin
                     when 0 => f := inc_dec_rp(state, f, inc, rxy(xy));
                     when 1 => f := inc_dec_rp(state, f, dec, rxy(xy));
                     end case;
-                when 4|5 => f := inc_dec_xy_d(state, f, alu(s.y), rxy(xy));
+                when 4 => f := inc_dec_xy_d(state, f, inc_i, rxy(xy));
+                when 5 => f := inc_dec_xy_d(state, f, dec_i, rxy(xy));
                 when 6 => f := ld_xy_d_n(state, f, rxy(xy));
                 when 7 => f := nop(state, f);
                 end case;

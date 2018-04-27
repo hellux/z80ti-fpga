@@ -9,8 +9,8 @@ sub a, (ix + 1)
 ld iy,0x40
 ld d, (iy+1)
 ld e, (iy+2)
-ld (ix + 3), F
-ld (iy + 1), D
+ld (ix + 3),0xF
+ld (iy + 1),0xD
 inc (ix + 2)
 dec (ix + 2)
 halt
