@@ -29,6 +29,8 @@ architecture arch of op_decoder is
         when t2 =>
             f.cw.data_rdi := '1';
             f.cb.iorq := '1';
+        when t3 =>
+            f.cw.dbus_src := ext_o;
         when others => null; end case;
         return f;
     end int_rd;
@@ -2324,6 +2326,10 @@ begin
                  iff_next => state.iff,
                  others => '0');
 
+        if state.m = m1 then
+            f.cb.m1 := '1';
+        end if;
+
         if state.mode = int then
             case state.im is
             when 0 => f := im0(state, f);
@@ -2333,11 +2339,8 @@ begin
         else
 
         -- fetch phase
-        if state.m = m1 then
-            f.cb.m1 := '1';
-            if state.mode /= halt then
-                f := mem_rd_instr(state, f);
-            end if;
+        if state.m = m1 and state.mode /= halt then
+            f := mem_rd_instr(state, f);
         end if;
 
         case state.prefix is

@@ -33,5 +33,5 @@ package io_comm is
 
     type keys_down_t is array(0 to 6) of std_logic_vector(7 downto 0);
 
-    type int_dev_t is (none, on_key, hwt1, hwt2);
+    type int_dev_t is (none, on_key, hwt1, hwt2, cry1, cry2, cry3);
 end io_comm;

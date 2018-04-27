@@ -17,24 +17,33 @@ architecture arch of state_machine is
 begin 
     process(clk) begin
         if rising_edge(clk) then
+            -- set t state
             if ctrl.cycle_end = '1' then
                 state.t <= t1;
             elsif cbi.wt /= '1' then
                 state.t <= state.t + 1;
             end if;
 
+            -- set m state
             if ctrl.instr_end = '1' then
                 state.m <= m1;
             elsif ctrl.cycle_end = '1' then
                 state.m <= state.m + 1;
             end if;
 
-            state.mode <= ctrl.mode_next;
+            -- set mode
+            if cbi.int = '1' then
+                state.mode <= int;
+            else
+                state.mode <= ctrl.mode_next;
+            end if;
 
+            -- set prefix
             if ctrl.instr_end = '1' then
                 state.prefix <= ctrl.prefix_next;
             end if;
 
+            -- reset
             if cbi.reset = '1' then
                 state.im <= 0;
                 state.mode <= exec;

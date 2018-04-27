@@ -20,7 +20,7 @@ end io;
 
 architecture arch of io is
     component asic port(
-        clk : in std_logic;
+        clk, clk_z80 : in std_logic;
         int : out std_logic;
         cbo : in ctrlbus_out;
         addr : in std_logic_vector(7 downto 0);
@@ -104,7 +104,7 @@ architecture arch of io is
     signal on_key_down : std_logic;
     signal cry_fin : std_logic_vector(1 to 3);
 begin
-    asic_c : asic port map(clk_z80, int, cbo,
+    asic_c : asic port map(clk, clk_z80, int, cbo,
                            addr, data_in, data_out,
                            ports_in, ports_out,
                            on_key_down, cry_fin);

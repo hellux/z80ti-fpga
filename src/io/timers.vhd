@@ -114,7 +114,8 @@ begin
     cntr_clk <= clk_z80 when sel_cntr = '1' else clk_cry;
     cntr_ld <= count.wr or tim_clk;
     clk_cntr : dcntr generic map(12)
-                     port map(clk, rst, cntr_ld, cntr_clk, active, div, cntr_val);
+                     port map(clk, rst, cntr_ld, cntr_clk,
+                              active, div, cntr_val);
     tim_clk <= '1' when cntr_val = x"000" and cntr_clk = '1' else '0';
 
     -- timer

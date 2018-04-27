@@ -6,7 +6,7 @@ use work.io_comm.all;
 use work.util.all;
 
 entity asic is port(
-    clk : in std_logic;
+    clk, clk_z80 : in std_logic;
 -- buses
     int : out std_logic;
     cbo : in ctrlbus_out;
@@ -28,6 +28,7 @@ architecture arch of asic is
 
     -- helpers
     signal a : integer range 0 to 255 := 0;
+    signal int_ack, in_op, out_op : std_logic;
 
     -- array of input/output to external ports
     signal parr_out : ports_out_array_t;
@@ -44,12 +45,10 @@ architecture arch of asic is
     signal p03_intmask : port_in_t;
     signal p04_mmap_int : port_in_t;
 begin
-    a <= to_integer(unsigned(addr));
-
-    -- port -> cpu data
-    data_out <= parr_in(a).data
-                    when cbo.iorq = '1' and cbo.rd = '1' else
-                x"00";
+    -- interpret control bus
+    int_ack <= cbo.iorq and cbo.m1;
+    in_op   <= cbo.iorq and not cbo.m1 and cbo.rd;
+    out_op  <= cbo.iorq and not cbo.m1 and cbo.wr;
 
     -- internal ports in signals
     p03_intmask.data <= "---" &
@@ -70,64 +69,87 @@ begin
     p04_mmap_int.int <= '0';
 
     -- internal ports out ctrl
-    p03 : process(clk)
+    p03 : process(clk_z80)
         variable p : port_out_t;
     begin
         p := parr_out(16#03#);
-        if rising_edge(clk) and p.wr = '1' then
+        if rising_edge(clk_z80) and p.wr = '1' then
             int_on_key <= p.data(0);
             int_hwt1 <= p.data(1);
             int_hwt2 <= p.data(2);
         end if;
     end process;
-    p04 : process(clk)
+    p04 : process(clk_z80)
         variable p : port_out_t;
     begin
         p := parr_out(16#04#);
-        if rising_edge(clk) and p.wr = '1' then
+        if rising_edge(clk_z80) and p.wr = '1' then
             mem_mode <= p.data(0);
             hwt_freq <= p.data(2 downto 1);
         end if;
     end process;
 
-    -- connect all outputs to port array (mux to selected)
-    port_array : process(a, data_in, cbo.rd, cbo.wr) begin
+    -- interrupt handling
+    int <= '1' when int_dev /= none else '0';
+    process(clk) begin
+        if rising_edge(clk) then
+            if int_dev = none then
+                for i in parr_in'range loop
+                    if parr_in(i).int = '1' then
+                        case i is
+                        when 16#31# => int_dev <= cry1;
+                        when 16#32# => int_dev <= cry2;
+                        when 16#33# => int_dev <= cry3;
+                        when others => null; end case;
+                        exit;
+                    end if;
+                end loop;
+            elsif int_ack = '1' then
+                -- TODO send address to dbus?
+                case int_dev is
+                when none => null;
+                when on_key => null;
+                when hwt1 => null;
+                when hwt2 => null;
+                when cry1 => null;
+                when cry2 => null;
+                when cry3 => null;
+                end case;
+                int_dev <= none;
+            end if;
+        end if;
+    end process;
+
+    -- port(a) -> data bus
+    a <= to_integer(unsigned(addr));
+    data_out <= parr_in(a).data when in_op = '1' else x"00";
+    -- data bus, rd/wr -> port(a), 0 -> rest
+    port_array : process(a, data_in, in_op, out_op) begin
         for i in parr_out'range loop
             parr_out(i) <= (data => (others => '0'),
                             rd => '0',
                             wr => '0');
         end loop;
         parr_out(a) <= (data => data_in,
-                        rd => cbo.iorq and cbo.rd,
-                        wr => cbo.iorq and cbo.wr);
+                        rd => in_op,
+                        wr => out_op);
     end process;
 
-    -- control bus outputs (cpu ctrl)
-    interrupt : process(parr_in) begin
-        int <= '0';
-        for i in parr_in'range loop
-            if parr_in(i).int = '1' then
-                int <= '1';
-                exit;
-            end if;
-        end loop;
-    end process;
+    -- data bus -> ports
+    ports_out.p01_kbd           <= parr_out(16#01#);
+    ports_out.p10_lcd_status    <= parr_out(16#10#);
+    ports_out.p11_lcd_data      <= parr_out(16#11#);
+    ports_out.p30_t1_freq       <= parr_out(16#30#);
+    ports_out.p31_t1_status     <= parr_out(16#31#);
+    ports_out.p32_t1_value      <= parr_out(16#32#);
+    ports_out.p33_t2_freq       <= parr_out(16#33#);
+    ports_out.p34_t2_status     <= parr_out(16#34#);
+    ports_out.p35_t2_value      <= parr_out(16#35#);
+    ports_out.p36_t3_freq       <= parr_out(16#36#);
+    ports_out.p37_t3_status     <= parr_out(16#37#);
+    ports_out.p38_t3_value      <= parr_out(16#38#);
 
-    -- connect port write signals from array to ports
-    ports_out.p01_kbd <= parr_out(16#01#);
-    ports_out.p10_lcd_status <= parr_out(16#10#);
-    ports_out.p11_lcd_data <= parr_out(16#11#);
-    ports_out.p30_t1_freq <= parr_out(16#30#);
-    ports_out.p31_t1_status <= parr_out(16#31#);
-    ports_out.p32_t1_value <= parr_out(16#32#);
-    ports_out.p33_t2_freq <= parr_out(16#33#);
-    ports_out.p34_t2_status <= parr_out(16#34#);
-    ports_out.p35_t2_value <= parr_out(16#35#);
-    ports_out.p36_t3_freq <= parr_out(16#36#);
-    ports_out.p37_t3_status <= parr_out(16#37#);
-    ports_out.p38_t3_value <= parr_out(16#38#);
-
-    -- connect port / constants to port in array
+    -- ports -> data bus
     parr_in <= (
         16#00# => (x"00", '0'),          -- lines
         16#01# => ports_in.p01_kbd,
