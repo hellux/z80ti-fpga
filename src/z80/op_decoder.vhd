@@ -735,7 +735,7 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end inc_dec_rp;
-
+    
     function bli_op(state : state_t; f_in : id_frame_t;
                     op : instr_t)
     return id_frame_t is variable f : id_frame_t; begin
@@ -1408,6 +1408,124 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end ld_xy_d_r;
+    
+    function ld_xy_d_n(state : state_t; f_in : id_frame_t; 
+                        rp : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            --Fetch displacement
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            --Fetch N
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.rf_addr := regZ;
+                f.cw.rf_rdd := '1';
+            when t5 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 =>
+            --Write N to IXY + d
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>   
+                f.cw.dbus_src := tmp_o;
+                f.cw.rf_addr := rp;
+                f.cw.abus_src := dis_o; 
+            when t2 =>
+                f.cw.rf_addr := regZ;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ld_xy_d_n;
+    
+    function inc_dec_xy_d(state : state_t; f_in : id_frame_t;
+                        op : instr_t; rp : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            --Fetch displacement
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.rf_addr := regZ;
+                f.cw.rf_rdd := '1';
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                --Fetch value of (ix/y + d)
+                f.cw.dbus_src := tmp_o; 
+                f.cw.rf_addr := rp;
+                f.cw.abus_src := dis_o;
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.cw.act_rd := '1';
+            when t4 =>
+                --Perform inc/dec
+                f.cw.alu_op := op;
+                f.cw.dbus_src := alu_o;
+                f.cw.rf_addr := regA;
+                f.cw.rf_rdd := '1';
+                f.cw.f_rd := '1';
+            when t5 =>
+                --Move displacement Z => tmp
+                f.cw.rf_addr := regZ;
+                f.cw.dbus_src := rf_o;
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 =>
+            --Write N to IXY + d
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>   
+                f.cw.dbus_src := tmp_o;
+                f.cw.rf_addr := rp;
+                f.cw.abus_src := dis_o; 
+            when t2 =>
+                f.cw.rf_addr := regA;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when t5 =>
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end inc_dec_xy_d;
+
     
     function alu_a_xy_d(state : state_t; f_in : id_frame_t; 
                         op : instr_t;
@@ -2448,9 +2566,8 @@ begin
                     when 0 => f := inc_dec_rp(state, f, inc, rxy(xy));
                     when 1 => f := inc_dec_rp(state, f, dec, rxy(xy));
                     end case;
-                when 4 => f := unimp(state, f); -- TODO inc (ix/y+d) (undoc?)
-                when 5 => f := unimp(state, f); -- TODO dec (ix/y+d) (undoc?)
-                when 6 => f := unimp(state, f); -- TODO ld (ix+d), n (undoc?)
+                when 4|5 => f := inc_dec_xy_d(state, f, alu(s.y), rxy(xy));
+                when 6 => f := ld_xy_d_n(state, f, rxy(xy));
                 when 7 => f := nop(state, f);
                 end case;
             when 1 =>
