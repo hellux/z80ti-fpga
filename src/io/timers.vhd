@@ -89,11 +89,11 @@ architecture arch_timer of timer is
         do : out std_logic);
     end component;
 
+    signal start, stop, active : std_logic;
     signal cntr_ld, cntr_clk : std_logic;
     signal cntr_val : std_logic_vector(11 downto 0);
-    signal tim_clk : std_logic;
+    signal tim_clk, tim_ld : std_logic;
     signal tim_current : std_logic_vector(7 downto 0);
-    signal tim_active : std_logic;
     signal tim_finish, tim_overflow : std_logic;
 
     -- flags
@@ -106,22 +106,26 @@ architecture arch_timer of timer is
     signal sel_cntr : std_logic; -- 0 crystal, 1 z80
     signal div : std_logic_vector(11 downto 0);
 begin
+    start <= count.wr and (freq_buf(7) or freq_buf(6));
+    stop <= (tim_finish and not loop_f) or not (freq_buf(7) or freq_buf(6));
+    active_ff : ff port map(clk, stop, start, '1', active);
+
     -- clock for timer
     cntr_clk <= clk_z80 when sel_cntr = '1' else clk_cry;
     cntr_ld <= count.wr or tim_clk;
     clk_cntr : dcntr generic map(12)
-                     port map(clk, rst, cntr_ld, cntr_clk, '1', div, cntr_val);
+                     port map(clk, rst, cntr_ld, cntr_clk, active, div, cntr_val);
     tim_clk <= '1' when cntr_val = x"000" and cntr_clk = '1' else '0';
 
     -- timer
+    tim_ld <= '1' when count.wr = '1' or (tim_finish = '1' and loop_f = '1')
+              else '0';
     timer_cntr : dcntr generic map(8)
-                       port map(clk, rst, count.wr, tim_active, tim_clk,
+                       port map(clk, rst, tim_ld, active, tim_clk,
                                 count_buf, tim_current);
     tim_finish <= '1' when tim_current = x"00" and
-                           tim_active = '1' and
-                           tim_clk = '1' else '0';
-    tim_overflow <= tim_finish and finished_f;
-    tim_active <= (freq_buf(7) or freq_buf(6)) and (not finished_f or loop_f);
+                           active = '1' else '0';
+    tim_overflow <= tim_finish and finished_f and tim_clk;
 
     -- flags
     finished_ff : ff port map(clk, count.wr, tim_finish,   '1', finished_f);
