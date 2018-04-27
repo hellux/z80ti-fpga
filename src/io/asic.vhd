@@ -2,19 +2,23 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
-use work.cmp_comm.all;
+use work.io_comm.all;
 use work.util.all;
 
 entity asic is port(
     clk : in std_logic;
+-- buses
     cbi : out ctrlbus_in;
     cbo : in ctrlbus_out;
     addr : in std_logic_vector(7 downto 0);
     data_in : in std_logic_vector(7 downto 0);   -- from dbus
     data_out : out std_logic_vector(7 downto 0); -- to dbus
+-- general inter io
     ports_in : in ports_in_t;                    -- (port -> cpu) from ctrl
     ports_out : out ports_out_t;                 -- (cpu -> port) to ctrl 
-    on_key_down : in std_logic);
+-- special inter io signals
+    on_key_down : in std_logic;
+    cry_fin : in std_logic_vector(1 to 3));
 end asic;
 
 architecture arch of asic is

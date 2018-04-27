@@ -891,11 +891,11 @@ architecture arch of op_decoder is
         when m5 =>
             case state.t is
             when t1 =>
-                f.cw.pc_rd = '1';
+                --f.cw.pc_rd = '1';
                 f.cw.abus_src := pc_o;
                 f.cw.addr_op := dec;
             when t2 =>
-                f.cw.pc_rd = '1';
+                --f.cw.pc_rd = '1';
                 f.cw.abus_src := pc_o;
                 f.cw.addr_op := dec;
             when t3 =>
@@ -1358,7 +1358,7 @@ architecture arch of op_decoder is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m4 =>
-            when t3 =>
+            --when t3 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
             when others => null; end case;
@@ -1392,13 +1392,13 @@ architecture arch of op_decoder is
                 f.cw.rf_addr := rp;
                 f.cw.abus_src := dis_o; 
             when t2 =>
-                f.cw.dbus_src := r;
+                --f.cw.dbus_src := r;
                 f.cw.data_rdo := '1';
             when t5 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m4 =>
-            when t3 =>
+            --when t3 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
             when others => null; end case;

@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-package cmp_comm is
+package io_comm is
     constant LCD_COLS : integer := 120;
     constant LCD_ROWS : integer := 64;
 
@@ -34,4 +34,4 @@ package cmp_comm is
     type keys_down_t is array(0 to 6) of std_logic_vector(7 downto 0);
 
     type int_dev_t is (none, on_key, hwt1, hwt2);
-end cmp_comm;
+end io_comm;
