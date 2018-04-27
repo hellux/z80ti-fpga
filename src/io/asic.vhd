@@ -12,8 +12,8 @@ entity asic is port(
     addr : in std_logic_vector(7 downto 0);
     data_in : in std_logic_vector(7 downto 0);   -- from dbus
     data_out : out std_logic_vector(7 downto 0); -- to dbus
-    ports_in : in ports_in_t;                     -- (port -> cpu) from ctrl
-    ports_out : out ports_out_t;                  -- (cpu -> port) to ctrl 
+    ports_in : in ports_in_t;                    -- (port -> cpu) from ctrl
+    ports_out : out ports_out_t;                 -- (cpu -> port) to ctrl 
     on_key_down : in std_logic);
 end asic;
 
@@ -48,7 +48,7 @@ begin
                     when cbo.iorq = '1' and cbo.rd = '1' else
                 x"00";
 
-    -- internal ports read signals
+    -- internal ports in signals
     p03_intmask.data <= int_on_key &
                         int_hwt1 &
                         int_hwt2 &
@@ -66,7 +66,7 @@ begin
                          cry_exp(3);
     p04_mmap_int.int <= '0';
 
-    -- internal ports write ctrl
+    -- internal ports out ctrl
     p03 : process(clk)
         variable p : port_out_t;
     begin
@@ -99,6 +99,7 @@ begin
                         wr => cbo.iorq and cbo.wr);
     end process;
 
+    -- control bus outputs (cpu ctrl)
     cbi.reset <= '0';
     cbi.wt <= '0';
     interrupt : process(parr_in) begin
