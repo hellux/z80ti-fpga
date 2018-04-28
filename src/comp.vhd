@@ -18,9 +18,9 @@ entity comp is port(
 -- memory
     maddr : out std_logic_vector(26 downto 0);
     mdata : inout std_logic_vector(15 downto 0);
-    mclk, madv_c, mcre, mce_c, moe_c, mwe_c : in std_logic;
-    mlb_c, mub_c : in std_logic;
-    mwait : out std_logic;
+    mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
+    mlb_c, mub_c : out std_logic;
+    mwait : in std_logic;
 -- 7 segment, led
     seg, led : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
@@ -35,14 +35,6 @@ architecture arch of comp is
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
         dbg : out dbg_z80_t);
-    end component;
-
-    component memory port(
-        clk, rst : in std_logic;
-        cbo : in ctrlbus_out;
-        addr : in std_logic_vector(15 downto 0);
-        data_in : in std_logic_vector(7 downto 0);
-        data_out : out std_logic_vector(7 downto 0));
     end component;
 
     component ti port(
@@ -60,6 +52,20 @@ architecture arch of comp is
         addr_ext : out std_logic_vector(19 downto 0));
     end component;
 
+    component mem_ctrl port(
+        clk, clk_z80, rst : in std_logic;
+        cbo : in ctrlbus_out;
+        addr_ext : in std_logic_vector(19 downto 0);
+        data_in : in std_logic_vector(7 downto 0);
+        data_out : out std_logic_vector(7 downto 0);
+    -- external
+        maddr : out std_logic_vector(26 downto 0);
+        mdata : inout std_logic_vector(15 downto 0);
+        mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
+        mlb_c, mub_c : out std_logic;
+        mwait : in std_logic);
+    end component;
+
     component vga_motor port(
          clk : in std_logic;
          data : in std_logic;
@@ -71,6 +77,14 @@ architecture arch of comp is
          vgaBlue : out std_logic_vector(2 downto 1);
          Hsync : out std_logic;
          Vsync : out std_logic);
+    end component;
+
+    component memory port(
+        clk, rst : in std_logic;
+        cbo : in ctrlbus_out;
+        addr : in std_logic_vector(15 downto 0);
+        data_in : in std_logic_vector(7 downto 0);
+        data_out : out std_logic_vector(7 downto 0));
     end component;
 
     component monitor port(
@@ -103,6 +117,8 @@ architecture arch of comp is
     signal x_vga : std_logic_vector(6 downto 0);
     signal y_vga : std_logic_vector(5 downto 0);
     signal addr_ext : std_logic_vector(19 downto 0);
+
+    signal data_mem_tmp : std_logic_vector(7 downto 0);
 begin
     -- input sync
     op_btns : process(clk) begin
@@ -141,7 +157,7 @@ begin
     cbi.int <= int;
     cbi.reset <= rst;
     -- OR data bus instead of tristate
-    data <= data_z80 or data_mem or data_ti;
+    data <= data_z80 or data_mem or data_ti or data_mem_tmp;
 
     -- cpu / asic
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
@@ -152,11 +168,16 @@ begin
                           addr_ext);
 
     -- external controllers
-    mem : memory port map(clk, rst, cbo, addr,
-                          data, data_mem);
     vga : vga_motor port map(clk, data_vga, rst, x_vga, y_vga,
                              vga_red, vga_green, vga_blue, hsync, vsync);
+    mem : mem_ctrl port map(clk, clk_z80, rst, cbo, addr_ext, data, data_mem,
+                            maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
+                            mwe_c, mlb_c, mub_c, mwait);
 
     -- debug
     mon : monitor port map(clk, btns_op, dbg_z80, seg, led, an);
+
+    -- tmp internal mem
+    memtmp : memory port map(clk, rst, cbo, addr,
+                          data, data_mem_tmp);
 end arch;

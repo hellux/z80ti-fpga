@@ -16,9 +16,10 @@ src/ti/pict_mem.vhd
 src/ti/ti83p/mmapper.vhd
 src/ti/ti83p/asic.vhd
 src/ti/ti83p/ti.vhd
-src/mem/mem_rom.vhd
-src/mem/memory.vhd
+tests/ext/mem_rom.vhd
+src/ext/memory.vhd
 src/ext/vga_motor.vhd
+src/ext/mem_ctrl.vhd
 src/dbg/monitor.vhd
 src/dbg/segment.vhd
 src/comp.vhd
