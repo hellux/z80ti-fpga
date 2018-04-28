@@ -19,14 +19,8 @@ entity asic is port(
 -- special inter io signals
     on_key_down : in std_logic;
     int_on_key : out std_logic;
-    cry_fin : in std_logic_vector(1 to 3);
     hwt_freq : out std_logic_vector(1 downto 0);
-    hwt_fin : in std_logic_vector(1 to 2);
--- memory mapping
-    mem_mode : out std_logic; -- memory mode 0 or 1
-    ram_rom_a, ram_rom_b : out std_logic; -- 0: rom, 1: ram
-    ram_page_a, ram_page_b : out std_logic;
-    rom_page_a, rom_page_b : out std_logic_vector(4 downto 0));
+    hwt_fin : in std_logic_vector(1 to 2));
 end asic;
 
 architecture arch of asic is
@@ -72,15 +66,15 @@ architecture arch of asic is
 
     signal p04_mmap_int : port_in_t;
     signal p04_mmap_int_out : port_out_t;
-    signal p04_mmap_int_buf : std_logic_vector(2 downto 0);
+    signal p04_mmap_int_buf : std_logic_vector(7 downto 0);
 
     signal p06_mempage_a : port_in_t;
     signal p06_mempage_a_out : port_out_t;
-    signal p06_mempage_a_buf : std_logic_vector(6 downto 0);
+    signal p06_mempage_a_buf : std_logic_vector(7 downto 0);
 
     signal p07_mempage_b : port_in_t;
     signal p07_mempage_b_out : port_out_t;
-    signal p07_mempage_b_buf : std_logic_vector(6 downto 0);
+    signal p07_mempage_b_buf : std_logic_vector(7 downto 0);
 begin
     -- interpret control bus
     int_ack <= cbo.iorq and cbo.m1;
@@ -91,9 +85,7 @@ begin
     p03_intmask <= ("---0-" & p03_intmask_buf,
                     hwt_fin(1) and hwt_int(1));
 
-    p04_mmap_int.data <= cry_fin(3) &
-                         cry_fin(2) &
-                         cry_fin(1) &
+    p04_mmap_int.data <= "---" &
                          '0' & -- link caused int (never)
                          on_key_down &
                          bool_sl(int_dev = hwt2) &
@@ -101,8 +93,8 @@ begin
                          bool_sl(int_dev = on_key);
     p04_mmap_int.int <= hwt_fin(2) and hwt_int(2);
 
-    p06_mempage_a <= ("-" & p06_mempage_a_buf, '0');
-    p07_mempage_b <= ("-" & p07_mempage_b_buf, '0');
+    p06_mempage_a <= (p06_mempage_a_buf, '0');
+    p07_mempage_b <= (p07_mempage_b_buf, '0');
 
     -- internal ports out ctrl
     p03_buf : reg generic map(3)
@@ -113,28 +105,24 @@ begin
     hwt_int(1) <= p03_intmask_buf(1);
     hwt_int(2) <= p03_intmask_buf(2);
 
-    p04_buf : reg generic map(3)
+    p04_buf : reg generic map(8)
                   port map(clk_z80, rst, p04_mmap_int_out.wr,
-                           p04_mmap_int_out.data(2 downto 0),
+                           p04_mmap_int_out.data,
                            p04_mmap_int_buf);
-    mem_mode <= p04_mmap_int_buf(0);
     hwt_freq <= p04_mmap_int_buf(2 downto 1);
+    ports_out.p04_mmap_int.data <= p04_mmap_int_buf;
 
-    p06_buf : reg generic map(7)
-                  port map(clk_z80, rst, p06_mempage_a_out.wr,
-                           p06_mempage_a_out.data(6 downto 0),
+    p06_buf : reg generic map(8)
+                  port map(clk_z80, rst, p04_mmap_int_out.wr,
+                           p06_mempage_a_out.data,
                            p06_mempage_a_buf);
-    ram_rom_a <= p06_mempage_a_buf(6);
-    rom_page_a <= p06_mempage_a_buf(4 downto 0);
-    ram_page_a <= p06_mempage_a_buf(0);
+    ports_out.p06_mempage_a.data <= p06_mempage_a_buf;
 
-    p07_buf : reg generic map(7)
-                  port map(clk_z80, rst, p07_mempage_b_out.wr,
-                           p07_mempage_b_out.data(6 downto 0),
+    p07_buf : reg generic map(8)
+                  port map(clk_z80, rst, p04_mmap_int_out.wr,
+                           p07_mempage_b_out.data,
                            p07_mempage_b_buf);
-    ram_rom_b <= p07_mempage_b_buf(6);
-    rom_page_b <= p07_mempage_b_buf(4 downto 0);
-    ram_page_b <= p07_mempage_b_buf(0);
+    ports_out.p07_mempage_b.data <= p07_mempage_b_buf;
 
     -- interrupt handling (send int until acknowledgment)
     int <= bool_sl(int_dev /= none);
@@ -147,9 +135,6 @@ begin
                         when 16#01# => int_dev <= on_key;
                         when 16#03# => int_dev <= hwt1;
                         when 16#04# => int_dev <= hwt2;
-                        when 16#31# => int_dev <= cry1;
-                        when 16#32# => int_dev <= cry2;
-                        when 16#33# => int_dev <= cry3;
                         when others => null; end case;
                         exit;
                     end if;
@@ -188,88 +173,32 @@ begin
     ports_out.p11_lcd_data   <= mp(parr_out, 16#11#, 16#13#, 16#19#, 16#1b#);
     -- TODO port 14/15 flash lock
     -- TODO port 16/17 no exec mask
-    ports_out.p30_t1_freq    <= mp(parr_out, 16#30#, 16#30#, 16#30#, 16#30#);
-    ports_out.p31_t1_status  <= mp(parr_out, 16#31#, 16#31#, 16#31#, 16#31#);
-    ports_out.p32_t1_value   <= mp(parr_out, 16#32#, 16#32#, 16#32#, 16#32#);
-    ports_out.p33_t2_freq    <= mp(parr_out, 16#33#, 16#33#, 16#33#, 16#33#);
-    ports_out.p34_t2_status  <= mp(parr_out, 16#34#, 16#34#, 16#34#, 16#34#);
-    ports_out.p35_t2_value   <= mp(parr_out, 16#35#, 16#35#, 16#35#, 16#35#);
-    ports_out.p36_t3_freq    <= mp(parr_out, 16#36#, 16#36#, 16#36#, 16#36#);
-    ports_out.p37_t3_status  <= mp(parr_out, 16#37#, 16#37#, 16#37#, 16#37#);
-    ports_out.p38_t3_value   <= mp(parr_out, 16#38#, 16#38#, 16#38#, 16#38#);
 
     -- ports -> data bus
     parr_in <= (
         16#00# => (x"00", '0'),          -- link port lines
+        16#08# => (x"00", '0'),
+        16#09# => ports_in.p01_kbd,
         16#01# => ports_in.p01_kbd,
         16#02# => (x"e1", '0'),          -- battery level
+        16#0a# => (x"e1", '0'),
         16#03# => p03_intmask,
+        16#0b# => p03_intmask,
         16#04# => p04_mmap_int,
+        16#0c# => p04_mmap_int,
         16#05# => (x"00", '0'),          -- current linkport byte
+        16#0d# => (x"00", '0'),
         16#06# => p06_mempage_a,
-        16#07# => p07_mempage_b,
-        16#08# => (x"00", '0'),          -- port 00 mirror
-        16#09# => ports_in.p01_kbd,
-        16#0a# => (x"e1", '0'),          -- port 02 mirror
-        16#0b# => p03_intmask,           -- port 03 mirror
-        16#0c# => p04_mmap_int,          -- port 04 mirror
-        16#0d# => (x"00", '0'),          -- port 05 mirror
         16#0e# => p06_mempage_a,
+        16#07# => p07_mempage_b,
         16#0f# => p07_mempage_b,
         16#10# => ports_in.p10_lcd_status,
-        16#11# => ports_in.p11_lcd_data,
         16#12# => ports_in.p10_lcd_status,
-        16#13# => ports_in.p11_lcd_data,
-        16#14# => (x"00", '0'),          -- ti84p: flash control
-        16#15# => (x"45", '0'),          -- ti84p: asic version
-        16#16# => (x"00", '0'),          -- ti84p: flash page exclusion
-        16#17# => (x"00", '0'),          -- ti84p: ??, always reads 0
         16#18# => ports_in.p10_lcd_status,
-        16#19# => ports_in.p11_lcd_data,
         16#1a# => ports_in.p10_lcd_status,
-        16#1b# => ports_in.p11_lcd_data,
-        16#1c# => (x"00", '0'),          -- ti84p: md5 value
-        16#1d# => (x"00", '0'),          -- ti84p: md5 value >> 8
-        16#1e# => (x"00", '0'),          -- ti84p: md5 value >> 16
-        16#1f# => (x"00", '0'),          -- ti84p: md5 value >> 25
-        16#20# => (x"00", '0'),          -- ti84p: cpu speed (set to 4MHz)
-        16#21# => (x"00", '0'),          -- hardware type
-        16#22# => (x"00", '0'),          -- ti84p: flash lower limit
-        16#23# => (x"00", '0'),          -- ti84p: flash upper limit
-        16#25# => (x"00", '0'),          -- ti84p: ram exec lower limit
-        16#26# => (x"00", '0'),          -- ti84p: ram exec upper limit
-        16#27# => (x"00", '0'),          -- ti84p: block mem map $c000
-        16#28# => (x"00", '0'),          -- ti84p: block mem map 8000h
-        16#29# => (x"00", '0'),          -- ti84p: lcd delay 6Mhz
-        16#2a# => (x"00", '0'),          -- ti84p: lcd delay 15Mhz
-        16#2b# => (x"00", '0'),          -- ti84p: lcd delay 15Mhz 02
-        16#2c# => (x"00", '0'),          -- ti84p: lcd delay 15Mhz 03
-        16#2d# => (x"00", '0'),          -- ti84p: crystal control
-        16#2e# => (x"00", '0'),          -- ti84p: mem access delay
-        16#2f# => (x"00", '0'),          -- ti84p: lcd wait delay
-        16#30# => ports_in.p30_t1_freq,
-        16#31# => ports_in.p31_t1_status,
-        16#32# => ports_in.p32_t1_value,
-        16#33# => ports_in.p33_t2_freq,
-        16#34# => ports_in.p34_t2_status,
-        16#35# => ports_in.p35_t2_value,
-        16#36# => ports_in.p36_t3_freq,
-        16#37# => ports_in.p37_t3_status,
-        16#38# => ports_in.p38_t3_value,
-        16#39# => (x"f0", '0'),          -- GPIO conf
-        16#40# => (x"00", '0'),          -- ti84p: clock mode
-        16#41# => (x"00", '0'),          -- ti84p: clock input
-        16#42# => (x"00", '0'),          -- ti84p: clock input
-        16#43# => (x"00", '0'),          -- ti84p: clock input
-        16#44# => (x"00", '0'),          -- ti84p: clock input
-        16#45# => (x"00", '0'),          -- ti84p: clock mode
-        16#46# => (x"00", '0'),          -- ti84p: clock mode
-        16#47# => (x"00", '0'),          -- ti84p: clock mode
-        16#48# => (x"00", '0'),          -- ti84p: clock mode
-        16#4c# => (x"22", '0'),          -- usb ctrl status
-        16#4d# => (x"a5", '0'),          -- usb cable status (disconnected)
-        16#55# => (x"1f", '0'),          -- usb interrupt state
-        16#56# => (x"00", '0'),          -- usb line events
-        16#57# => (x"50", '0'),          -- usb live event mask
+        16#11# => ports_in.p11_lcd_data,
+        16#13# => ports_in.p11_lcd_data,
+        16#19# => ports_in.p11_lcd_data,
+        16#14# => p04_mmap_int,
         others => (x"00", '0'));
 end arch;

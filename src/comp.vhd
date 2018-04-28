@@ -41,28 +41,21 @@ architecture arch of comp is
         cbo : in ctrlbus_out;
         addr : in std_logic_vector(15 downto 0);
         data_in : in std_logic_vector(7 downto 0);
-        data_out : out std_logic_vector(7 downto 0);
-        mode : in std_logic; -- memory mode 0 or 1
-        ram_rom_a, ram_rom_b : in std_logic; -- 0: rom, 1: ram
-        ram_page_a, ram_page_b : in std_logic;
-        rom_page_a, rom_page_b : in std_logic_vector(4 downto 0));
+        data_out : out std_logic_vector(7 downto 0));
     end component;
 
     component ti port(
         clk, clk_z80, clk_vga, rst : in std_logic;
         int : out std_logic;
         cbo : in ctrlbus_out;
-        addr : in std_logic_vector(7 downto 0);
+        addr_z80 : in std_logic_vector(15 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
         vga_red : out std_logic_vector(2 downto 0);
         vga_green : out std_logic_vector(2 downto 0);
         vga_blue : out std_logic_vector(2 downto 1);
         hsync, vsync : out std_logic;
-        mem_mode : out std_logic; -- memory mode 0 or 1
-        ram_rom_a, ram_rom_b : out std_logic; -- 0: rom, 1: ram
-        ram_page_a, ram_page_b : out std_logic;
-        rom_page_a, rom_page_b : out std_logic_vector(4 downto 0));
+        addr_ext : out std_logic_vector(19 downto 0));
     end component;
 
     component monitor port(
@@ -85,10 +78,7 @@ architecture arch of comp is
     signal clk_vga_div : integer range 0 to 3;
 
     -- ti <-> memory
-    signal mem_mode : std_logic;
-    signal ram_rom_a, ram_rom_b : std_logic;
-    signal ram_page_a, ram_page_b : std_logic;
-    signal rom_page_a, rom_page_b : std_logic_vector(4 downto 0);
+    signal addr_ext : std_logic_vector(19 downto 0);
 
     signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
 
@@ -136,18 +126,11 @@ begin
 
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
     mem : memory port map(clk, rst, cbo, addr,
-                          data, data_mem,
-                          mem_mode,
-                          ram_rom_a, ram_rom_b,
-                          ram_page_a, ram_page_b,
-                          rom_page_a, rom_page_b);
+                          data, data_mem);
     ti_comp : ti port map(clk, clk_z80, clk_vga, rst,
-                          int, cbo, addr(7 downto 0), data, data_ti,
+                          int, cbo, addr, data, data_ti,
                           vga_red, vga_green, vga_blue, hsync, vsync,
-                          mem_mode,
-                          ram_rom_a, ram_rom_b,
-                          ram_page_a, ram_page_b,
-                          rom_page_a, rom_page_b);
+                          addr_ext);
 
     -- DEBUG
     mon : monitor port map(clk, btns_op, dbg_z80, seg, led, an);

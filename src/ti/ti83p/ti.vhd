@@ -8,7 +8,7 @@ entity ti is port(
 -- buses
     int : out std_logic;
     cbo : in ctrlbus_out;
-    addr : in std_logic_vector(7 downto 0);
+    addr_z80 : in std_logic_vector(15 downto 0);
     data_in : in std_logic_vector(7 downto 0);
     data_out : out std_logic_vector(7 downto 0);
 -- external
@@ -17,10 +17,7 @@ entity ti is port(
     vga_blue : out std_logic_vector(2 downto 1);
     hsync, vsync : out std_logic;
 -- memory mapping
-    mem_mode : out std_logic; -- memory mode 0 or 1
-    ram_rom_a, ram_rom_b : out std_logic; -- 0: rom, 1: ram
-    ram_page_a, ram_page_b : out std_logic;
-    rom_page_a, rom_page_b : out std_logic_vector(4 downto 0));
+    addr_ext : out std_logic_vector(19 downto 0));
 end ti;
 
 architecture arch of ti is
@@ -35,30 +32,21 @@ architecture arch of ti is
         ports_out : out ports_out_t;
         on_key_down : in std_logic;
         int_on_key : out std_logic;
-        cry_fin : in std_logic_vector(1 to 3);
         hwt_freq : out std_logic_vector(1 downto 0);
-        hwt_fin : in std_logic_vector(1 to 2);
-        mem_mode : out std_logic; -- memory mode 0 or 1
-        ram_rom_a, ram_rom_b : out std_logic; -- 0: rom, 1: ram
-        ram_page_a, ram_page_b : out std_logic;
-        rom_page_a, rom_page_b : out std_logic_vector(4 downto 0));
+        hwt_fin : in std_logic_vector(1 to 2));
+    end component;
+
+    component mmapper port(
+        signal ctrl_mmap : in std_logic_vector(7 downto 0);
+        signal ctrl_page_a, ctrl_page_b : in std_logic_vector(7 downto 0);
+        signal addr_z80 : in std_logic_vector(15 downto 0);
+        signal addr_ext : out std_logic_vector(19 downto 0));
     end component;
 
     component hw_timers port(
         clk, rst : in std_logic;
         freq : in std_logic_vector(1 downto 0);
         fin : out std_logic_vector(1 downto 0));
-    end component;
-
-    component timers port(
-        clk, clk_z80, rst : in std_logic;
-        t1_fo, t1_so, t1_do : in port_out_t;
-        t1_fi, t1_si, t1_di : out port_in_t;
-        t2_fo, t2_so, t2_do : in port_out_t;
-        t2_fi, t2_si, t2_di : out port_in_t;
-        t3_fo, t3_so, t3_do : in port_out_t;
-        t3_fi, t3_si, t3_di : out port_in_t;
-        cry_fin : out std_logic_vector(1 to 3));
     end component;
 
     component kbd_ctrl port(
@@ -123,32 +111,22 @@ architecture arch of ti is
     signal ports_in : ports_in_t;
     signal on_key_down : std_logic;
     signal int_on_key : std_logic;
-    signal cry_fin : std_logic_vector(1 to 3);
     signal hwt_fin : std_logic_vector(1 to 2);
     signal hwt_freq : std_logic_vector(1 downto 0);
 begin
     asic_c : asic port map(clk, clk_z80, rst, int, cbo,
-                           addr, data_in, data_out,
+                           addr_z80(7 downto 0), data_in, data_out,
                            ports_in, ports_out,
                            on_key_down,
                            int_on_key,
-                           cry_fin,
-                           hwt_freq, hwt_fin,
-                           mem_mode,
-                           ram_rom_a, ram_rom_b,
-                           ram_page_a, ram_page_b,
-                           rom_page_a, rom_page_b);
+                           hwt_freq, hwt_fin);
+
+    mm : mmapper port map(ports_out.p04_mmap_int.data,
+                          ports_out.p06_mempage_a.data,
+                          ports_out.p07_mempage_b.data,
+                          addr_z80, addr_ext);
 
     hwtim : hw_timers port map(clk, rst, hwt_freq, hwt_fin);
-
-    tim : timers port map(clk, clk_z80, rst,
-     ports_out.p30_t1_freq, ports_out.p31_t1_status, ports_out.p32_t1_value,
-      ports_in.p30_t1_freq,  ports_in.p31_t1_status,  ports_in.p32_t1_value,
-     ports_out.p33_t2_freq, ports_out.p34_t2_status, ports_out.p35_t2_value,
-      ports_in.p33_t2_freq,  ports_in.p34_t2_status,  ports_in.p35_t2_value,
-     ports_out.p36_t3_freq, ports_out.p37_t3_status, ports_out.p38_t3_value,
-      ports_in.p36_t3_freq,  ports_in.p37_t3_status,  ports_in.p38_t3_value,
-                          cry_fin);
 
     kbd : kbd_ctrl port map(clk_z80, rst, keys_down, on_key_down, int_on_key,
                             ports_out.p01_kbd, ports_in.p01_kbd);
