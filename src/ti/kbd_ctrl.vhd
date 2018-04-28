@@ -1,8 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.io_comm.all;
-use work.util.all;
+use work.ti_comm.all;
 
 entity kbd_ctrl is port(
     clk, rst : in std_logic;
@@ -26,7 +25,8 @@ architecture arch of kbd_ctrl is
 begin
     grp_reg : reg generic map(8)
                   port map(clk, grp_rst, kbd_o.wr, kbd_o.data, grp);
-    grp_rst <= rst or (kbd_o.wr and bool_sl(kbd_o.data = x"ff"));
+    grp_rst <= '1' when rst = '1' or (kbd_o.wr = '1' and kbd_o.data = x"ff")
+          else '0';
 
     kbd_i.int <= int_on_key and on_key_down;
     and_groups : process(grp, keys_down)

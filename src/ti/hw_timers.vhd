@@ -1,6 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use work.io_comm.all;
+use work.ti_comm.all;
 
 entity hw_timers is port(
     clk, rst : in std_logic;

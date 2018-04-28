@@ -48,7 +48,7 @@ architecture arch of comp is
         rom_page_a, rom_page_b : in std_logic_vector(4 downto 0));
     end component;
 
-    component io port(
+    component ti port(
         clk, clk_z80, clk_vga, rst : in std_logic;
         int : out std_logic;
         cbo : in ctrlbus_out;
@@ -77,14 +77,14 @@ architecture arch of comp is
     signal addr : std_logic_vector(15 downto 0);
     signal cbi : ctrlbus_in;
     signal int : std_logic;
-    signal data, data_z80, data_mem, data_io : std_logic_vector(7 downto 0);
+    signal data, data_z80, data_mem, data_ti : std_logic_vector(7 downto 0);
 
     signal rst : std_logic;
     signal clk_z80, clk_vga : std_logic;
     signal clk_z80_div : integer range 0 to 24;
     signal clk_vga_div : integer range 0 to 3;
 
-    -- io <-> memory
+    -- ti <-> memory
     signal mem_mode : std_logic;
     signal ram_rom_a, ram_rom_b : std_logic;
     signal ram_page_a, ram_page_b : std_logic;
@@ -132,7 +132,7 @@ begin
     cbi.reset <= rst;
 
     -- OR data bus instead of tristate
-    data <= data_z80 or data_mem or data_io;
+    data <= data_z80 or data_mem or data_ti;
 
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
     mem : memory port map(clk, rst, cbo, addr,
@@ -141,8 +141,8 @@ begin
                           ram_rom_a, ram_rom_b,
                           ram_page_a, ram_page_b,
                           rom_page_a, rom_page_b);
-    io_comp : io port map(clk, clk_z80, clk_vga, rst,
-                          int, cbo, addr(7 downto 0), data, data_io,
+    ti_comp : ti port map(clk, clk_z80, clk_vga, rst,
+                          int, cbo, addr(7 downto 0), data, data_ti,
                           vga_red, vga_green, vga_blue, hsync, vsync,
                           mem_mode,
                           ram_rom_a, ram_rom_b,

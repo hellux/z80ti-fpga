@@ -1,6 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use work.io_comm.all;
+use work.ti_comm.all;
 
 entity timers is port(
     clk, clk_z80, rst : in std_logic;
@@ -47,7 +47,7 @@ end arch_timers;
 
 library ieee;
 use ieee.std_logic_1164.all;
-use work.io_comm.all;
+use work.ti_comm.all;
 
 entity timer is port(
     clk, clk_cry, clk_z80, rst : in std_logic;

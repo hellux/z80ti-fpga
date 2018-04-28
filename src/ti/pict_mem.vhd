@@ -1,9 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.io_comm.all;
-
--- TODO do_lcd
+use work.ti_comm.all;
 
 entity pict_mem is port (
     clk, clk_z80, rst : in std_logic;

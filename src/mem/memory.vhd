@@ -93,11 +93,11 @@ begin
     -- memory mapping
     with ram_rom_a select pagea <=
         ROM_START(19) & rom_page_a         when '0',
-        RAM_START(19) & ram_page_a & "000" when '1',
+        RAM_START(19) & "000" & ram_page_a when '1',
         (others => '0')                    when others;
     with ram_rom_b select pageb <=
         ROM_START(19) & rom_page_b         when '0',
-        RAM_START(19) & ram_page_b & "000" when '1',
+        RAM_START(19) & "000" & ram_page_b when '1',
         (others => '0')                    when others;
 
     page0 <= ROM_START(19 downto 14);

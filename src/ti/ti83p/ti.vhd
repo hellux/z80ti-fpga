@@ -1,9 +1,9 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use work.z80_comm.all;
-use work.io_comm.all;
+use work.ti_comm.all;
 
-entity io is port(
+entity ti is port(
     clk, clk_z80, clk_vga, rst : in std_logic;
 -- buses
     int : out std_logic;
@@ -21,9 +21,9 @@ entity io is port(
     ram_rom_a, ram_rom_b : out std_logic; -- 0: rom, 1: ram
     ram_page_a, ram_page_b : out std_logic;
     rom_page_a, rom_page_b : out std_logic_vector(4 downto 0));
-end io;
+end ti;
 
-architecture arch of io is
+architecture arch of ti is
     component asic port(
         clk, clk_z80, rst : in std_logic;
         int : out std_logic;
