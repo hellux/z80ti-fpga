@@ -43,6 +43,11 @@ begin
                 state.prefix <= ctrl.prefix_next;
             end if;
 
+            -- set im
+            if ctrl.instr_end = '1' then
+                state.im <= ctrl.im_next;
+            end if;
+
             -- reset
             if cbi.reset = '1' then
                 state.im <= 0;

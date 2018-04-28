@@ -2160,6 +2160,19 @@ architecture arch of op_decoder is
         return f;
     end si;
 
+    function set_im(state : state_t; f_in : id_frame_t;
+                    mode : integer range 0 to 2)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.t is
+        when t4 => 
+            f.ct.im_next := mode;
+            f.ct.cycle_end := '1';
+            f.ct.instr_end := '1';
+        when others => null; end case;
+        return f;
+    end set_im;
+
     function im0(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -2267,6 +2280,7 @@ architecture arch of op_decoder is
     type rp_table_t is array(0 to 3) of integer range 0 to 15;
     type alu_table_t is array(0 to 7) of instr_t;
     type xy_table_t is array(0 to 1) of integer range 0 to 15;
+    type im_table_t is array(0 to 7) of integer range 0 to 2;
     type prefix_table_t is array(0 to 1) of id_prefix_t;
     constant bli4 : bli_row_t := (ldi_i, cpi_i, ini_i, outi_i);
     constant bli5 : bli_row_t := (ldd_i, cpd_i, ind_i, outd_i);
@@ -2281,6 +2295,7 @@ architecture arch of op_decoder is
                                    sla_i, sra_i, sll_i, srl_i);
     constant afi : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
                                    daa_i, cpl_i, scf_i, ccf_i);
+    constant im : im_table_t := (0, 1, 1, 2, 0, 1, 1, 2);
     constant rxy : xy_table_t := (regIX, regIY);
     constant pxy : prefix_table_t := (ddcb_d, fdcb_d);
     constant pxy_d : prefix_table_t := (ddcb, fdcb);
@@ -2312,7 +2327,10 @@ begin
         end if;
 
         -- set all signals to defaults (overwrite below)
-        f.ct := (mode_next => state.mode, prefix_next => main, others => '0');
+        f.ct := (mode_next => state.mode,
+                 im_next => state.im,
+                 prefix_next => main,
+                 others => '0');
         f.cb := (others => '0');
         f.cw := (dbus_src => none,
                  abus_src => none,
@@ -2493,7 +2511,7 @@ begin
                     when 1 => f := unimp(state, f); -- TODO RETI
                     when others => f := unimp(state, f); -- TODO RETN
                     end case;
-                when 6 => f := unimp(state, f); -- TODO IM im[y]
+                when 6 => f := set_im(state, f, im(s.y));
                 when 7 =>
                     case s.y is
                     when 0 => --f := ld_i_a(state, f);
