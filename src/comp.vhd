@@ -117,8 +117,6 @@ architecture arch of comp is
     signal x_vga : std_logic_vector(6 downto 0);
     signal y_vga : std_logic_vector(5 downto 0);
     signal addr_ext : std_logic_vector(19 downto 0);
-
-    signal data_mem_tmp : std_logic_vector(7 downto 0);
 begin
     -- input sync
     op_btns : process(clk) begin
@@ -157,7 +155,7 @@ begin
     cbi.int <= int;
     cbi.reset <= rst;
     -- OR data bus instead of tristate
-    data <= data_z80 or data_mem or data_ti or data_mem_tmp;
+    data <= data_z80 or data_mem or data_ti;
 
     -- cpu / asic
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
@@ -173,11 +171,10 @@ begin
     mem : mem_ctrl port map(clk, clk_z80, rst, cbo, addr_ext, data, data_mem,
                             maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                             mwe_c, mlb_c, mub_c, mwait);
+    -- TODO add kbd enc
+    -- kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_clk,
+    --                        keys_down, on_key_down);
 
     -- debug
     mon : monitor port map(clk, btns_op, dbg_z80, seg, led, an);
-
-    -- tmp internal mem
-    memtmp : memory port map(clk, rst, cbo, addr,
-                          data, data_mem_tmp);
 end arch;

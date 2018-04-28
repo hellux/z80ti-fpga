@@ -28,6 +28,15 @@ architecture arch of comp_tb is
         an : out std_logic_vector(3 downto 0));
     end component;
 
+    component m45 port(
+        clk : in std_logic;
+        maddr : in std_logic_vector(26 downto 0);
+        mdata : inout std_logic_vector(15 downto 0);
+        mclk, madv_c, mcre, mce_c, moe_c, mwe_c : in std_logic;
+        mlb_c, mub_c : in std_logic;
+        mwait : out std_logic);
+    end component;
+
     signal clk, rst : std_logic;
 
     signal btns : std_logic_vector(4 downto 0);
@@ -55,6 +64,9 @@ begin
                       maddr, mdata, mclk, madv_c, mcre, mce_c,
                       moe_c, mwe_c, mlb_c, mub_c, mwait,
                       seg, led, an);
+    m : m45 port map(clk,
+                     maddr, mdata, mclk, madv_c, mcre, mce_c,
+                     moe_c, mwe_c, mlb_c, mub_c, mwait);
     process begin
         clk <= '1';
         wait for 5 ns;

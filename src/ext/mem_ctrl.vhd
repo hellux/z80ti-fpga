@@ -16,17 +16,57 @@ entity mem_ctrl is port(
     mwait : in std_logic);
 end mem_ctrl;
 
+-- READ
+--                                ¦<---~170 ns--->¦
+--                |      t1       |      t2       |      t3        |
+--                 _______         _______         _______          ______
+-- clk_z80  ______|       |_______|       |_______¦       ¦________¦      
+--
+-- addr_z80 ======|<===invalid===>|<====VALID===========VALID=============
+--                                 _______________ 
+-- mreq     ______________________|               |_______________________
+--                                 _______________ 
+-- rd       ______________________¦               ¦_______________________
+--
+-- data_z80 ======|<===invalid========invalid====>|<====VALID=====>|======
+
+-- WRITE
+--                |      t1       |      t2       |      t3        |
+--                 _______         _______         _______          ______
+-- clk_z80  ______|       |_______|       |_______¦       ¦________¦      
+--
+-- addr_z80 ======|<===invalid===>|<====VALID===========VALID=============
+--                                 ________________________________
+-- mreq     ______________________|                                |______
+--                                                 ________________ 
+-- rd       ______________________________________|                |______
+--
+-- data_z80 ======|<===invalid========invalid====>|<====VALID=====>|======
+
+-- memory: Micron M45W8MW16
+
 architecture arch of mem_ctrl is
+    signal rd, wr, addr_rdy : std_logic;
 begin
-    data_out <= x"00";
+    -- interpret cbus
+    addr_rdy <= cbo.mreq;
+    rd <= cbo.mreq and cbo.rd;
+    wr <= cbo.mreq and cbo.wr;
+
+    -- DQ -> z80
+    data_out <= mdata(7 downto 0) when rd = '1' and mwait = 'Z' else x"00";
+    -- z80 -> DQ
+    mdata <= x"00" & data_in when wr = '1' else (others => 'Z');
+    -- z80/mmap -> A
     maddr <= "0000000" & addr_ext;
-    mdata <= x"00" & data_in;
-    madv_c <= not cbo.mreq;
-    mcre <= '0';
-    mce_c <= not cbo.mreq;
-    moe_c <= not (cbo.mreq and cbo.rd);
-    mwe_c <= not (cbo.mreq and cbo.wr);
+
+    madv_c <= not addr_rdy;
+    mce_c <= not addr_rdy;
+    moe_c <= not rd;
+    mwe_c <= not wr;
+
     mclk <= '0'; -- use asynchronous ops
     mub_c <= '1'; -- never use upper byte;
     mlb_c <= '0'; -- always use lower byte;
+    mcre <= '0'; -- do not configure
 end arch;

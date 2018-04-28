@@ -2502,8 +2502,8 @@ begin
                     end case;
                 when 3 =>
                     case s.q is
-                    when 0 => f := ld_nnx_rp(state, f, rp(s.p)); -- TODO LD (nn), rp[p]
-                    when 1 => f := ld_rp_nnx(state, f, rp(s.p)); -- TODO LD rp[p], (nn)
+                    when 0 => f := ld_nnx_rp(state, f, rp(s.p));
+                    when 1 => f := ld_rp_nnx(state, f, rp(s.p));
                     end case;
                 when 4 => f := alu_af(state, f, neg_i);
                 when 5 =>
@@ -2514,8 +2514,8 @@ begin
                 when 6 => f := set_im(state, f, im(s.y));
                 when 7 =>
                     case s.y is
-                    when 0 => --f := ld_i_a(state, f);
-                    when 1 => --f := ld_r_a(state, f);
+                    when 0 => --f := ld_i_a(state, f); -- TODO
+                    when 1 => --f := ld_r_a(state, f); -- TODO
                     when 2 => f := ld_a_i_r(state, f, i_o);
                     when 3 => f := ld_a_i_r(state, f, r_o);
                     when 4 => f := rld_rrd(state, f, rrd1_i, rrd2_i);

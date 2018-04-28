@@ -178,8 +178,8 @@ begin
     parr_in <= (
         16#00# => (x"00", '0'),          -- link port lines
         16#08# => (x"00", '0'),
-        16#09# => ports_in.p01_kbd,
         16#01# => ports_in.p01_kbd,
+        16#09# => ports_in.p01_kbd,
         16#02# => (x"e1", '0'),          -- battery level
         16#0a# => (x"e1", '0'),
         16#03# => p03_intmask,
