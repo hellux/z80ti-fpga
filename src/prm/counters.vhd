@@ -34,8 +34,7 @@ entity dcntr is generic(bitwidth : integer); port(
     ld : in std_logic;
     ce1, ce2 : in std_logic;
     di : in std_logic_vector(bitwidth-1 downto 0);
-    do : out std_logic_vector(bitwidth-1 downto 0);
-    rc : out std_logic);
+    do : out std_logic_vector(bitwidth-1 downto 0));
 end dcntr;
 
 architecture arch of dcntr is

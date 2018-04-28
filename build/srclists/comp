@@ -14,6 +14,7 @@ src/mem/memory.vhd
 src/io/io.vhd
 src/io/asic.vhd
 src/io/timers.vhd
+src/io/hw_timers.vhd
 src/io/kbd_ctrl.vhd
 src/io/lcd_ctrl.vhd
 src/io/vga_motor.vhd

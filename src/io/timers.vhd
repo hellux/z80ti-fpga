@@ -79,8 +79,7 @@ architecture arch_timer of timer is
         ld : in std_logic;
         ce1, ce2 : in std_logic;
         di : in std_logic_vector(bitwidth-1 downto 0);
-        do : out std_logic_vector(bitwidth-1 downto 0);
-        rc : out std_logic);
+        do : out std_logic_vector(bitwidth-1 downto 0));
     end component;
     component ff port(
         clk, rst : in std_logic;
@@ -119,8 +118,7 @@ begin
     tim_clk <= '1' when cntr_val = x"000" and cntr_clk = '1' else '0';
 
     -- timer
-    tim_ld <= '1' when count.wr = '1' or (tim_finish = '1' and loop_f = '1')
-              else '0';
+    tim_ld <= count.wr or (tim_finish and loop_f);
     timer_cntr : dcntr generic map(8)
                        port map(clk, rst, tim_ld, active, tim_clk,
                                 count_buf, tim_current);
