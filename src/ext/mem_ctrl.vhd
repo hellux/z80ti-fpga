@@ -18,6 +18,7 @@ end mem_ctrl;
 
 architecture arch of mem_ctrl is
 begin
+    data_out <= x"00";
     maddr <= "0000000" & addr_ext;
     mdata <= x"00" & data_in;
     madv_c <= not cbo.mreq;
