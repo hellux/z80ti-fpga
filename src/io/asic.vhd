@@ -18,6 +18,7 @@ entity asic is port(
     ports_out : out ports_out_t;                 -- (cpu -> port) to ctrl 
 -- special inter io signals
     on_key_down : in std_logic;
+    int_on_key : out std_logic;
     cry_fin : in std_logic_vector(1 to 3);
     hwt_freq : out std_logic_vector(1 downto 0);
     hwt_fin : in std_logic_vector(1 to 2));
@@ -50,8 +51,8 @@ architecture arch of asic is
 
     -- internal states
     signal mem_mode : std_logic; -- memory mode 0 or 1
-    signal int_on_key : std_logic; -- on key will trigger interrupt
-    signal int_hwt : std_logic_vector(1 to 2); -- hardware timers will trigger
+    signal int_on_key_b : std_logic; -- on key will trigger interrupt
+    signal hwt_int : std_logic_vector(1 to 2); -- hardware timers will trigger
     signal int_dev : int_dev_t; -- interrupt device
 
     -- internal asic ports
@@ -70,10 +71,10 @@ begin
     p03_intmask.data <= "---" &
                         '0' & -- linkport will gen interrupt (never)
                         "-" &
-                        int_hwt(2) &
-                        int_hwt(1) &
-                        int_on_key;
-    p03_intmask.int <= int_on_key and on_key_down;
+                        hwt_int(2) &
+                        hwt_int(1) &
+                        int_on_key_b;
+    p03_intmask.int <= hwt_fin(1) and hwt_int(1);
     p04_mmap_int.data <= cry_fin(3) &
                          cry_fin(2) &
                          cry_fin(1) &
@@ -82,7 +83,7 @@ begin
                          bool_sl(int_dev = hwt2) &
                          bool_sl(int_dev = hwt1) &
                          bool_sl(int_dev = on_key);
-    p04_mmap_int.int <= '0';
+    p04_mmap_int.int <= hwt_fin(2) and hwt_int(2);
 
     -- internal ports out ctrl
     p03 : process(clk_z80)
@@ -90,11 +91,12 @@ begin
     begin
         p := p03_intmask_out;
         if rising_edge(clk_z80) and p.wr = '1' then
-            int_on_key <= p.data(0);
-            int_hwt(1) <= p.data(1);
-            int_hwt(2) <= p.data(2);
+            int_on_key_b <= p.data(0);
+            hwt_int(1) <= p.data(1);
+            hwt_int(2) <= p.data(2);
         end if;
     end process;
+    int_on_key <= int_on_key_b;
     p04 : process(clk_z80)
         variable p : port_out_t;
     begin
@@ -106,14 +108,16 @@ begin
     end process;
 
     -- interrupt handling (send int until acknowledgment)
-    int <= '1' when int_dev /= none else '0';
+    int <= bool_sl(int_dev /= none);
     process(clk) begin
         if rising_edge(clk) then
             if int_dev = none then
                 for i in parr_in'range loop
                     if parr_in(i).int = '1' then
                         case i is
-                        when 16#03# => int_dev <= on_key;
+                        when 16#01# => int_dev <= on_key;
+                        when 16#03# => int_dev <= hwt1;
+                        when 16#04# => int_dev <= hwt2;
                         when 16#31# => int_dev <= cry1;
                         when 16#32# => int_dev <= cry2;
                         when 16#33# => int_dev <= cry3;
@@ -128,8 +132,8 @@ begin
         end if;
     end process;
 
-    -- port(a) -> data bus
     a <= to_integer(unsigned(addr));
+    -- port(a) -> data bus
     data_out <= parr_in(a).data when in_op = '1' else x"00";
     -- data bus, rd/wr -> port(a), 0 -> rest
     port_array : process(a, data_in, in_op, out_op) begin
@@ -144,11 +148,11 @@ begin
     end process;
 
     -- data bus -> ports
-    -- TODO port 00/08 link ctrl
+    -- TODO port 00/08 link ctrl (possibly respond to request)
     ports_out.p01_kbd        <= mp(parr_out, 16#01#, 16#01#, 16#01#, 16#09#);
     p03_intmask_out          <= mp(parr_out, 16#03#, 16#03#, 16#03#, 16#0b#);
     p04_mmap_int_out         <= mp(parr_out, 16#04#, 16#04#, 16#04#, 16#0c#);
-    -- TODO port 05/0d linkport byte
+    -- TODO port 05/0d linkport byte (possibly respond to request)
     -- TODO port 06/0e mem page a
     -- TODO port 07/0f mem page b
     ports_out.p10_lcd_status <= mp(parr_out, 16#10#, 16#12#, 16#18#, 16#1a#);

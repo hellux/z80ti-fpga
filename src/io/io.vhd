@@ -29,6 +29,7 @@ architecture arch of io is
         ports_in : in ports_in_t;
         ports_out : out ports_out_t;
         on_key_down : in std_logic;
+        int_on_key : out std_logic;
         cry_fin : in std_logic_vector(1 to 3);
         hwt_freq : out std_logic_vector(1 downto 0);
         hwt_fin : in std_logic_vector(1 to 2));
@@ -54,6 +55,8 @@ architecture arch of io is
     component kbd_ctrl port(
         clk, rst : in std_logic;
         keys_down : in keys_down_t;
+        on_key_down : in std_logic;
+        int_on_key : in std_logic;
         kbd_o : in port_out_t;
         kbd_i : out port_in_t);
     end component;
@@ -110,6 +113,7 @@ architecture arch of io is
     signal ports_out : ports_out_t;
     signal ports_in : ports_in_t;
     signal on_key_down : std_logic;
+    signal int_on_key : std_logic;
     signal cry_fin : std_logic_vector(1 to 3);
     signal hwt_fin : std_logic_vector(1 to 2);
     signal hwt_freq : std_logic_vector(1 downto 0);
@@ -118,6 +122,7 @@ begin
                            addr, data_in, data_out,
                            ports_in, ports_out,
                            on_key_down,
+                           int_on_key,
                            cry_fin,
                            hwt_freq, hwt_fin);
 
@@ -132,7 +137,7 @@ begin
       ports_in.p36_t3_freq,  ports_in.p37_t3_status,  ports_in.p38_t3_value,
                           cry_fin);
 
-    kbd : kbd_ctrl port map(clk_z80, rst, keys_down,
+    kbd : kbd_ctrl port map(clk_z80, rst, keys_down, on_key_down, int_on_key,
                             ports_out.p01_kbd, ports_in.p01_kbd);
 
     lcd : lcd_ctrl port map(clk_z80, rst,
