@@ -6,7 +6,7 @@ use work.io_comm.all;
 use work.util.all;
 
 entity asic is port(
-    clk, clk_z80 : in std_logic;
+    clk, clk_z80, rst : in std_logic;
 -- buses
     int : out std_logic;
     cbo : in ctrlbus_out;
@@ -25,6 +25,13 @@ entity asic is port(
 end asic;
 
 architecture arch of asic is
+    component reg generic(size : integer); port(
+        clk, rst : in std_logic;
+        rd : in std_logic;
+        di : in std_logic_vector(size-1 downto 0);
+        do : out std_logic_vector(size-1 downto 0));
+    end component;
+
     type ports_out_array_t is array(0 to 255) of port_out_t;
     type ports_in_array_t  is array(0 to 255) of port_in_t;
     type rw_array_t is array(0 to 255) of std_logic;
@@ -57,10 +64,11 @@ architecture arch of asic is
 
     -- internal asic ports
     signal p03_intmask : port_in_t;
-    signal p04_mmap_int : port_in_t;
-
     signal p03_intmask_out : port_out_t;
+    signal p03_intmask_buf : std_logic_vector(7 downto 0);
+    signal p04_mmap_int : port_in_t;
     signal p04_mmap_int_out : port_out_t;
+    signal p04_mmap_int_buf : std_logic_vector(7 downto 0);
 begin
     -- interpret control bus
     int_ack <= cbo.iorq and cbo.m1;
@@ -86,26 +94,19 @@ begin
     p04_mmap_int.int <= hwt_fin(2) and hwt_int(2);
 
     -- internal ports out ctrl
-    p03 : process(clk_z80)
-        variable p : port_out_t;
-    begin
-        p := p03_intmask_out;
-        if rising_edge(clk_z80) and p.wr = '1' then
-            int_on_key_b <= p.data(0);
-            hwt_int(1) <= p.data(1);
-            hwt_int(2) <= p.data(2);
-        end if;
-    end process;
+    p03_buf : reg generic map(8)
+                  port map(clk_z80, rst, p03_intmask_out.wr,
+                           p03_intmask_out.data, p03_intmask_buf);
+    int_on_key_b <= p03_intmask_buf(0);
     int_on_key <= int_on_key_b;
-    p04 : process(clk_z80)
-        variable p : port_out_t;
-    begin
-        p := p04_mmap_int_out;
-        if rising_edge(clk_z80) and p.wr = '1' then
-            mem_mode <= p.data(0);
-            hwt_freq <= p.data(2 downto 1);
-        end if;
-    end process;
+    hwt_int(1) <= p03_intmask_buf(1);
+    hwt_int(2) <= p03_intmask_buf(2);
+
+    p04_buf : reg generic map(8)
+                  port map(clk_z80, rst, p04_mmap_int_out.wr,
+                           p04_mmap_int_out.data, p04_mmap_int_buf);
+    mem_mode <= p04_mmap_int_buf(0);
+    hwt_freq <= p04_mmap_int_buf(2 downto 1);
 
     -- interrupt handling (send int until acknowledgment)
     int <= bool_sl(int_dev /= none);
