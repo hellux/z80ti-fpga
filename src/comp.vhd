@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use work.z80_comm.all;
+use work.ti_comm.all;
 
 entity comp is port(
     clk : in std_logic;
@@ -51,11 +52,25 @@ architecture arch of comp is
         addr_z80 : in std_logic_vector(15 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
-        vga_red : out std_logic_vector(2 downto 0);
-        vga_green : out std_logic_vector(2 downto 0);
-        vga_blue : out std_logic_vector(2 downto 1);
-        hsync, vsync : out std_logic;
+        keys_down : in keys_down_t;
+        on_key_down : in std_logic;
+        x_vga : in std_logic_vector(6 downto 0);
+        y_vga : in std_logic_vector(5 downto 0);
+        data_vga : out std_logic;
         addr_ext : out std_logic_vector(19 downto 0));
+    end component;
+
+    component vga_motor port(
+         clk : in std_logic;
+         data : in std_logic;
+         rst : in std_logic;
+         x : out std_logic_vector(6 downto 0);
+         y : out std_logic_vector(5 downto 0);
+         vgaRed	: out std_logic_vector(2 downto 0);
+         vgaGreen : out std_logic_vector(2 downto 0);
+         vgaBlue : out std_logic_vector(2 downto 1);
+         Hsync : out std_logic;
+         Vsync : out std_logic);
     end component;
 
     component monitor port(
@@ -77,12 +92,17 @@ architecture arch of comp is
     signal clk_z80_div : integer range 0 to 24;
     signal clk_vga_div : integer range 0 to 3;
 
-    -- ti <-> memory
-    signal addr_ext : std_logic_vector(19 downto 0);
-
     signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
 
     signal dbg_z80 : dbg_z80_t;
+
+    -- ti <-> external
+    signal keys_down : keys_down_t;
+    signal on_key_down : std_logic;
+    signal data_vga : std_logic;
+    signal x_vga : std_logic_vector(6 downto 0);
+    signal y_vga : std_logic_vector(5 downto 0);
+    signal addr_ext : std_logic_vector(19 downto 0);
 begin
     -- input sync
     op_btns : process(clk) begin
@@ -120,18 +140,23 @@ begin
     cbi.wt <= '0';
     cbi.int <= int;
     cbi.reset <= rst;
-
     -- OR data bus instead of tristate
     data <= data_z80 or data_mem or data_ti;
 
+    -- cpu / asic
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
-    mem : memory port map(clk, rst, cbo, addr,
-                          data, data_mem);
     ti_comp : ti port map(clk, clk_z80, clk_vga, rst,
                           int, cbo, addr, data, data_ti,
-                          vga_red, vga_green, vga_blue, hsync, vsync,
+                          keys_down, on_key_down,
+                          x_vga, y_vga, data_vga,
                           addr_ext);
 
-    -- DEBUG
+    -- external controllers
+    mem : memory port map(clk, rst, cbo, addr,
+                          data, data_mem);
+    vga : vga_motor port map(clk, data_vga, rst, x_vga, y_vga,
+                             vga_red, vga_green, vga_blue, hsync, vsync);
+
+    -- debug
     mon : monitor port map(clk, btns_op, dbg_z80, seg, led, an);
 end arch;

@@ -12,11 +12,11 @@ entity ti is port(
     data_in : in std_logic_vector(7 downto 0);
     data_out : out std_logic_vector(7 downto 0);
 -- external
-    vga_red : out std_logic_vector(2 downto 0);
-    vga_green : out std_logic_vector(2 downto 0);
-    vga_blue : out std_logic_vector(2 downto 1);
-    hsync, vsync : out std_logic;
--- memory mapping
+    keys_down : in keys_down_t;
+    on_key_down : in std_logic;
+    x_vga : in std_logic_vector(6 downto 0);
+    y_vga : in std_logic_vector(5 downto 0);
+    data_vga : out std_logic;
     addr_ext : out std_logic_vector(19 downto 0));
 end ti;
 
@@ -81,35 +81,15 @@ architecture arch of ti is
         do_lcd: out std_logic_vector(7 downto 0));
     end component;
 
-    component vga_motor port(
-         clk : in std_logic;
-         data : in std_logic;
-         rst : in std_logic;
-         x : out std_logic_vector(6 downto 0);
-         y : out std_logic_vector(5 downto 0);
-         vgaRed	: out std_logic_vector(2 downto 0);
-         vgaGreen : out std_logic_vector(2 downto 0);
-         vgaBlue : out std_logic_vector(2 downto 1);
-         Hsync : out std_logic;
-         Vsync : out std_logic);
-    end component;
-
-    -- lcd ctrl <-> pict mem <-> vga motor
-    signal x_vga : std_logic_vector(6 downto 0);
-    signal y_vga : std_logic_vector(5 downto 0);
+    -- lcd ctrl <-> pict mem
     signal x_lcd : std_logic_vector(5 downto 0);
     signal y_lcd : std_logic_vector(4 downto 0);
     signal gmem_lcd_data, lcd_gmem_data : std_logic_vector(7 downto 0);
-    signal gmem_vga_data : std_logic;
     signal gmem_rst, gmem_rd, gmem_wl : std_logic;
-
-    -- kbd ctrl <-> kbd_enc
-    signal keys_down : keys_down_t;
 
     -- asic <-> controllers
     signal ports_out : ports_out_t;
     signal ports_in : ports_in_t;
-    signal on_key_down : std_logic;
     signal int_on_key : std_logic;
     signal hwt_fin : std_logic_vector(1 to 2);
     signal hwt_freq : std_logic_vector(1 downto 0);
@@ -138,7 +118,5 @@ begin
         ports_in.p10_lcd_status, ports_in.p11_lcd_data);
     gmem : pict_mem port map(clk, clk_z80, gmem_rst, gmem_rd, gmem_wl,
                              lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,
-                             gmem_vga_data, gmem_lcd_data);
-    vga : vga_motor port map(clk, gmem_vga_data, rst, x_vga, y_vga,
-                             vga_red, vga_green, vga_blue, hsync, vsync);
+                             data_vga, gmem_lcd_data);
 end arch;
