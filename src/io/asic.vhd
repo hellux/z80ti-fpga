@@ -21,7 +21,12 @@ entity asic is port(
     int_on_key : out std_logic;
     cry_fin : in std_logic_vector(1 to 3);
     hwt_freq : out std_logic_vector(1 downto 0);
-    hwt_fin : in std_logic_vector(1 to 2));
+    hwt_fin : in std_logic_vector(1 to 2);
+-- memory mapping
+    mem_mode : out std_logic; -- memory mode 0 or 1
+    ram_rom_a, ram_rom_b : out std_logic; -- 0: rom, 1: ram
+    ram_page_a, ram_page_b : out std_logic;
+    rom_page_a, rom_page_b : out std_logic_vector(4 downto 0));
 end asic;
 
 architecture arch of asic is
@@ -57,13 +62,8 @@ architecture arch of asic is
     signal parr_in : ports_in_array_t;
 
     -- internal states
-    signal mem_mode : std_logic; -- memory mode 0 or 1
-    signal int_on_key_b : std_logic; -- on key will trigger interrupt
     signal hwt_int : std_logic_vector(1 to 2); -- hardware timers will trigger
     signal int_dev : int_dev_t; -- interrupt device
-    signal ram_rom_a, ram_rom_b : std_logic; -- 0: rom, 1: ram
-    signal ram_page_a, ram_page_b : std_logic;
-    signal rom_page_a, rom_page_b : std_logic_vector(4 downto 0);
 
     -- internal asic ports
     signal p03_intmask : port_in_t;
@@ -109,8 +109,7 @@ begin
                   port map(clk_z80, rst, p03_intmask_out.wr,
                            p03_intmask_out.data(2 downto 0),
                            p03_intmask_buf);
-    int_on_key_b <= p03_intmask_buf(0);
-    int_on_key <= int_on_key_b;
+    int_on_key <= p03_intmask_buf(0);
     hwt_int(1) <= p03_intmask_buf(1);
     hwt_int(2) <= p03_intmask_buf(2);
 

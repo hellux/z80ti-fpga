@@ -4,15 +4,17 @@ use work.z80_comm.all;
 
 -- TODO
 --  -flash
---  -pages
---  -split rom/ram
 
 entity memory is port(
     clk, rst : in std_logic;
     cbo : in ctrlbus_out;
     addr : in std_logic_vector(15 downto 0);
     data_in : in std_logic_vector(7 downto 0);
-    data_out : out std_logic_vector(7 downto 0));
+    data_out : out std_logic_vector(7 downto 0);
+    mode : in std_logic; -- memory mode 0 or 1
+    ram_rom_a, ram_rom_b : in std_logic; -- 0: rom, 1: ram
+    ram_page_a, ram_page_b : in std_logic;
+    rom_page_a, rom_page_b : in std_logic_vector(4 downto 0));
 end memory;
 
 --            MEMORY LAYOUT
@@ -41,16 +43,16 @@ end memory;
 --        mode 0                  mode 1
 --    ______________          ______________
 --   |              | 0x0000 |              |
---   |    ROM 00    |        |    ROM 00    |
+--   |    ROM 00    |   :    |    ROM 00    |
 --   |______________| 0x3fff |______________|
 --   |              | 0x4000 |              |
---   |  MEM PAGE A  |        |  MEM PAGE A  |
+--   |  MEM PAGE A  |   :    |  MEM PAGE A  |
 --   |______________| 0x7fff |__(even page)_|
 --   |              | 0x8000 |              |
---   |  MEM PAGE B  |        |  MEM PAGE A  |
+--   |  MEM PAGE B  |   :    |  MEM PAGE A  |
 --   |______________| 0xbfff |______________|
 --   |              | 0xc000 |              |
---   |    RAM  0    |        |  MEM PAGE B  |
+--   |    RAM  0    |   :    |  MEM PAGE B  |
 --   |______________| 0xffff |______________|
 
 architecture arch of memory is
@@ -71,11 +73,7 @@ architecture arch of memory is
     signal rom_ce : std_logic;
     signal rom_addr : std_logic_vector(13 downto 0);
 
-    --tmp should be io
-    signal mode : std_logic;
-    signal ram_rom_a, ram_rom_b : std_logic; -- 0: rom, 1: ram
-    signal ram_page_a, ram_page_b : std_logic;
-    signal rom_page_a, rom_page_b : std_logic_vector(4 downto 0);
+    -- tmp should be external
     signal addr_ext : std_logic_vector(19 downto 0);
 
     signal page0, page1, page2, page3 : std_logic_vector(5 downto 0);

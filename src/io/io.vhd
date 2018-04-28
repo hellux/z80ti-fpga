@@ -15,7 +15,12 @@ entity io is port(
     vga_red : out std_logic_vector(2 downto 0);
     vga_green : out std_logic_vector(2 downto 0);
     vga_blue : out std_logic_vector(2 downto 1);
-    hsync, vsync : out std_logic);
+    hsync, vsync : out std_logic;
+-- memory mapping
+    mem_mode : out std_logic; -- memory mode 0 or 1
+    ram_rom_a, ram_rom_b : out std_logic; -- 0: rom, 1: ram
+    ram_page_a, ram_page_b : out std_logic;
+    rom_page_a, rom_page_b : out std_logic_vector(4 downto 0));
 end io;
 
 architecture arch of io is
@@ -32,7 +37,11 @@ architecture arch of io is
         int_on_key : out std_logic;
         cry_fin : in std_logic_vector(1 to 3);
         hwt_freq : out std_logic_vector(1 downto 0);
-        hwt_fin : in std_logic_vector(1 to 2));
+        hwt_fin : in std_logic_vector(1 to 2);
+        mem_mode : out std_logic; -- memory mode 0 or 1
+        ram_rom_a, ram_rom_b : out std_logic; -- 0: rom, 1: ram
+        ram_page_a, ram_page_b : out std_logic;
+        rom_page_a, rom_page_b : out std_logic_vector(4 downto 0));
     end component;
 
     component hw_timers port(
@@ -124,7 +133,11 @@ begin
                            on_key_down,
                            int_on_key,
                            cry_fin,
-                           hwt_freq, hwt_fin);
+                           hwt_freq, hwt_fin,
+                           mem_mode,
+                           ram_rom_a, ram_rom_b,
+                           ram_page_a, ram_page_b,
+                           rom_page_a, rom_page_b);
 
     hwtim : hw_timers port map(clk, rst, hwt_freq, hwt_fin);
 
