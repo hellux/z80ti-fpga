@@ -61,14 +61,26 @@ architecture arch of asic is
     signal int_on_key_b : std_logic; -- on key will trigger interrupt
     signal hwt_int : std_logic_vector(1 to 2); -- hardware timers will trigger
     signal int_dev : int_dev_t; -- interrupt device
+    signal ram_rom_a, ram_rom_b : std_logic; -- 0: rom, 1: ram
+    signal ram_page_a, ram_page_b : std_logic;
+    signal rom_page_a, rom_page_b : std_logic_vector(4 downto 0);
 
     -- internal asic ports
     signal p03_intmask : port_in_t;
     signal p03_intmask_out : port_out_t;
-    signal p03_intmask_buf : std_logic_vector(7 downto 0);
+    signal p03_intmask_buf : std_logic_vector(2 downto 0);
+
     signal p04_mmap_int : port_in_t;
     signal p04_mmap_int_out : port_out_t;
-    signal p04_mmap_int_buf : std_logic_vector(7 downto 0);
+    signal p04_mmap_int_buf : std_logic_vector(2 downto 0);
+
+    signal p06_mempage_a : port_in_t;
+    signal p06_mempage_a_out : port_out_t;
+    signal p06_mempage_a_buf : std_logic_vector(6 downto 0);
+
+    signal p07_mempage_b : port_in_t;
+    signal p07_mempage_b_out : port_out_t;
+    signal p07_mempage_b_buf : std_logic_vector(6 downto 0);
 begin
     -- interpret control bus
     int_ack <= cbo.iorq and cbo.m1;
@@ -76,13 +88,9 @@ begin
     out_op  <= cbo.iorq and not cbo.m1 and cbo.wr;
 
     -- internal ports in signals
-    p03_intmask.data <= "---" &
-                        '0' & -- linkport will gen interrupt (never)
-                        "-" &
-                        hwt_int(2) &
-                        hwt_int(1) &
-                        int_on_key_b;
-    p03_intmask.int <= hwt_fin(1) and hwt_int(1);
+    p03_intmask <= ("---0-" & p03_intmask_buf,
+                    hwt_fin(1) and hwt_int(1));
+
     p04_mmap_int.data <= cry_fin(3) &
                          cry_fin(2) &
                          cry_fin(1) &
@@ -93,20 +101,41 @@ begin
                          bool_sl(int_dev = on_key);
     p04_mmap_int.int <= hwt_fin(2) and hwt_int(2);
 
+    p06_mempage_a <= ("-" & p06_mempage_a_buf, '0');
+    p07_mempage_b <= ("-" & p07_mempage_b_buf, '0');
+
     -- internal ports out ctrl
-    p03_buf : reg generic map(8)
+    p03_buf : reg generic map(3)
                   port map(clk_z80, rst, p03_intmask_out.wr,
-                           p03_intmask_out.data, p03_intmask_buf);
+                           p03_intmask_out.data(2 downto 0),
+                           p03_intmask_buf);
     int_on_key_b <= p03_intmask_buf(0);
     int_on_key <= int_on_key_b;
     hwt_int(1) <= p03_intmask_buf(1);
     hwt_int(2) <= p03_intmask_buf(2);
 
-    p04_buf : reg generic map(8)
+    p04_buf : reg generic map(3)
                   port map(clk_z80, rst, p04_mmap_int_out.wr,
-                           p04_mmap_int_out.data, p04_mmap_int_buf);
+                           p04_mmap_int_out.data(2 downto 0),
+                           p04_mmap_int_buf);
     mem_mode <= p04_mmap_int_buf(0);
     hwt_freq <= p04_mmap_int_buf(2 downto 1);
+
+    p06_buf : reg generic map(7)
+                  port map(clk_z80, rst, p06_mempage_a_out.wr,
+                           p06_mempage_a_out.data(6 downto 0),
+                           p06_mempage_a_buf);
+    ram_rom_a <= p06_mempage_a_buf(6);
+    rom_page_a <= p06_mempage_a_buf(4 downto 0);
+    ram_page_a <= p06_mempage_a_buf(0);
+
+    p07_buf : reg generic map(7)
+                  port map(clk_z80, rst, p07_mempage_b_out.wr,
+                           p07_mempage_b_out.data(6 downto 0),
+                           p07_mempage_b_buf);
+    ram_rom_b <= p07_mempage_b_buf(6);
+    rom_page_b <= p07_mempage_b_buf(4 downto 0);
+    ram_page_b <= p07_mempage_b_buf(0);
 
     -- interrupt handling (send int until acknowledgment)
     int <= bool_sl(int_dev /= none);
@@ -154,8 +183,8 @@ begin
     p03_intmask_out          <= mp(parr_out, 16#03#, 16#03#, 16#03#, 16#0b#);
     p04_mmap_int_out         <= mp(parr_out, 16#04#, 16#04#, 16#04#, 16#0c#);
     -- TODO port 05/0d linkport byte (possibly respond to request)
-    -- TODO port 06/0e mem page a
-    -- TODO port 07/0f mem page b
+    p06_mempage_a_out        <= mp(parr_out, 16#06#, 16#06#, 16#06#, 16#0e#);
+    p07_mempage_b_out        <= mp(parr_out, 16#07#, 16#07#, 16#07#, 16#0f#);
     ports_out.p10_lcd_status <= mp(parr_out, 16#10#, 16#12#, 16#18#, 16#1a#);
     ports_out.p11_lcd_data   <= mp(parr_out, 16#11#, 16#13#, 16#19#, 16#1b#);
     -- TODO port 14/15 flash lock
@@ -178,16 +207,16 @@ begin
         16#03# => p03_intmask,
         16#04# => p04_mmap_int,
         16#05# => (x"00", '0'),          -- current linkport byte
-        16#06# => (x"00", '0'),          -- TODO mem page A
-        16#07# => (x"00", '0'),          -- TODO mem page B
+        16#06# => p06_mempage_a,
+        16#07# => p07_mempage_b,
         16#08# => (x"00", '0'),          -- port 00 mirror
         16#09# => ports_in.p01_kbd,
         16#0a# => (x"e1", '0'),          -- port 02 mirror
         16#0b# => p03_intmask,           -- port 03 mirror
         16#0c# => p04_mmap_int,          -- port 04 mirror
         16#0d# => (x"00", '0'),          -- port 05 mirror
-        16#0e# => (x"00", '0'),          -- port 06 mirror
-        16#0f# => (x"00", '0'),          -- port 07 mirorr
+        16#0e# => p06_mempage_a,
+        16#0f# => p07_mempage_b,
         16#10# => ports_in.p10_lcd_status,
         16#11# => ports_in.p11_lcd_data,
         16#12# => ports_in.p10_lcd_status,
