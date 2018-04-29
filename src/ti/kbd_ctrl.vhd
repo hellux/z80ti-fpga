@@ -3,6 +3,9 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.ti_comm.all;
 
+-- MISSING
+-- does not reset keys down on 0x00 p01 write
+
 entity kbd_ctrl is port(
     clk, rst : in std_logic;
     keys_down : in keys_down_t;

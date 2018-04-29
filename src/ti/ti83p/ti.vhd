@@ -63,8 +63,8 @@ architecture arch of ti is
 
     component lcd_ctrl port(
         clk, rst : in std_logic;
-        gmem_data_o : in std_logic_vector(7 downto 0);
-        gmem_data_i : out std_logic_vector(7 downto 0);
+        gmem_lcd_data : in std_logic_vector(7 downto 0);
+        lcd_gmem_data : out std_logic_vector(7 downto 0);
         gmem_x : out std_logic_vector(5 downto 0);
         gmem_y : out std_logic_vector(4 downto 0);
         gmem_rst, gmem_rd, gmem_wl : out std_logic;

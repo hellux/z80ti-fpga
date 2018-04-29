@@ -10,8 +10,8 @@ use work.util.all;
 
 entity lcd_ctrl is port(
     clk, rst : in std_logic;
-    gmem_data_o : in std_logic_vector(7 downto 0);
-    gmem_data_i : out std_logic_vector(7 downto 0);
+    gmem_lcd_data : in std_logic_vector(7 downto 0);
+    lcd_gmem_data : out std_logic_vector(7 downto 0);
     gmem_x : out std_logic_vector(5 downto 0);
     gmem_y : out std_logic_vector(4 downto 0);
     gmem_rst, gmem_rd, gmem_wl : out std_logic;
@@ -100,7 +100,7 @@ begin
     end process;
 
     -- gmem <-> lcd_ctrl
-    gmem_data_i <= p11_data_o.data;
+    lcd_gmem_data <= p11_data_o.data;
     gmem_x <= std_logic_vector(unsigned(z) + to_unsigned(x, gmem_x'length));
     gmem_y <= std_logic_vector(to_unsigned(y, gmem_y'length));
     gmem_rst <= rst;
@@ -108,7 +108,7 @@ begin
     gmem_wl <= mode.wl;
 
     -- lcd_ctrl -> z80
-    p11_data_i <= (data => gmem_data_o);
+    p11_data_i <= (data => gmem_lcd_data);
     p10_status_i <= (data => mode.busy &
                              mode.wl &
                              mode.active &
