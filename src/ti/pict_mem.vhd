@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 use work.ti_comm.all;
 
 entity pict_mem is port (
-    clk, clk_z80, rst : in std_logic;
+    clk, rst : in std_logic;
     rd, wl : in std_logic;
     page_in : in std_logic_vector(7 downto 0);
     x_lcd : in std_logic_vector(5 downto 0); -- row
@@ -91,7 +91,7 @@ begin
                 do_lcd(bit_sel) <= gmem_do_lcd(0);
             end case;
 
-            if clk_z80 = '1' then
+            if clk = '1' then
                 if rd = '1' then
                     state <= load;
                     page_buf <= page_in;

@@ -6,6 +6,7 @@ entity udcntr is generic(size : integer); port(
     ld : in std_logic;
     ud : in std_logic; -- 0: down, 1: up
     ce1, ce2 : in std_logic;
+    wrap : in integer range 0 to size-1;
     di : in integer range 0 to size-1;
     do : out integer range 0 to size-1);
 end udcntr;
@@ -24,9 +25,9 @@ begin
     end process;
     count_next <= di        when ld = '1' else
                   count     when ce1 = '0' or ce2 = '0' else
-                  0         when ud = '1' and count = size-1 else
+                  0         when ud = '1' and count = wrap else
                   count + 1 when ud = '1' else
-                  size-1    when ud = '0' and count = 0 else
+                  wrap      when ud = '0' and count = 0 else
                   count - 1 when ud = '0' else 
                   0;
     do <= count;
