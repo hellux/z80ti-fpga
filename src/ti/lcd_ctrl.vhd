@@ -38,8 +38,8 @@ begin
     gmem_rd <= '1' when data_o.wr = '1' else '0';
     gmem_wl <= mode.wl;
 
-    data_i <= (gmem_data_o, '0');
-    status_i <= (mode.busy & mode.wl & mode.active & "0--" & mode.inc, '0');
+    data_i <= (data => gmem_data_o);
+    status_i <= (data => mode.busy & mode.wl & mode.active & "0--" & mode.inc);
 
     update : process(clk) begin
         if rising_edge(clk) then

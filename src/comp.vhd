@@ -112,7 +112,7 @@ architecture arch of comp is
 
     -- ti <-> external
     signal keys_down : keys_down_t;
-    signal on_key_down : std_logic;
+    signal on_key_down : std_logic := '0';
     signal data_vga : std_logic;
     signal x_vga : std_logic_vector(6 downto 0);
     signal y_vga : std_logic_vector(5 downto 0);

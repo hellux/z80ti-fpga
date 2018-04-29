@@ -22,18 +22,23 @@ end ti;
 
 architecture arch of ti is
     component asic port(
-        clk, clk_z80, rst : in std_logic;
-        int : out std_logic;
-        cbo : in ctrlbus_out;
+        clk, rst : in std_logic;
+        in_op, out_op : in std_logic;
         addr : in std_logic_vector(7 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
         ports_in : in ports_in_t;
-        ports_out : out ports_out_t;
+        ports_out : out ports_out_t);
+    end component;
+
+    component interrupt port(
+        clk, rst : in std_logic;
+        p03_intmask_o, p04_mmap_int_o : in port_out_t;
+        p04_mmap_int_i : out port_in_t;
+        hwt_fin : in std_logic_vector(1 to 2);
         on_key_down : in std_logic;
-        int_on_key : out std_logic;
-        hwt_freq : out std_logic_vector(1 downto 0);
-        hwt_fin : in std_logic_vector(1 to 2));
+        int_ack : in std_logic;
+        int : out std_logic);
     end component;
 
     component mmapper port(
@@ -45,17 +50,15 @@ architecture arch of ti is
 
     component hw_timers port(
         clk, rst : in std_logic;
-        freq : in std_logic_vector(1 downto 0);
-        fin : out std_logic_vector(1 downto 0));
+        p04_mmap_int : port_out_t;
+        fin : out std_logic_vector(1 to 2));
     end component;
 
     component kbd_ctrl port(
         clk, rst : in std_logic;
         keys_down : in keys_down_t;
-        on_key_down : in std_logic;
-        int_on_key : in std_logic;
-        kbd_o : in port_out_t;
-        kbd_i : out port_in_t);
+        p01_kbd_o : in port_out_t;
+        p01_kbd_i : out port_in_t);
     end component;
 
     component lcd_ctrl port(
@@ -81,6 +84,9 @@ architecture arch of ti is
         do_lcd: out std_logic_vector(7 downto 0));
     end component;
 
+    -- ctrl
+    signal int_ack, in_op, out_op : std_logic;
+
     -- lcd ctrl <-> pict mem
     signal x_lcd : std_logic_vector(5 downto 0);
     signal y_lcd : std_logic_vector(4 downto 0);
@@ -90,25 +96,35 @@ architecture arch of ti is
     -- asic <-> controllers
     signal ports_out : ports_out_t;
     signal ports_in : ports_in_t;
-    signal int_on_key : std_logic;
+
+    -- interrupt sources
     signal hwt_fin : std_logic_vector(1 to 2);
-    signal hwt_freq : std_logic_vector(1 downto 0);
+    signal int_on_key : std_logic;
 begin
-    asic_c : asic port map(clk, clk_z80, rst, int, cbo,
+    -- interpret control bus
+    int_ack <= cbo.iorq and cbo.m1;
+    in_op   <= cbo.iorq and not cbo.m1 and cbo.rd;
+    out_op  <= cbo.iorq and not cbo.m1 and cbo.wr;
+
+    asic_c : asic port map(clk, rst,
+                           in_op, out_op,
                            addr_z80(7 downto 0), data_in, data_out,
-                           ports_in, ports_out,
-                           on_key_down,
-                           int_on_key,
-                           hwt_freq, hwt_fin);
+                           ports_in, ports_out);
+
+    inth : interrupt port map(clk, rst,
+                              ports_out.p03_intmask, ports_out.p04_mmap_int,
+                              ports_in.p04_mmap_int,
+                              hwt_fin, on_key_down,
+                              int_ack, int);
 
     mm : mmapper port map(ports_out.p04_mmap_int.data,
                           ports_out.p06_mempage_a.data,
                           ports_out.p07_mempage_b.data,
                           addr_z80, addr_ext);
 
-    hwtim : hw_timers port map(clk, rst, hwt_freq, hwt_fin);
+    hwtim : hw_timers port map(clk, rst, ports_out.p04_mmap_int, hwt_fin);
 
-    kbd : kbd_ctrl port map(clk_z80, rst, keys_down, on_key_down, int_on_key,
+    kbd : kbd_ctrl port map(clk_z80, rst, keys_down, 
                             ports_out.p01_kbd, ports_in.p01_kbd);
 
     lcd : lcd_ctrl port map(clk_z80, rst,

@@ -6,10 +6,8 @@ use work.ti_comm.all;
 entity kbd_ctrl is port(
     clk, rst : in std_logic;
     keys_down : in keys_down_t;
-    on_key_down : in std_logic;
-    int_on_key : in std_logic;
-    kbd_o : in port_out_t;
-    kbd_i : out port_in_t);
+    p01_kbd_o : in port_out_t;
+    p01_kbd_i : out port_in_t);
 end kbd_ctrl;
 
 architecture arch of kbd_ctrl is
@@ -21,14 +19,9 @@ architecture arch of kbd_ctrl is
     end component;
 
     signal grp : std_logic_vector(7 downto 0);
-    signal grp_rst : std_logic;
 begin
-    grp_reg : reg generic map(8)
-                  port map(clk, grp_rst, kbd_o.wr, kbd_o.data, grp);
-    grp_rst <= '1' when rst = '1' or (kbd_o.wr = '1' and kbd_o.data = x"ff")
-          else '0';
+    grp <= p01_kbd_o.data;
 
-    kbd_i.int <= int_on_key and on_key_down;
     and_groups : process(grp, keys_down)
         variable result : std_logic_vector(7 downto 0);
     begin
@@ -38,6 +31,6 @@ begin
                 result := result and keys_down(i);
             end if;
         end loop;
-        kbd_i.data <= result;
+        p01_kbd_i <= (data => result);
     end process;
 end arch;
