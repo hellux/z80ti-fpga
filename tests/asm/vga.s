@@ -9,7 +9,7 @@ ld a, 0x07  ; auto inc y
 out (c), a
 
 byte:
-ld a, 0xaa
+ld a, 0xaa   ; page data
 out (0x11),a
 dec b
 jp nz, byte
@@ -17,8 +17,8 @@ jp nz, byte
 next_row:
 ld a, 0x05 ; auto inc x
 out (c), a
-in a, (0x11) ; read to inc
-ld a, 0x80
+in a, (0x11) ; read to auto inc
+ld a, 0x20 ; set col to 0
 out (c), a
 dec d
 jp nz, row
