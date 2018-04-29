@@ -16,6 +16,7 @@ package ti_comm is
 
     type ports_in_t is record
         p01_kbd : port_in_t;
+        p02_status : port_in_t;
         p04_mmap_int : port_in_t;
         p10_lcd_status, p11_lcd_data : port_in_t;
     end record;
@@ -24,6 +25,7 @@ package ti_comm is
         p01_kbd : port_out_t;
         p03_intmask : port_out_t;
         p04_mmap_int : port_out_t;
+        p05_protect : port_out_t;
         p06_mempage_a, p07_mempage_b : port_out_t;
         p10_lcd_status, p11_lcd_data : port_out_t;
     end record;

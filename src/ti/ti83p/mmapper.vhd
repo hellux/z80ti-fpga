@@ -2,11 +2,14 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 --         TI83p MEMORY LAYOUT
---  32 RAM pages : 00-1f
---  2  ROM pages : 0-1
---  Each page is 0x4000 bytes
+--
+--  One page is 0x4000 bytes
+--  32 ROM pages : 00-1f * 0x4000 = 512 KB
+--  2  RAM pages : 0-1   * 0x4000 = 32 KB
+--  Memory avail : 1 MB * 16      = 16384 KB
 --
 --       EXTERNAL MEMORY LAYOUT
+--  place rom 0-512KB then ram immediately after:
 --  start         page          end
 --           ______________
 -- 0x00000  |____ROM_00____|  0x03fff

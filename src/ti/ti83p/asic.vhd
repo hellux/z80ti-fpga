@@ -24,7 +24,7 @@ architecture arch of asic is
         do : out std_logic_vector(size-1 downto 0));
     end component;
 
-    constant PORT_COUNT : integer := 256;
+    constant PORT_COUNT : integer := 32;
 
     type port_ctrl_t is record 
         rd, wr, buf : std_logic;
@@ -64,6 +64,9 @@ architecture arch of asic is
     signal p04_mmap_int_ctrl : port_ctrl_t;
     signal p04_mmap_int_buf : std_logic_vector(7 downto 0);
 
+    signal p05_protect_ctrl : port_ctrl_t;
+    signal p05_protect_buf : std_logic_vector(7 downto 0);
+
     signal p06_mempage_a_ctrl : port_ctrl_t;
     signal p06_mempage_a_buf : std_logic_vector(7 downto 0);
 
@@ -95,7 +98,7 @@ begin
         end if;
     end process;
 
-    a <= to_integer(unsigned(addr));
+    a <= to_integer(unsigned(addr(4 downto 0)));
     -- port(a) -> data bus
     data_out <= parr_in(a).data when in_op = '1' else x"00";
     -- rd/wr
@@ -108,11 +111,10 @@ begin
                     buf => out_op);
     end process;
 
-    -- TODO port 00/08 link ctrl (possibly respond to request)
     p01_kbd_ctrl         <= carr(16#01#) or carr(16#09#);
     p03_intmask_ctrl     <= carr(16#03#) or carr(16#0b#);
     p04_mmap_int_ctrl    <= carr(16#04#) or carr(16#0c#);
-    -- TODO port 05/0d linkport byte (possibly respond to request)
+    p05_protect_ctrl     <= carr(16#05#) or carr(16#0d#);
     p06_mempage_a_ctrl   <= carr(16#06#) or carr(16#0e#);
     p07_mempage_b_ctrl   <= carr(16#07#) or carr(16#0f#);
     p10_lcd_status_ctrl  <= carr(16#10#) or carr(16#12#) or
@@ -120,7 +122,7 @@ begin
     p11_lcd_data_ctrl    <= carr(16#11#) or carr(16#13#) or
                             carr(16#19#) or carr(16#1b#);
     -- TODO port 14/15 flash lock
-    -- TODO port 16/17 no exec mask
+    -- TODO port 05 / 16/17 no exec mask
 
     -- out data -> buffers (for controllers)
     p01_buf : reg generic map(8)
@@ -140,6 +142,12 @@ begin
                            data_in, p04_mmap_int_buf);
     ports_out.p04_mmap_int <= (p04_mmap_int_buf,
                                p04_mmap_int_ctrl.rd, p04_mmap_int_ctrl.wr);
+
+    p05_buf : reg generic map(8)
+                  port map(clk, rst, p05_protect_ctrl.buf,
+                           data_in, p05_protect_buf);
+    ports_out.p06_mempage_a <= (p05_protect_buf,
+                                p05_protect_ctrl.rd, p05_protect_ctrl.wr);
 
     p06_buf : reg generic map(8)
                   port map(clk, rst, p06_mempage_a_ctrl.buf,
@@ -167,12 +175,12 @@ begin
 
     -- ports -> data bus
     parr_in <= (
-        16#00# => (data => x"00"),          -- link port lines
-        16#08# => (data => x"00"),
+        16#00# => (data => x"03"),          -- link port lines
+        16#08# => (data => x"03"),
         16#01# => ports_in.p01_kbd,
         16#09# => ports_in.p01_kbd,
-        16#02# => (data => x"e1"),          -- battery level
-        16#0a# => (data => x"e1"),
+        16#02# => ports_in.p02_status,
+        16#0a# => ports_in.p02_status,
         16#03# => (data => p03_intmask_buf),
         16#0b# => (data => p03_intmask_buf),
         16#04# => ports_in.p04_mmap_int,

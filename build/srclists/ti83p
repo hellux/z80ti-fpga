@@ -17,6 +17,7 @@ src/ti/ti83p/interrupts.vhd
 src/ti/ti83p/mmapper.vhd
 src/ti/ti83p/asic.vhd
 src/ti/ti83p/ti.vhd
+src/ti/ti83p/status.vhd
 tests/ext/m45w8mw16.vhd
 src/ext/vga_motor.vhd
 src/ext/mem_ctrl.vhd

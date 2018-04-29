@@ -15,8 +15,8 @@ entity lcd_ctrl is port(
     gmem_x : out std_logic_vector(5 downto 0);
     gmem_y : out std_logic_vector(4 downto 0);
     gmem_rst, gmem_rd, gmem_wl : out std_logic;
-    p10_status_o, p11_data_o : in port_out_t;
-    p10_status_i, p11_data_i : out port_in_t);
+    p10_command, p11_data_o : in port_out_t;
+    p10_status, p11_data_i : out port_in_t);
 end lcd_ctrl;
 
 architecture arch of lcd_ctrl is
@@ -54,28 +54,28 @@ architecture arch of lcd_ctrl is
     signal y, y_in, y_wrap : integer range 0 to LCD_COLS/6-1; -- column page
     signal z, z_in : std_logic_vector(5 downto 0);
 
-    signal mode : lcd_mode_t;
+    signal mode : lcd_mode_t := ("00", others => '0');
 begin
     -- x, y, z registers / counters
     ptr_upd <= p11_data_o.rd or p11_data_o.wr;
 
     x_cnt <= not mode.inc(1);
-    x_ld <= p10_status_o.wr and bool_sl(p10_status_o.data(7 downto 6) = "10");
-    x_in <= to_integer(unsigned(p10_status_o.data(5 downto 0)));
+    x_ld <= p10_command.wr and bool_sl(p10_command.data(7 downto 6) = "10");
+    x_in <= to_integer(unsigned(p10_command.data(5 downto 0)));
     x_cntr : udcntr generic map(LCD_ROWS)
                     port map(clk, rst, x_ld, mode.inc(0), ptr_upd, x_cnt,
                              LCD_ROWS-1, x_in, x);
 
     y_cnt <= mode.inc(1);
-    y_ld <= p10_status_o.wr and bool_sl(p10_status_o.data(7 downto 5) = "001");
-    y_in <= to_integer(unsigned(p10_status_o.data(4 downto 0)));
+    y_ld <= p10_command.wr and bool_sl(p10_command.data(7 downto 5) = "001");
+    y_in <= to_integer(unsigned(p10_command.data(4 downto 0)));
     y_wrap <= LCD_COLS/6-1 when mode.wl = '1' else LCD_COLS/8-1;
     y_cntr : udcntr generic map(LCD_COLS/6)
                     port map(clk, rst, y_ld, mode.inc(0), ptr_upd, y_cnt,
                              y_wrap, y_in, y);
 
-    z_ld <= p10_status_o.wr and bool_sl(p10_status_o.data(7 downto 6) = "01");
-    z_in <= p10_status_o.data(5 downto 0);
+    z_ld <= p10_command.wr and bool_sl(p10_command.data(7 downto 6) = "01");
+    z_in <= p10_command.data(5 downto 0);
     z_reg : reg generic map(6)
                 port map(clk, rst, z_ld, z_in, z);
 
@@ -85,14 +85,14 @@ begin
             if rst = '1' then
                 mode <= (inc => "00", others => '0');
             else
-                if p10_status_o.wr = '1' then
-                    case p10_status_o.data is
+                if p10_command.wr = '1' then
+                    case p10_command.data is
                     when x"00"|x"01" => 
-                        mode.wl <= p10_status_o.data(0);
+                        mode.wl <= p10_command.data(0);
                     when x"02"|x"03" =>
-                        mode.active <= p10_status_o.data(1);
+                        mode.active <= p10_command.data(1);
                     when x"04"|x"05"|x"06"|x"07" =>
-                        mode.inc <= p10_status_o.data(1 downto 0);
+                        mode.inc <= p10_command.data(1 downto 0);
                     when others => null; end case;
                 end if;
             end if;
@@ -109,9 +109,9 @@ begin
 
     -- lcd_ctrl -> z80
     p11_data_i <= (data => gmem_lcd_data);
-    p10_status_i <= (data => mode.busy &
-                             mode.wl &
-                             mode.active &
-                             "0--" &
-                             mode.inc);
+    p10_status <= (data => mode.busy &
+                           mode.wl &
+                           mode.active &
+                           "0--" &
+                           mode.inc);
 end arch;

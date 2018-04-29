@@ -31,6 +31,11 @@ architecture arch of ti is
         ports_out : out ports_out_t);
     end component;
 
+    component status port(
+        p05_protect : in port_out_t;
+        p02_status : out port_in_t);
+    end component;
+
     component interrupt port(
         clk, rst : in std_logic;
         p03_intmask_o, p04_mmap_int_o : in port_out_t;
@@ -68,8 +73,8 @@ architecture arch of ti is
         gmem_x : out std_logic_vector(5 downto 0);
         gmem_y : out std_logic_vector(4 downto 0);
         gmem_rst, gmem_rd, gmem_wl : out std_logic;
-        p10_status_o, p11_data_o : in port_out_t;
-        p10_status_i, p11_data_i : out port_in_t);
+        p10_command, p11_data_o : in port_out_t;
+        p10_status, p11_data_i : out port_in_t);
     end component;
 
     component pict_mem port(
@@ -110,6 +115,8 @@ begin
                            in_op, out_op,
                            addr_z80(7 downto 0), data_in, data_out,
                            ports_in, ports_out);
+
+    stat : status port map(ports_out.p05_protect, ports_in.p02_status);
 
     inth : interrupt port map(clk, rst,
                               ports_out.p03_intmask, ports_out.p04_mmap_int,
