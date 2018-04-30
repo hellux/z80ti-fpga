@@ -103,15 +103,14 @@ architecture arch of comp is
         data_out : out std_logic_vector(7 downto 0));
     end component;
     
-    constant Z80_DIV : integer := 16;
+    constant Z80_DIV : integer := 17;
+    constant TI_DIV : integer := 2;
     constant VGA_DIV : integer := 4;
 
-    signal clk_z80, clk_vga : std_logic;
+    signal clk_z80, clk_vga, clk_ti : std_logic;
     signal clk_z80_div : integer range 0 to Z80_DIV-1;
+    signal clk_ti_div : integer range 0 to TI_DIV-1;
     signal clk_vga_div : integer range 0 to VGA_DIV-1;
-
-    attribute clock_signal : string;
-    attribute clock_signal of clk_z80 : signal is "yes";
 
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
@@ -153,6 +152,11 @@ begin
             else
                 clk_z80_div <= clk_z80_div + 1;
             end if;
+            if clk_ti_div = TI_DIV-1 then
+                clk_ti_div <= 0;
+            else
+                clk_ti_div <= clk_ti_div + 1;
+            end if;
             if clk_vga_div = VGA_DIV-1 then
                 clk_vga_div <= 0;
             else
@@ -165,6 +169,7 @@ begin
         end if;
     end process;
     clk_z80 <= '1' when clk_z80_div = 0 else '0';
+    clk_ti  <= '1' when clk_ti_div  = 0 else '0';
     clk_vga <= '1' when clk_vga_div = 0 else '0';
 
     -- buses
@@ -187,7 +192,7 @@ begin
 
     -- cpu / asic
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
-    ti_comp : ti port map(clk, rst,
+    ti_comp : ti port map(clk_ti, rst,
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
                           x_vga, y_vga, data_vga,
