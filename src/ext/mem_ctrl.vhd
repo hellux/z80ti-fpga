@@ -5,6 +5,7 @@ use work.z80_comm.all;
 entity mem_ctrl is port(
     clk, rst : in std_logic;
     cbo : in ctrlbus_out;
+    wt : out std_logic;
     addr_ext : in std_logic_vector(19 downto 0);
     data_in : in std_logic_vector(7 downto 0);
     data_out : out std_logic_vector(7 downto 0);
@@ -69,4 +70,6 @@ begin
 
     mclk <= '0'; -- use asynchronous ops
     mcre <= '0'; -- do not configure
+
+    wt <= '0';
 end arch;

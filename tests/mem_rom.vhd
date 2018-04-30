@@ -11,6 +11,7 @@ entity mem_rom is port(
     data_out : out std_logic_vector(7 downto 0));
 end mem_rom;
 
+
 architecture arch of mem_rom is
     -- main instr
     constant nop        : std_logic_vector(7 downto 0) := x"00";
@@ -283,16 +284,43 @@ architecture arch of mem_rom is
 
     type mem_t is array(0 to 127) of std_logic_vector(7 downto 0);
     constant prgm_test : mem_t := (
-        ld_hl_nn,
-        x"90",
-        x"00",
+        ld_c_n,
+        x"10",
+        ld_a_n,
+        x"01",
+        ed,
+        ld_d_n,
+        x"04",
+        ld_b_n,
+        x"02",
+        ld_a_n,
         ld_hlx_n,
         x"55",
         ld_b_hlx,
         halt,
         others => nop);
 
-    signal mem : mem_t := prgm_test;
+    function file_to_mem(filename : string) return mem_t is
+        use std.textio.all;
+        type charfile is file of character;
+        file file_p : charfile;
+        variable word : character;
+        variable mem : mem_t;
+        use ieee.numeric_std.all;
+    begin
+        mem := (others => x"00");
+        file_open(file_p, filename, READ_MODE);
+        for i in mem_t'range loop
+            if endfile(file_p) then exit; end if; 
+            read(file_p, word);
+            mem(i) := std_logic_vector(to_unsigned(character'pos(word), 8));
+        end loop;
+        file_close(file_p);
+        return mem;
+    end function;
+
+
+    signal mem : mem_t := file_to_mem("/edu/noahe116/tsea83-z80/a.bin");
     signal word_out : std_logic_vector(7 downto 0);
     signal a : integer range 0 to 16383 := 0;
 begin

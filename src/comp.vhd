@@ -55,6 +55,7 @@ architecture arch of comp is
     component mem_ctrl port(
         clk, rst : in std_logic;
         cbo : in ctrlbus_out;
+        wt : out std_Logic;
         addr_ext : in std_logic_vector(19 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
@@ -113,7 +114,7 @@ architecture arch of comp is
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
     signal cbi : ctrlbus_in;
-    signal int : std_logic;
+    signal int, wt : std_logic;
     signal data, data_z80, data_mem, data_ti : std_logic_vector(7 downto 0);
 
     signal rst : std_logic;
@@ -166,13 +167,13 @@ begin
 
     -- buses
     rst <= btns(1);
-    cbi.wt <= '0';
+    cbi.wt <= wt;
     cbi.int <= int;
     cbi.reset <= rst;
     -- OR data bus instead of tristate
     data <= data_z80 or data_mem or data_ti;
 
-    -- TEMP
+    -- TEMP (until we can flash after prog)
     rom_ce <= '1' when addr_ext(19 downto 7) = "0000000000000" else '0';
     data_mem <= data_mem_rom when rom_ce = '1' else data_mem_ext; 
 
@@ -191,7 +192,7 @@ begin
     -- external controllers
     vga : vga_motor port map(clk, data_vga, rst, x_vga, y_vga,
                              vga_red, vga_green, vga_blue, hsync, vsync);
-    mem : mem_ctrl port map(clk, rst, cbo, addr_ext, data, data_mem_ext,
+    mem : mem_ctrl port map(clk, rst, cbo, wt, addr_ext, data, data_mem_ext,
                             maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                             mwe_c, mlb_c, mub_c, mwait);
     -- TODO add kbd enc
