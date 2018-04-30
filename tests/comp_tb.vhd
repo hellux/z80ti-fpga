@@ -77,7 +77,7 @@ begin
     btns <= (1 => rst, others => '0');
     process begin
         rst <= '0';
-        wait for 10 ns;
+        wait for 1000 ns;
         rst <= '1';
         wait for 500 ns;
         rst <= '0';
