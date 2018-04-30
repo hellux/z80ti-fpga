@@ -34,6 +34,8 @@ architecture arch of pict_mem is
     signal gmem_do_lcd, gmem_do_vga : std_logic_vector(0 downto 0);
     signal gmem_a_lcd, gmem_a_vga : std_logic_vector(12 downto 0);
     signal page_buf : std_logic_vector(7 downto 0);
+    signal x_buf : std_logic_vector(5 downto 0);
+    signal y_buf : std_logic_vector(4 downto 0);
     signal bit_sel : integer range 0 to 7;
     signal state : gmem_state_t;
 begin
@@ -44,14 +46,13 @@ begin
                  gmem_di_lcd, "0", 
                  gmem_do_lcd, gmem_do_vga);
 
-    process(x_lcd, y_lcd, wl, bit_sel)
+    process(x_buf, y_buf, wl, bit_sel)
         variable xl : integer range 0 to LCD_ROWS-1;
         variable yl : integer range 0 to LCD_COLS/6-1;
         variable wordl : integer range 6 to 8;
-        variable bit_seldex : integer range 0 to 7;
     begin
-        xl := to_integer(unsigned(x_lcd));
-        yl := to_integer(unsigned(y_lcd));
+        xl := to_integer(unsigned(x_buf));
+        yl := to_integer(unsigned(y_buf));
         if wl = '1' then wordl := 8; else wordl := 6; end if;
         gmem_a_lcd <= std_logic_vector(to_unsigned(
             xl*LCD_COLS+yl*wordl + bit_sel, 13
@@ -89,15 +90,15 @@ begin
                 end if;
             when idle =>
                 do_lcd(bit_sel) <= gmem_do_lcd(0);
-            end case;
 
-            if clk = '1' then
                 if rd = '1' then
                     state <= load;
                     page_buf <= page_in;
+                    x_buf <= x_lcd;
+                    y_buf <= y_lcd;
                     bit_sel <= 0;
                 end if;
-            end if;
+            end case;
         end if;
     end process;
 end arch;
