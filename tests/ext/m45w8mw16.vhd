@@ -14,7 +14,7 @@ end m45;
 
 architecture arch of m45 is
     type mem_t is array(128 to 255) of std_logic_vector(7 downto 0);
-    signal mem : mem_t;
+    signal mem : mem_t := (others => x"00");
     signal word_out : std_logic_vector(7 downto 0);
     signal a : integer;
 begin

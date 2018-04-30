@@ -14,7 +14,7 @@ architecture arch of mem_ext_ftb is
         mlb_c, mub_c : out std_logic;
         mwait : in std_logic;
     -- 7 segment, led
-        seg, led : out std_logic_vector(7 downto 0);
+        seg : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
 
@@ -27,7 +27,7 @@ architecture arch of mem_ext_ftb is
         mwait : out std_logic);
     end component;
 
-    signal clk, rst : std_logic;
+    signal clk : std_logic;
 
     signal maddr : std_logic_vector(26 downto 0);
     signal mdata : std_logic_vector(15 downto 0);
@@ -35,13 +35,13 @@ architecture arch of mem_ext_ftb is
     signal mlb_c, mub_c : std_logic;
     signal mwait : std_logic;
 
-    signal seg, led : std_logic_vector(7 downto 0);
+    signal seg : std_logic_vector(7 downto 0);
     signal an : std_logic_vector(3 downto 0);
 begin
     fb : mem_ext_fb port map(clk,
                       maddr, mdata, mclk, madv_c, mcre, mce_c,
                       moe_c, mwe_c, mlb_c, mub_c, mwait,
-                      seg, led, an);
+                      seg, an);
     m : m45 port map(clk,
                      maddr, mdata, mclk, madv_c, mcre, mce_c,
                      moe_c, mwe_c, mlb_c, mub_c, mwait);

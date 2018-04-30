@@ -50,7 +50,7 @@ architecture arch of mem_ext_fb is
     constant CYCLES : integer := 16;
 
     signal init_cnt : integer range 0 to INIT_TIME;
-    signal clk_z80_div : integer;
+    signal clk_z80_div : integer range 0 to 16 := 0;
     signal clk_z80 : std_logic;
     
     signal cbo : ctrlbus_out;
@@ -87,7 +87,7 @@ begin
     process(clk) begin
         if rising_edge(clk) then
             if clk_z80 = '1' then
-                if init_cnt = INIT_TIME and t < CYCLES then
+                if init_cnt = INIT_TIME and t < CYCLES-1 then
                     t <= t + 1;
                 end if;
             end if;
@@ -105,12 +105,12 @@ begin
         case t is
         when 0 => null; -- init
         when 1 =>
-            addr <= x"0001f";
+            addr <= x"00096";
             data <= x"55";
             cbo.mreq <= '1';
             cbo.wr <= '1';
         when 4 =>
-            addr <= x"0001f";
+            addr <= x"00096";
             cbo.mreq <= '1';
             cbo.rd <= '1';
             dreg_rd <= '1';
