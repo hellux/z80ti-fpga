@@ -16,7 +16,7 @@ entity comp is port(
     vga_blue : out std_logic_vector(2 downto 1);
     hsync, vsync : out std_logic;
 -- memory
-    maddr : out std_logic_vector(26 downto 0);
+    maddr : out std_logic_vector(25 downto 0);
     mdata : inout std_logic_vector(15 downto 0);
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
     mlb_c, mub_c : out std_logic;
@@ -59,7 +59,7 @@ architecture arch of comp is
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
     -- external
-        maddr : out std_logic_vector(26 downto 0);
+        maddr : out std_logic_vector(25 downto 0);
         mdata : inout std_logic_vector(15 downto 0);
         mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
         mlb_c, mub_c : out std_logic;
@@ -102,6 +102,13 @@ architecture arch of comp is
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0));
     end component;
+    
+    constant Z80_DIV : integer := 16;
+    constant VGA_DIV : integer := 4;
+
+    signal clk_z80, clk_vga : std_logic;
+    signal clk_z80_div : integer range 0 to Z80_DIV-1;
+    signal clk_vga_div : integer range 0 to VGA_DIV-1;
 
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
@@ -110,9 +117,6 @@ architecture arch of comp is
     signal data, data_z80, data_mem, data_ti : std_logic_vector(7 downto 0);
 
     signal rst : std_logic;
-    signal clk_z80, clk_vga : std_logic;
-    signal clk_z80_div : integer range 0 to 24;
-    signal clk_vga_div : integer range 0 to 3;
 
     signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
 
@@ -141,12 +145,12 @@ begin
     -- clock sync
     process(clk) begin
         if rising_edge(clk) then
-            if clk_z80_div = 24 then
+            if clk_z80_div = Z80_DIV-1 then
                 clk_z80_div <= 0;
             else
                 clk_z80_div <= clk_z80_div + 1;
             end if;
-            if clk_vga_div = 3 then
+            if clk_vga_div = VGA_DIV-1 then
                 clk_vga_div <= 0;
             else
                 clk_vga_div <= clk_vga_div + 1;

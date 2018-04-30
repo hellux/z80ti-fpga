@@ -54,7 +54,7 @@ begin
     wr <= cbo.mreq and cbo.wr;
 
     -- DQ -> z80
-    data_out <= mdata(7 downto 0) when rd = '1' and mwait = 'Z' else x"00";
+    data_out <= mdata(7 downto 0) when rd = '1' else x"00";
     -- z80 -> DQ
     mdata <= x"00" & data_in when wr = '1' else (others => 'Z');
     -- z80/mmap -> A
