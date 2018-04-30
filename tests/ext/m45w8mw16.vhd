@@ -5,7 +5,7 @@ use work.z80_comm.all;
 
 entity m45 is port(
     clk : in std_logic;
-    maddr : in std_logic_vector(26 downto 0);
+    maddr : in std_logic_vector(25 downto 0);
     mdata : inout std_logic_vector(15 downto 0);
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : in std_logic;
     mlb_c, mub_c : in std_logic;
