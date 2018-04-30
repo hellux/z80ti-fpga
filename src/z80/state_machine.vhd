@@ -13,7 +13,7 @@ entity state_machine is port(
 end state_machine;
 
 architecture arch of state_machine is
-    signal state : state_t := (halt, main, 0, '0', (others => false), m1, t1);
+    signal state : state_t;
 begin 
     process(clk) begin
         if rising_edge(clk) then
