@@ -6,7 +6,7 @@ use work.z80_comm.all;
 entity mem_ext_fb is port(
     clk : in std_logic;
 -- memory
-    maddr : out std_logic_vector(26 downto 0);
+    maddr : out std_logic_vector(25 downto 0);
     mdata : inout std_logic_vector(15 downto 0);
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
     mlb_c, mub_c : out std_logic;
@@ -31,7 +31,7 @@ architecture arch of mem_ext_fb is
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
     -- external
-        maddr : out std_logic_vector(26 downto 0);
+        maddr : out std_logic_vector(25 downto 0);
         mdata : inout std_logic_vector(15 downto 0);
         mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
         mlb_c, mub_c : out std_logic;
@@ -47,10 +47,11 @@ architecture arch of mem_ext_fb is
     end component;
 
     constant INIT_TIME : integer := 20000; -- * 10 ns = 200us
+    constant Z80_DIV : integer := 10;
     constant CYCLES : integer := 16;
 
     signal init_cnt : integer range 0 to INIT_TIME;
-    signal clk_z80_div : integer range 0 to 16 := 0;
+    signal clk_z80_div : integer range 0 to Z80_DIV-1 := 0;
     signal clk_z80 : std_logic;
     
     signal cbo : ctrlbus_out;
@@ -66,7 +67,7 @@ begin
     -- clock sync
     process(clk) begin
         if rising_edge(clk) then
-            if clk_z80_div = 16 then
+            if clk_z80_div = Z80_DIV-1 then
                 clk_z80_div <= 0;
             else
                 clk_z80_div <= clk_z80_div + 1;
@@ -102,6 +103,7 @@ begin
         addr <= (others => '0');
         dreg_rd <= '0';
 
+        addr <= x"00096";
         case t is
         when 0 => null; -- init
         when 1 =>

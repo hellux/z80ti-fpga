@@ -9,7 +9,7 @@ entity mem_ctrl is port(
     data_in : in std_logic_vector(7 downto 0);
     data_out : out std_logic_vector(7 downto 0);
 -- external
-    maddr : out std_logic_vector(26 downto 0);
+    maddr : out std_logic_vector(25 downto 0);
     mdata : inout std_logic_vector(15 downto 0);
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
     mlb_c, mub_c : out std_logic;
@@ -46,10 +46,10 @@ end mem_ctrl;
 -- memory: Micron M45W8MW16
 
 architecture arch of mem_ctrl is
-    signal rd, wr, addr_rdy : std_logic;
+    signal rd, wr, ce : std_logic;
 begin
     -- interpret cbus
-    addr_rdy <= cbo.mreq;
+    ce <= cbo.mreq;
     rd <= cbo.mreq and cbo.rd;
     wr <= cbo.mreq and cbo.wr;
 
@@ -58,10 +58,10 @@ begin
     -- z80 -> DQ
     mdata <= x"00" & data_in when wr = '1' else (others => 'Z');
     -- z80/mmap -> A
-    maddr <= "0000000" & addr_ext;
+    maddr <= "000000" & addr_ext;
 
-    madv_c <= not addr_rdy;
-    mce_c <= not addr_rdy;
+    madv_c <= '0';
+    mce_c <= not ce;
     moe_c <= not rd;
     mwe_c <= not wr;
 
