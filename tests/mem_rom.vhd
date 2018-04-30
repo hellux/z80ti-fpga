@@ -304,9 +304,8 @@ architecture arch of mem_rom is
         out_n_a,
         x"11",
         dec_b,
-        jp_nz_nn,
-        x"0e",
-        x"00",
+        jr_nz_n,
+        x"f9",
         ld_a_n,
         x"05",
         out_c_a,
@@ -316,9 +315,8 @@ architecture arch of mem_rom is
         x"20",
         out_c_a,
         dec_d,
-        jp_nz_nn,
-        x"08",
-        x"00",
+        jr_nz_n,
+        x"e6",
         halt,
         others => nop);
 
