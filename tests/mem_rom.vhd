@@ -251,7 +251,7 @@ architecture arch of mem_rom is
     constant jp_pe_nn   : std_logic_vector(7 downto 0) := x"ea";
     constant jp_m_nn    : std_logic_vector(7 downto 0) := x"fa";
     constant cb         : std_logic_vector(7 downto 0) := x"cb";
-    constant in_a_nx    : std_logic_vector(7 downto 0) := x"db";
+    constant in_a_n    : std_logic_vector(7 downto 0) := x"db";
     constant ex_de_hl   : std_logic_vector(7 downto 0) := x"eb";
     constant ei         : std_logic_vector(7 downto 0) := x"fb";
     constant call_z_nn  : std_logic_vector(7 downto 0) := x"cc";
@@ -279,6 +279,8 @@ architecture arch of mem_rom is
     constant in_e_c     : std_logic_vector(7 downto 0) := x"58";
     constant in_l_c     : std_logic_vector(7 downto 0) := x"68";
     constant in_a_c     : std_logic_vector(7 downto 0) := x"78";
+    constant out_c_a    : std_logic_vector(7 downto 0) := x"79";
+    
     -- bit instructions
     constant set_6_a    : std_logic_vector(7 downto 0) := x"f7";
 
@@ -289,18 +291,38 @@ architecture arch of mem_rom is
         ld_a_n,
         x"01",
         ed,
+        out_c_a,
         ld_d_n,
-        x"04",
+        x"40",
         ld_b_n,
-        x"02",
+        x"0c",
         ld_a_n,
-        ld_hlx_n,
-        x"55",
-        ld_b_hlx,
+        x"07",
+        out_c_a,
+        ld_a_n,
+        x"aa",
+        out_n_a,
+        x"11",
+        dec_b,
+        jp_nz_nn,
+        x"0e",
+        x"00",
+        ld_a_n,
+        x"05",
+        out_c_a,
+        in_a_n,
+        x"11",
+        ld_a_n,
+        x"20",
+        out_c_a,
+        dec_d,
+        jp_nz_nn,
+        x"08",
+        x"00",
         halt,
         others => nop);
 
-    function file_to_mem(filename : string) return mem_t is
+    impure function file_to_mem(filename : string) return mem_t is
         use std.textio.all;
         type charfile is file of character;
         file file_p : charfile;
@@ -320,7 +342,8 @@ architecture arch of mem_rom is
     end function;
 
 
-    signal mem : mem_t := file_to_mem("/edu/noahe116/tsea83-z80/a.bin");
+    --signal mem : mem_t := file_to_mem("a.bin");
+    signal mem : mem_t := prgm_test;
     signal word_out : std_logic_vector(7 downto 0);
     signal a : integer range 0 to 16383 := 0;
 begin
