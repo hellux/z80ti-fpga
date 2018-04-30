@@ -53,7 +53,6 @@ architecture arch of comp is
     end component;
 
     component mem_ctrl port(
-        clk, rst : in std_logic;
         cbo : in ctrlbus_out;
         wt : out std_Logic;
         addr_ext : in std_logic_vector(19 downto 0);
@@ -110,6 +109,9 @@ architecture arch of comp is
     signal clk_z80, clk_vga : std_logic;
     signal clk_z80_div : integer range 0 to Z80_DIV-1;
     signal clk_vga_div : integer range 0 to VGA_DIV-1;
+
+    attribute clock_signal : string;
+    attribute clock_signal of clk_z80 : signal is "yes";
 
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
@@ -194,7 +196,7 @@ begin
     -- external controllers
     vga : vga_motor port map(clk, data_vga, rst, x_vga, y_vga,
                              vga_red, vga_green, vga_blue, hsync, vsync);
-    mem : mem_ctrl port map(clk, rst, cbo, wt, addr_ext, data, data_mem_ext,
+    mem : mem_ctrl port map(cbo, wt, addr_ext, data, data_mem_ext,
                             maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                             mwe_c, mlb_c, mub_c, mwait);
     -- TODO add kbd enc

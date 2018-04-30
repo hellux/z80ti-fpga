@@ -14,7 +14,7 @@ entity lcd_ctrl is port(
     lcd_gmem_data : out std_logic_vector(7 downto 0);
     gmem_x : out std_logic_vector(5 downto 0);
     gmem_y : out std_logic_vector(4 downto 0);
-    gmem_rst, gmem_rd, gmem_wl : out std_logic;
+    gmem_rd, gmem_wl : out std_logic;
     p10_command, p11_data_o : in port_out_t;
     p10_status, p11_data_i : out port_in_t);
 end lcd_ctrl;
@@ -103,7 +103,6 @@ begin
     lcd_gmem_data <= p11_data_o.data;
     gmem_x <= std_logic_vector(unsigned(z) + to_unsigned(x, gmem_x'length));
     gmem_y <= std_logic_vector(to_unsigned(y, gmem_y'length));
-    gmem_rst <= rst;
     gmem_rd <= '1' when p11_data_o.wr = '1' else '0';
     gmem_wl <= mode.wl;
 

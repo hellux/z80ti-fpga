@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 use work.ti_comm.all;
 
 entity pict_mem is port (
-    clk, rst : in std_logic;
+    clk : in std_logic;
     rd, wl : in std_logic;
     page_in : in std_logic_vector(7 downto 0);
     x_lcd : in std_logic_vector(5 downto 0); -- row
@@ -20,7 +20,7 @@ architecture arch of pict_mem is
         dwidth : integer;
         size : integer;
         awidth : integer); port(
-        clk, rst : in std_logic;
+        clk : in std_logic;
         wea, web : in std_logic;
         addra, addrb : in std_logic_vector(awidth-1 downto 0);
         data_ina, data_inb : in std_logic_vector(dwidth-1 downto 0);
@@ -38,7 +38,7 @@ architecture arch of pict_mem is
     signal state : gmem_state_t;
 begin
     gmem : bram generic map(1, LCD_COLS*LCD_ROWS, 13)
-        port map(clk, rst,
+        port map(clk,
                  gmem_we_lcd, '0',
                  gmem_a_lcd, gmem_a_vga,
                  gmem_di_lcd, "0", 

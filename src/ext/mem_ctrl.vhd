@@ -3,7 +3,6 @@ use ieee.std_logic_1164.all;
 use work.z80_comm.all;
 
 entity mem_ctrl is port(
-    clk, rst : in std_logic;
     cbo : in ctrlbus_out;
     wt : out std_logic;
     addr_ext : in std_logic_vector(19 downto 0);
