@@ -79,14 +79,6 @@ architecture arch of comp is
          Vsync : out std_logic);
     end component;
 
-    component memory port(
-        clk, rst : in std_logic;
-        cbo : in ctrlbus_out;
-        addr : in std_logic_vector(15 downto 0);
-        data_in : in std_logic_vector(7 downto 0);
-        data_out : out std_logic_vector(7 downto 0));
-    end component;
-
     component monitor port(
         clk : in std_logic;
         btns : in std_logic_vector(4 downto 0);
@@ -150,10 +142,6 @@ begin
                 clk_vga_div <= 0;
             else
                 clk_vga_div <= clk_vga_div + 1;
-            end if;
-            if rst = '1' then
-                clk_z80_div <= 0;
-                clk_vga_div <= 0;
             end if;
         end if;
     end process;

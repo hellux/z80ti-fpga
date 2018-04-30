@@ -46,27 +46,62 @@ end mem_ctrl;
 -- memory: Micron M45W8MW16
 
 architecture arch of mem_ctrl is
-    signal rd, wr, addr_rdy : std_logic;
+    component memory_interface generic(addr_width: natural := 26;
+				                       data_width: natural := 16);
+                               port(
+		addr_o : out std_logic_vector(addr_width-1 downto 0);
+		clk_o : out  std_logic;
+		addr_valid_o :out std_logic;
+		cntl_reg_enable_o : out std_logic;
+		chip_enable_o : out std_logic;
+		output_enable_o : out std_logic;
+		write_en_o : out std_logic;
+		lower_byte_en_o : out std_logic;
+		upper_byte_en_o : out std_logic;
+		data_io : inout std_logic_vector( data_width-1 downto 0);
+		wait_i : in std_logic;
+		addr_i : in std_logic_vector (addr_width-1 downto 0);
+		we_i : in std_logic ;
+		data_i : in std_logic_vector (data_width-1 downto 0);
+		data_o : out std_logic_vector (data_width-1 downto 0);
+		clk_i : in std_logic; 
+		go_i : in std_logic);
+    end component;
+
+    signal addr_i : std_logic_vector(25 downto 0);
+    signal data_i, data_o : std_logic_vector(15 downto 0);
+    signal rd, wr, ce : std_logic;
 begin
-    -- interpret cbus
-    addr_rdy <= cbo.mreq;
+    ce <= cbo.mreq;
     rd <= cbo.mreq and cbo.rd;
     wr <= cbo.mreq and cbo.wr;
 
-    -- DQ -> z80
-    data_out <= mdata(7 downto 0) when rd = '1' and mwait = 'Z' else x"00";
-    -- z80 -> DQ
-    mdata <= x"00" & data_in when wr = '1' else (others => 'Z');
-    -- z80/mmap -> A
-    maddr <= "0000000" & addr_ext;
+    addr_i <= "000000" & addr_ext;
+    data_i <= x"00" & data_in;
+    data_out <= data_o(7 downto 0) when rd = '1' else x"00";
 
-    madv_c <= not addr_rdy;
-    mce_c <= not addr_rdy;
-    moe_c <= not rd;
-    mwe_c <= not wr;
+    mint : memory_interface port map(
+    -- interface -> mem
+        addr_o => maddr(25 downto 0),
+        clk_o => mclk,
+        addr_valid_o => madv_c,
+        chip_enable_o => mce_c,
+        output_enable_o => moe_c,
+        write_en_o => mwe_c,
+        lower_byte_en_o => mlb_c,
+        upper_byte_en_o => mub_c,
+    -- interface <-> mem
+        data_io => mdata,
+    -- mem -> interface
+        wait_i => mwait,
+    -- cpu -> interface
+        addr_i => addr_i,
+        we_i => wr,
+        data_i => data_i,
+        clk_i => clk,
+        go_i => ce,
+    -- interface -> cpu
+        data_o => data_o);
 
-    mclk <= '0'; -- use asynchronous ops
-    mub_c <= '1'; -- never use upper byte;
-    mlb_c <= '0'; -- always use lower byte;
-    mcre <= '0'; -- do not configure
+    mcre <= '0';
 end arch;

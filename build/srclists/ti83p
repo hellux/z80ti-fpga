@@ -22,6 +22,7 @@ tests/ext/m45w8mw16.vhd
 tests/mem_rom.vhd
 src/ext/vga_motor.vhd
 src/ext/mem_ctrl.vhd
+src/ext/memory_interface.vhd
 src/dbg/monitor.vhd
 src/dbg/segment.vhd
 src/comp.vhd

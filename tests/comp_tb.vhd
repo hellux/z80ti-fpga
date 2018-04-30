@@ -79,7 +79,11 @@ begin
         rst <= '0';
         wait for 10 ns;
         rst <= '1';
-        wait for 25 ns;
+        wait for 500 ns;
+        rst <= '0';
+        wait for 160 us;
+        rst <= '1';
+        wait for 500 ns;
         rst <= '0';
         wait for 1000 us;
     end process;
