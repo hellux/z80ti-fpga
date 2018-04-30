@@ -22,6 +22,21 @@ architecture Behavioral of vga_motor is
     signal vga_clk : std_logic; -- One pulse width 25 MHz signal
     signal colour : std_logic_vector(7 downto 0);	
     signal blank : std_logic;                        -- blanking signal
+
+    function div3(n : integer) return integer is
+        variable q, r : integer;
+    begin
+        q := 0;
+        r := n;
+        for i in 1 to 80 loop
+            if r < 3 then
+                exit;
+            end if;
+            q := q + 1;
+            r := r - 3;
+        end loop;
+        return q;
+    end div3;
 begin
     clk_div : process(clk) begin
         if rising_edge(clk) then
@@ -67,17 +82,18 @@ begin
              '1';
     blank <= '1' when Xpixel > 640 or Ypixel > 480 else '0';
     colour <= x"00" when blank = '1' else
-              x"00" when Xpixel > 383 or Ypixel > 255 else
+              x"00" when Xpixel >= 96*6 or Ypixel >= 64*6 else
               --001 010 01
-              x"00" when data = '1' else
+              x"ff" when data = '1' else
               --01001000
               x"48" when data = '0' else
               (others => '-');
   
-    x <= std_logic_vector(to_unsigned(Xpixel/4, x'length))
-             when Xpixel < 480 else (others => '0');
-    y <= std_logic_vector(to_unsigned(Ypixel/4, y'length))
-            when Ypixel < 256 else (others => '0');
+    x <= std_logic_vector(to_unsigned(div3(Xpixel/2), x'length))
+        when Xpixel < 96*6 else (others => '0');
+    y <= std_logic_vector(to_unsigned(div3(Ypixel/4), y'length))
+        when Ypixel < 64*6 else (others => '0');
+
     vgaRed 	    <= colour(7 downto 5);
     vgaGreen    <= colour(4 downto 2);
     vgaBlue 	<= colour(1 downto 0);
