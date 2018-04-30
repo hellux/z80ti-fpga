@@ -62,11 +62,11 @@ begin
 
     madv_c <= '0';
     mce_c <= not ce;
+    mub_c <= not ce;
+    mlb_c <= not ce;
     moe_c <= not rd;
     mwe_c <= not wr;
 
     mclk <= '0'; -- use asynchronous ops
-    mub_c <= '1'; -- never use upper byte;
-    mlb_c <= '0'; -- always use lower byte;
     mcre <= '0'; -- do not configure
 end arch;

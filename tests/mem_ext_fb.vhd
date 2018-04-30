@@ -47,7 +47,7 @@ architecture arch of mem_ext_fb is
     end component;
 
     constant INIT_TIME : integer := 20000; -- * 10 ns = 200us
-    constant Z80_DIV : integer := 10;
+    constant Z80_DIV : integer := 7;
     constant CYCLES : integer := 16;
 
     signal init_cnt : integer range 0 to INIT_TIME;
