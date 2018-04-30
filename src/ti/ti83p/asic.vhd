@@ -146,8 +146,8 @@ begin
     p05_buf : reg generic map(8)
                   port map(clk, rst, p05_protect_ctrl.buf,
                            data_in, p05_protect_buf);
-    ports_out.p06_mempage_a <= (p05_protect_buf,
-                                p05_protect_ctrl.rd, p05_protect_ctrl.wr);
+    ports_out.p05_protect <= (p05_protect_buf,
+                              p05_protect_ctrl.rd, p05_protect_ctrl.wr);
 
     p06_buf : reg generic map(8)
                   port map(clk, rst, p06_mempage_a_ctrl.buf,

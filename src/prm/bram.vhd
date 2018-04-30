@@ -6,7 +6,7 @@ entity bram is generic(
     dwidth : integer;
     size : integer;
     awidth : integer); port(
-    clk, rst : in std_logic;
+    clk : in std_logic;
     wea, web : in std_logic;
     addra, addrb : in std_logic_vector(awidth-1 downto 0);
     data_ina, data_inb : in std_logic_vector(dwidth-1 downto 0);

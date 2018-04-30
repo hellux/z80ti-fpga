@@ -73,12 +73,12 @@ begin
 
     -- map address
     with ram_rom_a select page_a <=
-        ROM_START(19) & rom_page_a         when '0',
-        RAM_START(19) & "000" & ram_page_a when '1',
-        (others => '0')                    when others;
+        ROM_START(19)           & rom_page_a when '0',
+        RAM_START(19 downto 15) & ram_page_a when '1',
+        (others => '0')                      when others;
     with ram_rom_b select page_b <=
-        ROM_START(19) & rom_page_b         when '0',
-        RAM_START(19) & "000" & ram_page_b when '1',
+        ROM_START(19)           & rom_page_b when '0',
+        RAM_START(19 downto 15) & ram_page_b when '1',
         (others => '0')                    when others;
 
     page0 <= ROM_START(19 downto 14);

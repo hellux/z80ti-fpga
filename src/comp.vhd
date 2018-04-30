@@ -16,7 +16,7 @@ entity comp is port(
     vga_blue : out std_logic_vector(2 downto 1);
     hsync, vsync : out std_logic;
 -- memory
-    maddr : out std_logic_vector(26 downto 0);
+    maddr : out std_logic_vector(25 downto 0);
     mdata : inout std_logic_vector(15 downto 0);
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
     mlb_c, mub_c : out std_logic;
@@ -53,13 +53,13 @@ architecture arch of comp is
     end component;
 
     component mem_ctrl port(
-        clk, rst : in std_logic;
         cbo : in ctrlbus_out;
+        wt : out std_Logic;
         addr_ext : in std_logic_vector(19 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
     -- external
-        maddr : out std_logic_vector(26 downto 0);
+        maddr : out std_logic_vector(25 downto 0);
         mdata : inout std_logic_vector(15 downto 0);
         mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
         mlb_c, mub_c : out std_logic;
@@ -95,16 +95,30 @@ architecture arch of comp is
         an : out std_logic_vector(3 downto 0));
     end component;
 
+    component mem_rom port(
+        clk, rst : in std_logic;
+        rd, wr, ce : in std_logic;
+        addr : in std_logic_vector(13 downto 0);
+        data_in : in std_logic_vector(7 downto 0);
+        data_out : out std_logic_vector(7 downto 0));
+    end component;
+    
+    constant Z80_DIV : integer := 17;
+    constant TI_DIV : integer := 2;
+    constant VGA_DIV : integer := 4;
+
+    signal clk_z80, clk_vga, clk_ti : std_logic;
+    signal clk_z80_div : integer range 0 to Z80_DIV-1;
+    signal clk_ti_div : integer range 0 to TI_DIV-1;
+    signal clk_vga_div : integer range 0 to VGA_DIV-1;
+
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
     signal cbi : ctrlbus_in;
-    signal int : std_logic;
+    signal int, wt : std_logic;
     signal data, data_z80, data_mem, data_ti : std_logic_vector(7 downto 0);
 
     signal rst : std_logic;
-    signal clk_z80, clk_vga : std_logic;
-    signal clk_z80_div : integer range 0 to 24;
-    signal clk_vga_div : integer range 0 to 3;
 
     signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
 
@@ -117,6 +131,9 @@ architecture arch of comp is
     signal x_vga : std_logic_vector(6 downto 0);
     signal y_vga : std_logic_vector(5 downto 0);
     signal addr_ext : std_logic_vector(19 downto 0);
+
+    signal data_mem_rom, data_mem_ext : std_logic_vector(7 downto 0);
+    signal rom_ce : std_logic;
 begin
     -- input sync
     op_btns : process(clk) begin
@@ -130,12 +147,17 @@ begin
     -- clock sync
     process(clk) begin
         if rising_edge(clk) then
-            if clk_z80_div = 24 then
+            if clk_z80_div = Z80_DIV-1 then
                 clk_z80_div <= 0;
             else
                 clk_z80_div <= clk_z80_div + 1;
             end if;
-            if clk_vga_div = 3 then
+            if clk_ti_div = TI_DIV-1 then
+                clk_ti_div <= 0;
+            else
+                clk_ti_div <= clk_ti_div + 1;
+            end if;
+            if clk_vga_div = VGA_DIV-1 then
                 clk_vga_div <= 0;
             else
                 clk_vga_div <= clk_vga_div + 1;
@@ -147,19 +169,30 @@ begin
         end if;
     end process;
     clk_z80 <= '1' when clk_z80_div = 0 else '0';
+    clk_ti  <= '1' when clk_ti_div  = 0 else '0';
     clk_vga <= '1' when clk_vga_div = 0 else '0';
 
     -- buses
     rst <= btns(1);
-    cbi.wt <= '0';
+    cbi.wt <= wt;
     cbi.int <= int;
     cbi.reset <= rst;
     -- OR data bus instead of tristate
     data <= data_z80 or data_mem or data_ti;
 
+    -- TEMP (until we can flash after prog)
+    rom_ce <= '1' when cbo.mreq = '1' and
+                       addr_ext(19 downto 7) = "0000000000000" else
+              '0';
+    data_mem <= data_mem_rom when rom_ce = '1' else data_mem_ext; 
+
+    mem_tmp : mem_rom port map(clk, rst, cbo.wr, cbo.rd, rom_ce,
+                               addr(13 downto 0), data, data_mem_rom);
+    --
+
     -- cpu / asic
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
-    ti_comp : ti port map(clk, rst,
+    ti_comp : ti port map(clk_ti, rst,
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
                           x_vga, y_vga, data_vga,
@@ -168,7 +201,7 @@ begin
     -- external controllers
     vga : vga_motor port map(clk, data_vga, rst, x_vga, y_vga,
                              vga_red, vga_green, vga_blue, hsync, vsync);
-    mem : mem_ctrl port map(clk, rst, cbo, addr_ext, data, data_mem,
+    mem : mem_ctrl port map(cbo, wt, addr_ext, data, data_mem_ext,
                             maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                             mwe_c, mlb_c, mub_c, mwait);
     -- TODO add kbd enc

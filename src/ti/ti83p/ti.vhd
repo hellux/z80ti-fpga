@@ -60,7 +60,6 @@ architecture arch of ti is
     end component;
 
     component kbd_ctrl port(
-        clk, rst : in std_logic;
         keys_down : in keys_down_t;
         p01_kbd_o : in port_out_t;
         p01_kbd_i : out port_in_t);
@@ -72,13 +71,13 @@ architecture arch of ti is
         lcd_gmem_data : out std_logic_vector(7 downto 0);
         gmem_x : out std_logic_vector(5 downto 0);
         gmem_y : out std_logic_vector(4 downto 0);
-        gmem_rst, gmem_rd, gmem_wl : out std_logic;
+        gmem_rd, gmem_wl : out std_logic;
         p10_command, p11_data_o : in port_out_t;
         p10_status, p11_data_i : out port_in_t);
     end component;
 
     component pict_mem port(
-        clk, rst : in std_logic;
+        clk : in std_logic;
         rd, wl : in std_logic;
         page_in : in std_logic_vector(7 downto 0);
         x_lcd : in std_logic_vector(5 downto 0); -- row
@@ -96,7 +95,7 @@ architecture arch of ti is
     signal x_lcd : std_logic_vector(5 downto 0);
     signal y_lcd : std_logic_vector(4 downto 0);
     signal gmem_lcd_data, lcd_gmem_data : std_logic_vector(7 downto 0);
-    signal gmem_rst, gmem_rd, gmem_wl : std_logic;
+    signal gmem_rd, gmem_wl : std_logic;
 
     -- asic <-> controllers
     signal ports_out : ports_out_t;
@@ -131,15 +130,14 @@ begin
 
     hwtim : hw_timers port map(clk, rst, ports_out.p04_mmap_int, hwt_fin);
 
-    kbd : kbd_ctrl port map(clk, rst, keys_down, 
-                            ports_out.p01_kbd, ports_in.p01_kbd);
+    kbd : kbd_ctrl port map(keys_down, ports_out.p01_kbd, ports_in.p01_kbd);
 
     lcd : lcd_ctrl port map(clk, rst,
         gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd,
-        gmem_rst, gmem_rd, gmem_wl,
+        gmem_rd, gmem_wl,
         ports_out.p10_lcd_status, ports_out.p11_lcd_data,
         ports_in.p10_lcd_status, ports_in.p11_lcd_data);
-    gmem : pict_mem port map(clk, gmem_rst, gmem_rd, gmem_wl,
+    gmem : pict_mem port map(clk, gmem_rd, gmem_wl,
                              lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,
                              data_vga, gmem_lcd_data);
 end arch;

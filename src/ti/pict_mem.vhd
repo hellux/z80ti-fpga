@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 use work.ti_comm.all;
 
 entity pict_mem is port (
-    clk, rst : in std_logic;
+    clk : in std_logic;
     rd, wl : in std_logic;
     page_in : in std_logic_vector(7 downto 0);
     x_lcd : in std_logic_vector(5 downto 0); -- row
@@ -20,7 +20,7 @@ architecture arch of pict_mem is
         dwidth : integer;
         size : integer;
         awidth : integer); port(
-        clk, rst : in std_logic;
+        clk : in std_logic;
         wea, web : in std_logic;
         addra, addrb : in std_logic_vector(awidth-1 downto 0);
         data_ina, data_inb : in std_logic_vector(dwidth-1 downto 0);
@@ -34,24 +34,25 @@ architecture arch of pict_mem is
     signal gmem_do_lcd, gmem_do_vga : std_logic_vector(0 downto 0);
     signal gmem_a_lcd, gmem_a_vga : std_logic_vector(12 downto 0);
     signal page_buf : std_logic_vector(7 downto 0);
+    signal x_buf : std_logic_vector(5 downto 0);
+    signal y_buf : std_logic_vector(4 downto 0);
     signal bit_sel : integer range 0 to 7;
     signal state : gmem_state_t;
 begin
     gmem : bram generic map(1, LCD_COLS*LCD_ROWS, 13)
-        port map(clk, rst,
+        port map(clk,
                  gmem_we_lcd, '0',
                  gmem_a_lcd, gmem_a_vga,
                  gmem_di_lcd, "0", 
                  gmem_do_lcd, gmem_do_vga);
 
-    process(x_lcd, y_lcd, wl, bit_sel)
+    process(x_buf, y_buf, wl, bit_sel)
         variable xl : integer range 0 to LCD_ROWS-1;
         variable yl : integer range 0 to LCD_COLS/6-1;
         variable wordl : integer range 6 to 8;
-        variable bit_seldex : integer range 0 to 7;
     begin
-        xl := to_integer(unsigned(x_lcd));
-        yl := to_integer(unsigned(y_lcd));
+        xl := to_integer(unsigned(x_buf));
+        yl := to_integer(unsigned(y_buf));
         if wl = '1' then wordl := 8; else wordl := 6; end if;
         gmem_a_lcd <= std_logic_vector(to_unsigned(
             xl*LCD_COLS+yl*wordl + bit_sel, 13
@@ -89,15 +90,15 @@ begin
                 end if;
             when idle =>
                 do_lcd(bit_sel) <= gmem_do_lcd(0);
-            end case;
 
-            if clk = '1' then
                 if rd = '1' then
                     state <= load;
                     page_buf <= page_in;
+                    x_buf <= x_lcd;
+                    y_buf <= y_lcd;
                     bit_sel <= 0;
                 end if;
-            end if;
+            end case;
         end if;
     end process;
 end arch;

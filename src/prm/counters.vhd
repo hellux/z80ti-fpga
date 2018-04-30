@@ -12,24 +12,32 @@ entity udcntr is generic(size : integer); port(
 end udcntr;
 
 architecture arch of udcntr is
-    signal count, count_next : integer range 0 to size-1;
+    signal count : integer range 0 to size-1;
 begin
     process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
                 count <= 0;
-            else
-                count <= count_next;
+            elsif ld = '1' then
+                count <= di;
+            elsif ce1 = '1' and ce2 = '1' then
+                if ud = '1' then
+                    if count = wrap then
+                        count <= 0;
+                    else
+                        count <= count + 1;
+                    end if;
+                else
+                    if count = 0 then
+                        count <= wrap;
+                    else
+                        count <= count -1;
+                    end if;
+                end if;
             end if;
         end if;
     end process;
-    count_next <= di        when ld = '1' else
-                  count     when ce1 = '0' or ce2 = '0' else
-                  0         when ud = '1' and count = wrap else
-                  count + 1 when ud = '1' else
-                  wrap      when ud = '0' and count = 0 else
-                  count - 1 when ud = '0' else 
-                  0;
+
     do <= count;
 end arch;
 

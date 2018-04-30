@@ -7,20 +7,12 @@ use work.ti_comm.all;
 -- does not reset keys down on 0x00 p01 write
 
 entity kbd_ctrl is port(
-    clk, rst : in std_logic;
     keys_down : in keys_down_t;
     p01_kbd_o : in port_out_t;
     p01_kbd_i : out port_in_t);
 end kbd_ctrl;
 
 architecture arch of kbd_ctrl is
-    component reg generic(size : integer); port(
-        clk, rst : in std_logic;
-        rd : in std_logic;
-        di : in std_logic_vector(size-1 downto 0);
-        do : out std_logic_vector(size-1 downto 0));
-    end component;
-
     signal grp : std_logic_vector(7 downto 0);
 begin
     grp <= p01_kbd_o.data;
