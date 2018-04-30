@@ -1,7 +1,7 @@
 ld c, 0x10  ; lcd status port
 ld a, 0x01  ; 8 bit mode
 out (c), a
-ld d, 0x4   ; number of rows (64)
+ld d, 0x04  ; number of rows (64)
 
 row:
 ld b, 0x02  ; number of pages per row (12)
@@ -12,7 +12,7 @@ byte:
 ld a, 0xaa   ; page data
 out (0x11),a
 dec b
-jp nz, byte
+jr nz, byte
 
 next_row:
 ld a, 0x05 ; auto inc x
@@ -21,6 +21,6 @@ in a, (0x11) ; read to auto inc
 ld a, 0x20 ; set col to 0
 out (c), a
 dec d
-jp nz, row
+jr nz, row
 
 halt

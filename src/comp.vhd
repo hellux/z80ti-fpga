@@ -174,7 +174,9 @@ begin
     data <= data_z80 or data_mem or data_ti;
 
     -- TEMP (until we can flash after prog)
-    rom_ce <= '1' when addr_ext(19 downto 7) = "0000000000000" else '0';
+    rom_ce <= '1' when cbo.mreq = '1' and
+                       addr_ext(19 downto 7) = "0000000000000" else
+              '0';
     data_mem <= data_mem_rom when rom_ce = '1' else data_mem_ext; 
 
     mem_tmp : mem_rom port map(clk, rst, cbo.wr, cbo.rd, rom_ce,

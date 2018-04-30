@@ -38,7 +38,7 @@ architecture arch of lcd_ctrl is
     end component;
 
     type lcd_mode_t is record
-        inc : std_logic_vector(1 downto 0); -- 00 y--, 01 y++, 10 x--, 11 x++
+        inc : std_logic_vector(1 downto 0); -- 00 x--, 01 x++, 10 y--, 11 y++
         active : std_logic;
         wl : std_logic; -- 0: 6bit, 1: 8bit
         busy : std_logic;
