@@ -5,7 +5,7 @@ entity mem_ext_ftb is
 end mem_ext_ftb;
 
 architecture arch of mem_ext_ftb is
-    component comp port(
+    component mem_ext_fb port(
         clk : in std_logic;
     -- memory
         maddr : out std_logic_vector(26 downto 0);
@@ -38,7 +38,7 @@ architecture arch of mem_ext_ftb is
     signal seg, led : std_logic_vector(7 downto 0);
     signal an : std_logic_vector(3 downto 0);
 begin
-    c : comp port map(clk,
+    fb : mem_ext_fb port map(clk,
                       maddr, mdata, mclk, madv_c, mcre, mce_c,
                       moe_c, mwe_c, mlb_c, mub_c, mwait,
                       seg, led, an);

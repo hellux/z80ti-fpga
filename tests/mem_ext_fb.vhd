@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
 
-entity comp is port(
+entity mem_ext_fb is port(
     clk : in std_logic;
 -- memory
     maddr : out std_logic_vector(26 downto 0);
@@ -11,12 +11,12 @@ entity comp is port(
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
     mlb_c, mub_c : out std_logic;
     mwait : in std_logic;
--- 7 segment, led
-    seg, led : out std_logic_vector(7 downto 0);
+-- 7 segment
+    seg : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
-end comp;
+end mem_ext_fb;
 
-architecture arch of comp is
+architecture arch of mem_ext_fb is
     component reg generic(size : integer); port(
         clk, rst : in std_logic;
         rd : in std_logic;
@@ -84,10 +84,12 @@ begin
                             maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                             mwe_c, mlb_c, mub_c, mwait);
 
-    process(clk_z80) begin
-        if rising_edge(clk_z80) then
-            if init_cnt = INIT_TIME and t < CYCLES then
-                t <= t + 1;
+    process(clk) begin
+        if rising_edge(clk) then
+            if clk_z80 = '1' then
+                if init_cnt = INIT_TIME and t < CYCLES then
+                    t <= t + 1;
+                end if;
             end if;
         end if;
     end process;
@@ -98,6 +100,7 @@ begin
         cbo <= (others => '0');
         data <= (others => '0');
         addr <= (others => '0');
+        dreg_rd <= '0';
 
         case t is
         when 0 => null; -- init
@@ -116,5 +119,5 @@ begin
     end process;
 
     smt : segment port map(clk, seg_value, x"0", seg, an);
-    seg_value <= dreg_o & x"00";
+    seg_value <= dreg_o & x"cc";
 end arch;
