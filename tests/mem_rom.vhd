@@ -300,7 +300,7 @@ architecture arch of mem_rom is
         halt,
         others => nop);
 
-    function file_to_mem(filename : string) return mem_t is
+    impure function file_to_mem(filename : string) return mem_t is
         use std.textio.all;
         type charfile is file of character;
         file file_p : charfile;
@@ -320,7 +320,7 @@ architecture arch of mem_rom is
     end function;
 
 
-    signal mem : mem_t := file_to_mem("/edu/noahe116/tsea83-z80/a.bin");
+    signal mem : mem_t := file_to_mem("a.bin");
     signal word_out : std_logic_vector(7 downto 0);
     signal a : integer range 0 to 16383 := 0;
 begin
