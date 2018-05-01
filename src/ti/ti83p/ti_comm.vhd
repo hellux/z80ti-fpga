@@ -62,6 +62,13 @@ package ti_comm is
     constant PI04_HWT2_INT          : natural := 2;
     constant PI04_ON_KEY_DOWN       : natural := 3;
     constant PI04_LINK_INT          : natural := 4;
+
+    constant PI10_AUTO_INC_DEC      : natural := 0;
+    constant PI10_AUTO_Y_X          : natural := 1;
+    constant PI10_RESET_STATE       : natural := 4;
+    constant PI10_LCD_ENABLED       : natural := 5;
+    constant PI10_WL_8_6            : natural := 6;
+    constant PI10_LCD_BUSY          : natural := 7;
 end ti_comm;
 
 package body ti_comm is

@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 
 --         TI83p MEMORY LAYOUT
 --
---  One page is 0x4000 bytes
+--  One page is 0x4000 bytes = 16 KB
 --  32 ROM pages : 00-1f * 0x4000 = 512 KB
 --  2  RAM pages : 0-1   * 0x4000 = 32 KB
 --  Memory avail : 1 MB * 16      = 16384 KB

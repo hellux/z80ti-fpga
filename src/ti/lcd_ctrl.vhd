@@ -42,7 +42,6 @@ architecture arch of lcd_ctrl is
         inc : std_logic_vector(1 downto 0); -- 00 x--, 01 x++, 10 y--, 11 y++
         active : std_logic;
         wl : std_logic; -- 0: 6bit, 1: 8bit
-        busy : std_logic;
     end record;
 
     -- ctrl interpret
@@ -55,7 +54,10 @@ architecture arch of lcd_ctrl is
     signal y, y_in, y_wrap : integer range 0 to LCD_COLS/6-1; -- column page
     signal z, z_in : std_logic_vector(5 downto 0);
 
-    signal mode : lcd_mode_t := ("00", others => '0');
+    constant MODE_INIT : lcd_mode_t := (inc => "11",
+                                        wl => '1',
+                                        active => '0');
+    signal mode : lcd_mode_t := MODE_INIT;
 begin
     -- x, y, z registers / counters
     ptr_upd <= p11_data_o.rd or p11_data_o.wr;
@@ -84,7 +86,7 @@ begin
     set_mode : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                mode <= (inc => "00", others => '0');
+                mode <= MODE_INIT;
             else
                 if p10_command.wr = '1' then
                     case p10_command.data is
@@ -109,9 +111,12 @@ begin
 
     -- lcd_ctrl -> z80
     p11_data_i <= (data => gmem_lcd_data);
-    p10_status <= (data => mode.busy &
-                           mode.wl &
-                           mode.active &
-                           "0--" &
-                           mode.inc);
+    p10_status.data <=
+        (PI10_AUTO_INC_DEC   => mode.inc(0),
+         PI10_AUTO_Y_X       => mode.inc(1),
+         PI10_RESET_STATE    => '0',
+         PI10_LCD_ENABLED    => mode.active,
+         PI10_WL_8_6         => mode.wl,
+         PI10_LCD_BUSY       => '0',
+         others              => '0');
 end arch;
