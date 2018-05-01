@@ -293,7 +293,7 @@ architecture arch of mem_rom is
         ed,
         out_c_a,
         ld_d_n,
-        x"40",  -- no of rows
+        x"02",  -- no of rows
         ld_b_n,
         x"0c",  -- no of pages
         ld_a_n,
@@ -301,7 +301,7 @@ architecture arch of mem_rom is
         ed,
         out_c_a,
         ld_a_n,
-        x"aa",
+        x"ff",  -- pixel data
         out_n_a,
         x"11",
         dec_b,

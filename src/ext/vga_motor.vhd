@@ -3,40 +3,25 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity vga_motor is port ( 
-     clk			: in std_logic;
-	 data			: in std_logic;
-	 rst			: in std_logic;
+     clk : in std_logic;
+	 data : in std_logic;
+	 rst : in std_logic;
      x : out std_logic_vector(6 downto 0);
      y : out std_logic_vector(5 downto 0);
-	 vgaRed		    : out std_logic_vector(2 downto 0);
-	 vgaGreen	    : out std_logic_vector(2 downto 0);
-	 vgaBlue		: out std_logic_vector(2 downto 1);
-	 Hsync		    : out std_logic;
-	 Vsync		    : out std_logic);
+	 vgaRed	: out std_logic_vector(2 downto 0);
+	 vgaGreen : out std_logic_vector(2 downto 0);
+	 vgaBlue : out std_logic_vector(2 downto 1);
+	 Hsync : out std_logic;
+	 Vsync : out std_logic);
 end vga_motor;
 
 architecture Behavioral of vga_motor is
-    signal Xpixel : integer range 0 to 800; -- Horizontal pixel counter
-    signal Ypixel : integer range 0 to 521; -- Vertical pixel counter
-    signal clk_count : unsigned(1 downto 0); -- Clock div, for 25MHz clk
-    signal vga_clk : std_logic; -- One pulse width 25 MHz signal
+    signal Xpixel : integer range 0 to 800; -- horizontal pixel counter
+    signal Ypixel : integer range 0 to 521; -- vertical pixel counter
+    signal clk_count : unsigned(1 downto 0);
+    signal vga_clk : std_logic;
     signal colour : std_logic_vector(7 downto 0);	
-    signal blank : std_logic;                        -- blanking signal
-
-    function div3(n : integer) return integer is
-        variable q, r : integer;
-    begin
-        q := 0;
-        r := n;
-        for i in 1 to 80 loop
-            if r < 3 then
-                exit;
-            end if;
-            q := q + 1;
-            r := r - 3;
-        end loop;
-        return q;
-    end div3;
+    signal blank : std_logic;
 begin
     clk_div : process(clk) begin
         if rising_edge(clk) then
@@ -82,17 +67,17 @@ begin
              '1';
     blank <= '1' when Xpixel > 640 or Ypixel > 480 else '0';
     colour <= x"00" when blank = '1' else
-              x"00" when Xpixel >= 96*6 or Ypixel >= 64*6 else
-              --001 010 01
+              -- 010 010 01_
+              x"49" when Xpixel >= 96*4 or Ypixel >= 64*4 else
               x"ff" when data = '1' else
-              --01001000
-              x"48" when data = '0' else
+              -- 010 010 00_
+              "48" when data = '0' else
               (others => '-');
   
-    x <= std_logic_vector(to_unsigned(div3(Xpixel/2), x'length))
-        when Xpixel < 96*6 else (others => '0');
-    y <= std_logic_vector(to_unsigned(div3(Ypixel/4), y'length))
-        when Ypixel < 64*6 else (others => '0');
+    x <= std_logic_vector(to_unsigned(Xpixel/4, x'length))
+        when Xpixel < 96*4 else (others => '0');
+    y <= std_logic_vector(to_unsigned(Ypixel/4, y'length))
+        when Ypixel < 64*4 else (others => '0');
 
     vgaRed 	    <= colour(7 downto 5);
     vgaGreen    <= colour(4 downto 2);

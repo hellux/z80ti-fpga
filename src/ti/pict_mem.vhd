@@ -5,21 +5,23 @@ use work.ti_comm.all;
 
 entity pict_mem is port (
     clk : in std_logic;
+    -- lcd -> gmem
     rd, wl : in std_logic;
     page_in : in std_logic_vector(7 downto 0);
     x_lcd : in std_logic_vector(5 downto 0); -- row
     y_lcd : in std_logic_vector(4 downto 0); -- column page
+    -- vga -> gmem
     x_vga : in std_logic_vector(6 downto 0); -- column
     y_vga : in std_logic_vector(5 downto 0); -- row
+    -- gmem -> lcd/vga
     do_vga: out std_logic;
     do_lcd: out std_logic_vector(7 downto 0));
 end pict_mem;
 
 architecture arch of pict_mem is
-    component bram generic(
-        dwidth : integer;
-        size : integer;
-        awidth : integer); port(
+    component bram generic(dwidth : integer;
+                           size : integer;
+                           awidth : integer); port(
         clk : in std_logic;
         wea, web : in std_logic;
         addra, addrb : in std_logic_vector(awidth-1 downto 0);
