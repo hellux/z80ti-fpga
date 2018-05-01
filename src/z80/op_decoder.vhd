@@ -2316,18 +2316,31 @@ architecture arch of op_decoder is
             when t3 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m4 => -- i & tmp -> pc
+        when m4 => -- i & tmp + 1 -> tmpa, (i & tmp) -> Z (lower byte)
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
                 f.cw.dbus_src := tmp_o;
                 f.cw.abus_src := int_o;
-                f.cw.addr_op := none;
-                f.cw.pc_rd := '1';
+                f.cw.addr_op := inc;
+                f.cw.tmpa_rd := '1';
+            when t3 =>
+                f.cw.rf_addr := regZ;
+                f.cw.rf_rdd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m5 => -- (tmpa) -> W (upper byte)
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.abus_src := tmpa_o;
+            when t3 =>
+                f.cw.rf_addr := regW;
+                f.cw.rf_rdd := '1';
                 f.cw.iff_next := '0'; -- turn off interrupts
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
-                f.ct.mode_next := exec;
+                f.ct.mode_next := wz;
             when others => null; end case;
         when others => null; end case;
             f := mem_rd(state, f);
