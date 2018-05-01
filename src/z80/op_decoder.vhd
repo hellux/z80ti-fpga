@@ -1992,9 +1992,9 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
-        when m1 => -- fetch high to w
+        when m1 => -- dec sp
             case state.t is
-            when t4 => -- dec sp
+            when t4 =>
                 f.cw.rf_addr := regSP;
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
@@ -2176,7 +2176,50 @@ architecture arch of op_decoder is
     function im1(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        -- TODO
+        case state.m is
+        when m1 => -- dec sp, int ack
+            case state.t is
+            when t1 =>
+                f.cw.iff_next := '0'; -- turn off interrupts
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+                f.cb.iorq := '1'; -- acknowledge interrupt
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- pch -> (sph--)
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+            when t2 =>
+                f.cw.dbus_src := pch_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- pcl -> (sph--), rst_addr -> pc
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+            when t2 =>
+                f.cw.dbus_src := pcl_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.cw.abus_src := rst_o;
+                f.cw.rst_addr := "111"; -- "111" << 3 = 0x38
+                f.cw.addr_op := none;
+                f.cw.pc_rd := '1';
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
         return f;
     end im1;
 
@@ -2194,7 +2237,6 @@ architecture arch of op_decoder is
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
             when t3 =>
-                f.cw.dbus_src := ext_o;
                 f.cw.tmp_rd := '1';
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := pc_o;
