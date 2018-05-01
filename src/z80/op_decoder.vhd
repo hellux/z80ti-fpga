@@ -2173,21 +2173,6 @@ architecture arch of op_decoder is
         return f;
     end set_im;
 
-    function im0(state : state_t; f_in : id_frame_t)
-    return id_frame_t is variable f : id_frame_t; begin
-        f := f_in;
-        case state.m is
-        when m1 => -- rd instr from data bus to ir
-            f := int_rd(state, f);
-            case state.t is
-            when t3 =>
-                f.cw.ir_rd := '1';
-                f.ct.mode_next := exec;
-            when others => null; end case;
-        when others => null; end case;
-        return f;
-    end im0;
-
     function im1(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -2203,6 +2188,7 @@ architecture arch of op_decoder is
             f := int_rd(state, f);
             case state.t is
             when t1 =>
+                f.cw.iff_next := '0'; -- turn off interrupts
                 f.cw.rf_addr := regSP;
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
@@ -2350,7 +2336,7 @@ begin
 
         if state.mode = int then
             case state.im is
-            when 0 => f := im0(state, f);
+            when 0 => f := unimp(state, f);
             when 1 => f := im1(state, f);
             when 2 => f := im2(state, f);
             end case;
@@ -2508,8 +2494,8 @@ begin
                 when 4 => f := alu_af(state, f, neg_i);
                 when 5 =>
                     case s.y is
-                    when 1 => f := unimp(state, f); -- TODO RETI
-                    when others => f := unimp(state, f); -- TODO RETN
+                    when 1 => f := ret(state, f); -- int ack not needed
+                    when others => f := ret(state, f); -- nmi not implemented
                     end case;
                 when 6 => f := set_im(state, f, im(s.y));
                 when 7 =>

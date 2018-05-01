@@ -7,6 +7,7 @@ use work.util.all;
 -- TODO / MISSING
 --  - power on/off
 --  - contrast
+--  - gmem reset
 
 entity lcd_ctrl is port(
     clk, rst : in std_logic;
