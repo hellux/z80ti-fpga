@@ -8,8 +8,7 @@ entity m45 is port(
     maddr : in std_logic_vector(25 downto 0);
     mdata : inout std_logic_vector(15 downto 0);
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : in std_logic;
-    mlb_c, mub_c : in std_logic;
-    mwait : out std_logic);
+    mlb_c, mub_c : in std_logic);
 end m45;
 
 architecture arch of m45 is
@@ -42,5 +41,4 @@ begin
     end process;
 
     mdata <= x"00" & word_out when moe_c = '0' else (others => 'Z');
-    mwait <= 'Z';
 end arch;

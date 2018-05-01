@@ -20,7 +20,6 @@ entity comp is port(
     mdata : inout std_logic_vector(15 downto 0);
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
     mlb_c, mub_c : out std_logic;
-    mwait : in std_logic;
 -- 7 segment, led
     seg, led : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
@@ -41,7 +40,7 @@ architecture arch of comp is
         clk, rst : in std_logic;
         int : out std_logic;
         cbo : in ctrlbus_out;
-        addr_z80 : in std_logic_vector(15 downto 0);
+        addr_log : in std_logic_vector(15 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
         keys_down : in keys_down_t;
@@ -49,21 +48,20 @@ architecture arch of comp is
         x_vga : in std_logic_vector(6 downto 0);
         y_vga : in std_logic_vector(5 downto 0);
         data_vga : out std_logic;
-        addr_ext : out std_logic_vector(19 downto 0));
+        rd, wr : out std_logic;
+        addr_phy : out std_logic_vector(19 downto 0));
     end component;
 
-    component mem_ctrl port(
-        cbo : in ctrlbus_out;
-        wt : out std_Logic;
-        addr_ext : in std_logic_vector(19 downto 0);
+    component mem_if port(
+        rd, wr : in std_logic;
+        addr_phy : in std_logic_vector(19 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
     -- external
         maddr : out std_logic_vector(25 downto 0);
         mdata : inout std_logic_vector(15 downto 0);
         mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
-        mlb_c, mub_c : out std_logic;
-        mwait : in std_logic);
+        mlb_c, mub_c : out std_logic);
     end component;
 
     component vga_motor port(
@@ -124,14 +122,18 @@ architecture arch of comp is
 
     signal dbg_z80 : dbg_z80_t;
 
-    -- ti <-> external
+    -- ti <-> kbd
     signal keys_down : keys_down_t;
     signal on_key_down : std_logic := '0';
+    -- ti <-> vga
     signal data_vga : std_logic;
     signal x_vga : std_logic_vector(6 downto 0);
     signal y_vga : std_logic_vector(5 downto 0);
-    signal addr_ext : std_logic_vector(19 downto 0);
+    -- ti <-> mem controller
+    signal rd, wr : std_logic;
+    signal addr_phy : std_logic_vector(19 downto 0);
 
+    -- signals for temporary on-chip rom until flash
     signal data_mem_rom, data_mem_ext : std_logic_vector(7 downto 0);
     signal rom_ce : std_logic;
 begin
@@ -182,7 +184,7 @@ begin
 
     -- TEMP (until we can flash after prog)
     rom_ce <= '1' when cbo.mreq = '1' and
-                       addr_ext(19 downto 7) = "0000000000000" else
+                       addr_phy(19 downto 7) = "0000000000000" else
               '0';
     data_mem <= data_mem_rom when rom_ce = '1' else data_mem_ext; 
 
@@ -196,14 +198,14 @@ begin
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
                           x_vga, y_vga, data_vga,
-                          addr_ext);
+                          rd, wr, addr_phy);
 
     -- external controllers
     vga : vga_motor port map(clk, data_vga, rst, x_vga, y_vga,
                              vga_red, vga_green, vga_blue, hsync, vsync);
-    mem : mem_ctrl port map(cbo, wt, addr_ext, data, data_mem_ext,
-                            maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
-                            mwe_c, mlb_c, mub_c, mwait);
+    mif : mem_if port map(rd, wr, addr_phy, data, data_mem_ext,
+                          maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
+                          mwe_c, mlb_c, mub_c);
     -- TODO add kbd enc
     -- kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_clk,
     --                        keys_down, on_key_down);

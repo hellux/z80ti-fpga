@@ -5,19 +5,22 @@ use work.ti_comm.all;
 
 entity ti is port(
     clk, rst : in std_logic;
--- buses
+-- z80 buses
     int : out std_logic;
     cbo : in ctrlbus_out;
-    addr_z80 : in std_logic_vector(15 downto 0);
+    addr_log : in std_logic_vector(15 downto 0);
     data_in : in std_logic_vector(7 downto 0);
     data_out : out std_logic_vector(7 downto 0);
--- external
+-- kbd ext
     keys_down : in keys_down_t;
     on_key_down : in std_logic;
+-- vga ext
     x_vga : in std_logic_vector(6 downto 0);
     y_vga : in std_logic_vector(5 downto 0);
     data_vga : out std_logic;
-    addr_ext : out std_logic_vector(19 downto 0));
+-- mem ext
+    rd, wr : out std_logic;
+    addr_phy : out std_logic_vector(19 downto 0));
 end ti;
 
 architecture arch of ti is
@@ -46,11 +49,12 @@ architecture arch of ti is
         int : out std_logic);
     end component;
 
-    component mmapper port(
-        signal ctrl_mmap : in std_logic_vector(7 downto 0);
-        signal ctrl_page_a, ctrl_page_b : in std_logic_vector(7 downto 0);
-        signal addr_z80 : in std_logic_vector(15 downto 0);
-        signal addr_ext : out std_logic_vector(19 downto 0));
+    component mem_ctrl port(
+        signal cbo : in ctrlbus_out;
+        signal p04_mmap_int, p06_mempage_a, p07_mempage_b : in port_out_t;
+        signal addr_log : in std_logic_vector(15 downto 0);
+        signal addr_phy : out std_logic_vector(19 downto 0);
+        signal rd, wr : out std_logic);
     end component;
 
     component hw_timers port(
@@ -113,7 +117,7 @@ begin
 
     asic_c : asic port map(clk, rst,
                            in_op, out_op,
-                           addr_z80(7 downto 0), data_in, data_out,
+                           addr_log(7 downto 0), data_in, data_out,
                            ports_in, ports_out);
 
     stat : status port map(ports_out.p05_protect, ports_in.p02_status);
@@ -124,10 +128,12 @@ begin
                               hwt_fin, on_key_down,
                               int_ack, int);
 
-    mm : mmapper port map(ports_out.p04_mmap_int.data,
-                          ports_out.p06_mempage_a.data,
-                          ports_out.p07_mempage_b.data,
-                          addr_z80, addr_ext);
+    mctrl : mem_ctrl port map(cbo,
+                              ports_out.p04_mmap_int,
+                              ports_out.p06_mempage_a,
+                              ports_out.p07_mempage_b,
+                              addr_log,
+                              addr_phy, rd, wr);
 
     hwtim : hw_timers port map(clk, rst, ports_out.p03_intmask,
                                ports_out.p04_mmap_int, hwt_fin);

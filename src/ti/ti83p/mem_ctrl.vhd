@@ -1,5 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use work.z80_comm.all;
+use work.ti_comm.all;
 
 --         TI83p MEMORY LAYOUT
 --
@@ -8,7 +10,7 @@ use ieee.std_logic_1164.all;
 --  2  RAM pages : 0-1   * 0x4000 = 32 KB
 --  Memory avail : 1 MB * 16      = 16384 KB
 --
---       EXTERNAL MEMORY LAYOUT
+--     EXTERNAL/PHYSICAL MEMORY LAYOUT
 --  place rom 0-512KB then ram immediately after:
 --  start         page          end
 --           ______________
@@ -26,7 +28,7 @@ use ieee.std_logic_1164.all;
 --          |       :      |
 --          |_______:______|  0xfffff
 --
---            INTERNAL MEMORY LAYOUTS
+--       LOGICAL->PHYSICAL MEMORY MAPPING
 --        mode 0                  mode 1
 --    ______________          ______________
 --   |              | 0x0000 |              |
@@ -42,14 +44,15 @@ use ieee.std_logic_1164.all;
 --   |    RAM  0    |   :    |  MEM PAGE B  |
 --   |______________| 0xffff |______________|
 
-entity mmapper is port(
-    signal ctrl_mmap : in std_logic_vector(7 downto 0);
-    signal ctrl_page_a, ctrl_page_b : in std_logic_vector(7 downto 0);
-    signal addr_z80 : in std_logic_vector(15 downto 0);
-    signal addr_ext : out std_logic_vector(19 downto 0));
-end mmapper;
+entity mem_ctrl is port(
+    signal cbo : in ctrlbus_out;
+    signal p04_mmap_int, p06_mempage_a, p07_mempage_b : in port_out_t;
+    signal addr_log : in std_logic_vector(15 downto 0);
+    signal addr_phy : out std_logic_vector(19 downto 0);
+    signal rd, wr : out std_logic);
+end mem_ctrl;
 
-architecture arch of mmapper is
+architecture arch of mem_ctrl is
     constant ROM_START : std_logic_vector(19 downto 0) := x"00000";
     constant RAM_START : std_logic_vector(19 downto 0) := x"80000";
 
@@ -62,16 +65,16 @@ architecture arch of mmapper is
     signal page_a, page_b : std_logic_vector(5 downto 0);
     signal page_sel : std_logic_vector(5 downto 0);
 begin
-    -- interpret control signals
-    mode <= ctrl_mmap(0);
-    ram_rom_a <= ctrl_page_a(6);
-    rom_page_a <= ctrl_page_a(4 downto 0);
-    ram_page_a <= ctrl_page_a(0);
-    ram_rom_b <= ctrl_page_b(6);
-    rom_page_b <= ctrl_page_b(4 downto 0);
-    ram_page_b <= ctrl_page_b(0);
+    -- interpret ports
+    mode <= p04_mmap_int.data(0);
+    ram_rom_a <= p06_mempage_a.data(6);
+    rom_page_a <= p06_mempage_a.data(4 downto 0);
+    ram_page_a <= p06_mempage_a.data(0);
+    ram_rom_b <= p07_mempage_b.data(6);
+    rom_page_b <= p07_mempage_b.data(4 downto 0);
+    ram_page_b <= p07_mempage_b.data(0);
 
-    -- map address
+    -- logical -> physical address
     with ram_rom_a select page_a <=
         ROM_START(19)           & rom_page_a when '0',
         RAM_START(19 downto 15) & ram_page_a when '1',
@@ -86,12 +89,16 @@ begin
     page2 <= page_b when mode = '0' else page_a;
     page3 <= RAM_START(19 downto 14) when mode = '0' else page_b;
 
-    with addr_z80(15 downto 14) select page_sel <=
+    with addr_log(15 downto 14) select page_sel <=
         page0           when "00",
         page1           when "01",
         page2           when "10",
         page3           when "11",
         (others => '0') when others;
 
-    addr_ext <= page_sel & addr_z80(13 downto 0);
+    addr_phy <= page_sel & addr_log(13 downto 0);
+
+    -- determine ctrl signals
+    rd <= cbo.mreq and cbo.rd; -- TODO check pc no exec mask
+    wr <= cbo.mreq and cbo.wr; -- TODO check flash protection
 end arch;
