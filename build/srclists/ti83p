@@ -9,10 +9,10 @@ src/z80/alu.vhd
 src/z80/op_decoder.vhd
 src/z80/state_machine.vhd
 src/z80/z80.vhd
-src/ti/hw_timers.vhd
 src/ti/kbd_ctrl.vhd
 src/ti/lcd_ctrl.vhd
 src/ti/pict_mem.vhd
+src/ti/ti83p/hw_timers.vhd
 src/ti/ti83p/interrupts.vhd
 src/ti/ti83p/mmapper.vhd
 src/ti/ti83p/asic.vhd
