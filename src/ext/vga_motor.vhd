@@ -16,6 +16,12 @@ entity vga_motor is port (
 end vga_motor;
 
 architecture Behavioral of vga_motor is
+    constant VGA_VIS_X : integer := 640;
+    constant VGA_VIS_Y : integer := 480;
+    constant LCD_VIS_X : integer := 120;
+    constant LCD_VIS_Y : integer := 96;
+    constant PIXEL_SIZE : integer := 4;
+
     signal Xpixel : integer range 0 to 800; -- horizontal pixel counter
     signal Ypixel : integer range 0 to 521; -- vertical pixel counter
     signal clk_count : unsigned(1 downto 0);
@@ -65,19 +71,20 @@ begin
              '1';
     Vsync <= '0' when Ypixel > 490 and Ypixel <= 492 else
              '1';
-    blank <= '1' when Xpixel > 640 or Ypixel > 480 else '0';
+    blank <= '1' when Xpixel >= VGA_VIS_X or Ypixel >= VGA_VIS_Y else '0';
     colour <= x"00" when blank = '1' else
               -- 010 010 01_
-              x"49" when Xpixel >= 96*4 or Ypixel >= 64*4 else
+              x"49" when Xpixel >= LCD_VIS_X*PIXEL_SIZE or
+                         Ypixel >= LCD_VIS_Y*PIXEL_SIZE else
               x"ff" when data = '1' else
               -- 010 010 00_
-              "48" when data = '0' else
+              x"48" when data = '0' else
               (others => '-');
   
-    x <= std_logic_vector(to_unsigned(Xpixel/4, x'length))
-        when Xpixel < 96*4 else (others => '0');
-    y <= std_logic_vector(to_unsigned(Ypixel/4, y'length))
-        when Ypixel < 64*4 else (others => '0');
+    x <= std_logic_vector(to_unsigned(Xpixel/PIXEL_SIZE, x'length))
+        when Xpixel < LCD_VIS_X*PIXEL_SIZE else (others => '0');
+    y <= std_logic_vector(to_unsigned(Ypixel/PIXEL_SIZE, y'length))
+        when Ypixel < LCD_VIS_Y*PIXEL_SIZE else (others => '0');
 
     vgaRed 	    <= colour(7 downto 5);
     vgaGreen    <= colour(4 downto 2);

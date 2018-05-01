@@ -11,7 +11,6 @@ entity mem_rom is port(
     data_out : out std_logic_vector(7 downto 0));
 end mem_rom;
 
-
 architecture arch of mem_rom is
     -- main instr
     constant nop        : std_logic_vector(7 downto 0) := x"00";
@@ -293,7 +292,7 @@ architecture arch of mem_rom is
         ed,
         out_c_a,
         ld_d_n,
-        x"02",  -- no of rows
+        x"40",  -- no of rows
         ld_b_n,
         x"0c",  -- no of pages
         ld_a_n,

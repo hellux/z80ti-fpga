@@ -81,6 +81,6 @@ begin
         rst <= '1';
         wait for 25 ns;
         rst <= '0';
-        wait for 1000 us;
+        wait for 1000 ms;
     end process;
 end arch;
