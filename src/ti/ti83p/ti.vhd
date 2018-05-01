@@ -55,6 +55,7 @@ architecture arch of ti is
 
     component hw_timers port(
         clk, rst : in std_logic;
+        p03_intmask : port_out_t;
         p04_mmap_int : port_out_t;
         fin : out std_logic_vector(1 to 2));
     end component;
@@ -128,7 +129,8 @@ begin
                           ports_out.p07_mempage_b.data,
                           addr_z80, addr_ext);
 
-    hwtim : hw_timers port map(clk, rst, ports_out.p04_mmap_int, hwt_fin);
+    hwtim : hw_timers port map(clk, rst, ports_out.p03_intmask,
+                               ports_out.p04_mmap_int, hwt_fin);
 
     kbd : kbd_ctrl port map(keys_down, ports_out.p01_kbd, ports_in.p01_kbd);
 

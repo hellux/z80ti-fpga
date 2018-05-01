@@ -24,17 +24,18 @@ architecture arch of interrupt is
     signal int_dev : int_dev_t; -- interrupt device
 begin
     -- interrupt enable
-    int_on_key <= p03_intmask_o.data(0);
-    hwt_int(1) <= p03_intmask_o.data(1);
-    hwt_int(2) <= p03_intmask_o.data(2);
+    int_on_key <= p03_intmask_o.data(PO03_ON_KEY_INT);
+    hwt_int(1) <= p03_intmask_o.data(PO03_HWT1_INT);
+    hwt_int(2) <= p03_intmask_o.data(PO03_HWT2_INT);
 
     -- interrupt report
-    p04_mmap_int_i.data <= ("000" &
-                           '0' & -- link caused int (never)
-                            on_key_down &
-                            bool_sl(int_dev = hwt2) &
-                            bool_sl(int_dev = hwt1) &
-                            bool_sl(int_dev = on_key));
+    p04_mmap_int_i.data <= (
+        PI04_ON_KEY_INT  => bool_sl(int_dev = on_key),
+        PI04_HWT1_INT    => bool_sl(int_dev = hwt1),
+        PI04_HWT2_INT    => bool_sl(int_dev = hwt2),
+        PI04_LINK_INT    => '0',
+        PI04_ON_KEY_DOWN => on_key_down,
+        others => '0');
 
     int <= bool_sl(int_dev /= none);
     process(clk) begin
