@@ -913,6 +913,49 @@ architecture arch of op_decoder is
         return f;
     end bli_op;
 
+    function ld_i_a(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := regA;
+                f.cw.dbus_src := rf_o;
+                f.cw.i_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            case state.t is
+            when t5 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ld_i_a;
+
+    function ld_r_a(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := regA;
+                f.cw.dbus_src := rf_o;
+                f.cw.r_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            case state.t is
+            when t5 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ld_r_a;
 
     function ld_a_i_r(state : state_t; f_in : id_frame_t;
                       src : dbus_src_t)
@@ -2542,8 +2585,8 @@ begin
                 when 6 => f := set_im(state, f, im(s.y));
                 when 7 =>
                     case s.y is
-                    when 0 => --f := ld_i_a(state, f); -- TODO
-                    when 1 => --f := ld_r_a(state, f); -- TODO
+                    when 0 => f := ld_i_a(state, f);
+                    when 1 => f := ld_r_a(state, f);
                     when 2 => f := ld_a_i_r(state, f, i_o);
                     when 3 => f := ld_a_i_r(state, f, r_o);
                     when 4 => f := rld_rrd(state, f, rrd1_i, rrd2_i);
