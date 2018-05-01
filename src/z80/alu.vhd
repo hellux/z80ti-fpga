@@ -94,7 +94,7 @@ begin
         op2(3 downto 0) & op1(3 downto 0)        when rld1_i,
         op1(7 downto 4) & op2(7 downto 4)        when rld2_i,
         op1(3 downto 0) & op2(7 downto 4)        when rrd1_i,
-        op1(7 downto 4) & op2(7 downto 4)        when rrd2_i,
+        op1(7 downto 4) & op2(3 downto 0)        when rrd2_i,
         op1 and op2                              when and_i,
         op1 xor op2                              when xor_i,
         op1 or  op2                              when or_i,

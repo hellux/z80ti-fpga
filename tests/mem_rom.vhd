@@ -284,7 +284,7 @@ architecture arch of mem_rom is
     constant set_6_a    : std_logic_vector(7 downto 0) := x"f7";
 
     type mem_t is array(0 to 127) of std_logic_vector(7 downto 0);
-    constant prgm_test : mem_t := (
+    constant prgm_vga : mem_t := (
         ld_c_n,
         x"10",
         ld_a_n,
@@ -342,8 +342,8 @@ architecture arch of mem_rom is
     end function;
 
 
-    --signal mem : mem_t := file_to_mem("a.bin");
-    signal mem : mem_t := prgm_test;
+    signal mem : mem_t := file_to_mem("a.bin");
+    --signal mem : mem_t := prgm_vga;
     signal word_out : std_logic_vector(7 downto 0);
     signal a : integer range 0 to 16383 := 0;
 begin
