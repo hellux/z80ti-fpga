@@ -13,8 +13,12 @@ entity m45 is port(
 end m45;
 
 architecture arch of m45 is
-    type mem_t is array(128 to 255) of std_logic_vector(7 downto 0);
-    signal mem : mem_t := (others => x"00");
+    constant STACK_TOP : integer := 16#83fff#;
+    constant STACK_SIZE : integer := 128;
+    type mem_stack_t is array(STACK_TOP-STACK_SIZE to STACK_TOP)
+        of std_logic_vector(7 downto 0);
+    signal mem_stack : mem_stack_t := (others => x"00");
+
     signal word_out : std_logic_vector(7 downto 0);
     signal a : integer;
 begin
@@ -24,13 +28,13 @@ begin
         if rising_edge(clk) then
             if mce_c = '0' then
                 if mwe_c = '0' then
-                    if 128 <= a and a <= 255 then
-                        mem(a) <= mdata(7 downto 0);
+                    if mem_stack'left <= a and a <= mem_stack'right then
+                        mem_stack(a) <= mdata(7 downto 0);
                     end if;
                 end if;
             end if;
-            if 128 <= a and a <= 255 then
-                word_out <= mem(a);
+            if mem_stack'left <= a and a <= mem_stack'right then
+                word_out <= mem_stack(a);
             else
                 word_out <= x"cc";
             end if;
