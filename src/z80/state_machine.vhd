@@ -32,7 +32,10 @@ begin
             end if;
 
             -- set mode
-            if state.iff = '1' and cbi.int = '1' then
+            if ctrl.instr_end = '1' and
+               state.iff = '1' and
+               cbi.int = '1'
+            then
                 state.mode <= int;
             else
                 state.mode <= ctrl.mode_next;

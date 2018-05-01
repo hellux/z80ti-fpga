@@ -28,7 +28,7 @@ architecture arch of hw_timers is
     signal hwt1_ld, hwt2_ld : std_logic;
     signal hwt1_finish, hwt2_finish : std_logic;
 begin
-    freq_ctrl <= p04_mmap_int.data(PO04_HWT_FREQ_L downto PO04_HWT_FREQ_R);
+    freq_ctrl <= p04_mmap_int.data(2 downto 1);
 
     hwt1_div <= HWT1_DIVS(to_integer(unsigned(freq_ctrl)));
     hwt1_finish <= '1' when hwt1_val = x"00000" else '0';

@@ -47,7 +47,7 @@ begin
                     int_dev <= on_key;
                 elsif hwt_int(1) = '1' and hwt_fin(1) = '1' then
                     int_dev <= hwt1;
-                elsif hwt_int(1) = '1' and hwt_fin(2) = '1' then
+                elsif hwt_int(2) = '1' and hwt_fin(2) = '1' then
                     int_dev <= hwt2;
                 end if;
             elsif int_ack = '1' then

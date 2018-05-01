@@ -2260,6 +2260,7 @@ architecture arch of op_decoder is
                 f.cw.rst_addr := "111"; -- "111" << 3 = 0x38
                 f.cw.addr_op := none;
                 f.cw.pc_rd := '1';
+                f.ct.mode_next := exec;
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
             when others => null; end case;

@@ -11,10 +11,13 @@ end status;
 
 architecture arch of status is
 begin
-    p02_status.data <= '0' &    -- reset for ti83p/ti73, else set
-                       '0' &    -- link assist available
-                       p05_protect.data(2 downto 0) &
-                       '0' &    -- flash unlocked TODO
-                       '1' &    -- reset on ti73
-                       '1';     -- batteries good
+    p02_status.data <= (
+        PO02_73_83              => '0',
+        PO02_LINK_ASSIST        => '0',
+        PO02_PROTECT_2          => p05_protect.data(2),
+        PO02_PROTECT_1          => p05_protect.data(1),
+        PO02_PROTECT_0          => p05_protect.data(0),
+        PO02_FLASH_UNLOCKED     => '0', -- TODO
+        PO02_NOT_73             => '1',
+        PO02_BATTERY_GOOD       => '1');
 end arch;
