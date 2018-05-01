@@ -2224,7 +2224,6 @@ architecture arch of op_decoder is
         when m1 => -- dec sp, int ack
             case state.t is
             when t1 =>
-                f.cw.iff_next := '0'; -- turn off interrupts
                 f.cw.rf_addr := regSP;
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
@@ -2260,6 +2259,7 @@ architecture arch of op_decoder is
                 f.cw.rst_addr := "111"; -- "111" << 3 = 0x38
                 f.cw.addr_op := none;
                 f.cw.pc_rd := '1';
+                f.cw.iff_next := '0'; -- turn off interrupts
                 f.ct.mode_next := exec;
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
@@ -2276,7 +2276,6 @@ architecture arch of op_decoder is
             f := int_rd(state, f);
             case state.t is
             when t1 =>
-                f.cw.iff_next := '0'; -- turn off interrupts
                 f.cw.rf_addr := regSP;
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
@@ -2317,31 +2316,18 @@ architecture arch of op_decoder is
             when t3 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m4 => -- store low order byte to w
+        when m4 => -- i & tmp -> pc
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
                 f.cw.dbus_src := tmp_o;
                 f.cw.abus_src := int_o;
-                f.cw.addr_op := inc;
-                f.cw.tmpa_rd := '1';
-            when t3 =>
-                f.cw.rf_addr := regW;
-                f.cw.rf_rdd := '1';
-                f.ct.cycle_end := '1';
-            when others => null; end case;
-        when m5 => -- store high order byte to z
-            f := mem_rd(state, f);
-            case state.t is
-            when t1 =>
-                f.cw.dbus_src := tmp_o;
-                f.cw.abus_src := tmpa_o;
-            when t3 =>
-                f.cw.rf_addr := regZ;
-                f.cw.rf_rdd := '1';
+                f.cw.addr_op := none;
+                f.cw.pc_rd := '1';
+                f.cw.iff_next := '0'; -- turn off interrupts
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
-                f.ct.mode_next := wz;
+                f.ct.mode_next := exec;
             when others => null; end case;
         when others => null; end case;
             f := mem_rd(state, f);
