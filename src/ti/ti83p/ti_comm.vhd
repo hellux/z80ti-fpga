@@ -1,7 +1,10 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 package ti_comm is
+    constant TI_DIV : integer := 2; -- divide 100 MHz
+
     constant LCD_COLS : integer := 120;
     constant LCD_ROWS : integer := 64;
 
@@ -34,17 +37,12 @@ package ti_comm is
 
     type int_dev_t is (none, on_key, hwt1, hwt2);
 
+    impure function fdiv(freq : natural) return std_logic_vector;
     type hwt_divs_t is array(0 to 3) of std_logic_vector(19 downto 0);
     constant HWT1_DIVS : hwt_divs_t :=
-        (x"2b98a",  -- 560 Hz
-         x"62719",  -- 248 Hz
-         x"8f9ca",  -- 170 Hz
-         x"cee61"); -- 118 Hz
+        (fdiv(560), fdiv(248), fdiv(170), fdiv(118));
     constant HWT2_DIVS : hwt_divs_t :=
-        (x"0ae63",  -- 1120 Hz
-         x"311f6",  -- 497 Hz
-         x"46f89",  -- 344 Hz
-         x"67730"); -- 236 Hz
+        (fdiv(1120), fdiv(497), fdiv(344), fdiv(236));
 
     constant PO02_73_83             : natural := 7;
     constant PO02_LINK_ASSIST       : natural := 6;
@@ -64,4 +62,11 @@ package ti_comm is
     constant PI04_HWT2_INT          : natural := 2;
     constant PI04_ON_KEY_DOWN       : natural := 3;
     constant PI04_LINK_INT          : natural := 4;
+end ti_comm;
+
+package body ti_comm is
+    -- CLK FREQ / TI_DIV / freq = divider for to get frequency freq
+    impure function fdiv(freq : natural) return std_logic_vector is begin
+        return std_logic_vector(to_unsigned(100*10**6/TI_DIV/freq, 20));
+    end fdiv;
 end ti_comm;
