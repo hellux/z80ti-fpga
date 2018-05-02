@@ -29,6 +29,8 @@ architecture arch of op_decoder is
         when t2 =>
             f.cw.data_rdi := '1';
             f.cb.iorq := '1';
+        when t3 =>
+            f.cw.dbus_src := ext_o;
         when others => null; end case;
         return f;
     end int_rd;
@@ -710,6 +712,7 @@ architecture arch of op_decoder is
                 f.cw.rf_rdd := '1';
             when t3 =>
                 f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -735,7 +738,7 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end inc_dec_rp;
-
+    
     function bli_op(state : state_t; f_in : id_frame_t;
                     op : instr_t)
     return id_frame_t is variable f : id_frame_t; begin
@@ -911,6 +914,49 @@ architecture arch of op_decoder is
         return f;
     end bli_op;
 
+    function ld_i_a(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := regA;
+                f.cw.dbus_src := rf_o;
+                f.cw.i_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            case state.t is
+            when t5 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ld_i_a;
+
+    function ld_r_a(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.cw.rf_addr := regA;
+                f.cw.dbus_src := rf_o;
+                f.cw.r_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            case state.t is
+            when t5 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ld_r_a;
 
     function ld_a_i_r(state : state_t; f_in : id_frame_t;
                       src : dbus_src_t)
@@ -1358,16 +1404,18 @@ architecture arch of op_decoder is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m4 =>
-            --when t3 =>
+            case state.t is
+            when t3 =>
                 f.ct.cycle_end := '1';
-                f.ct.instr_end := '1'; 
+                f.ct.instr_end := '1';
+            when others => null; end case;
         when others => null; end case;
         return f;
     end ld_r_xy_d;
     
     function ld_xy_d_r(state : state_t; f_in : id_frame_t; 
-                        r : integer range 0 to 7;
-                        rp : integer range 0 to 15)
+                        rp : integer range 0 to 15;
+                        r : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1391,18 +1439,188 @@ architecture arch of op_decoder is
                 f.cw.rf_addr := rp;
                 f.cw.abus_src := dis_o; 
             when t2 =>
-                --f.cw.dbus_src := r;
+                f.cw.rf_addr := r;
+                f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t5 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m4 =>
-            --when t3 =>
+            case state.t is
+            when t3 =>
                 f.ct.cycle_end := '1';
-                f.ct.instr_end := '1'; 
+                f.ct.instr_end := '1';
+            when others => null; end case;
         when others => null; end case;
         return f;
     end ld_xy_d_r;
+    
+    function ld_xy_d_n(state : state_t; f_in : id_frame_t; 
+                        rp : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            --Fetch displacement
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            --Fetch N
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.rf_addr := regZ;
+                f.cw.rf_rdd := '1';
+            when t5 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 =>
+            --Write N to IXY + d
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>   
+                f.cw.dbus_src := tmp_o;
+                f.cw.rf_addr := rp;
+                f.cw.abus_src := dis_o; 
+            when t2 =>
+                f.cw.rf_addr := regZ;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ld_xy_d_n;
+    
+    function inc_dec_xy_d(state : state_t; f_in : id_frame_t;
+                        op : instr_t; rp : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            --Fetch displacement
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.rf_addr := regZ;
+                f.cw.rf_rdd := '1';
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                --Fetch value of (ix/y + d)
+                f.cw.dbus_src := tmp_o; 
+                f.cw.rf_addr := rp;
+                f.cw.abus_src := dis_o;
+            when t3 =>
+                f.cw.tmp_rd := '1';
+            when t4 =>
+                --Perform inc/dec
+                f.cw.alu_op := op;
+                f.cw.dbus_src := alu_o;
+                f.cw.rf_addr := regW;
+                f.cw.rf_rdd := '1';
+                f.cw.f_rd := '1';
+            when t5 =>
+                --Move displacement Z => tmp
+                f.cw.rf_addr := regZ;
+                f.cw.dbus_src := rf_o;
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 =>
+            --Write N to IXY + d
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>   
+                f.cw.dbus_src := tmp_o;
+                f.cw.rf_addr := rp;
+                f.cw.abus_src := dis_o; 
+            when t2 =>
+                f.cw.rf_addr := regW;
+                f.cw.dbus_src := rf_o;
+                f.cw.data_rdo := '1';
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when t5 =>
+            case state.t is
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end inc_dec_xy_d;
+
+    
+    function alu_a_xy_d(state : state_t; f_in : id_frame_t; 
+                        op : instr_t;
+                        rp : integer range 0 to 15)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            --Fetch displacement
+            f := mem_rd_pc(state, f);
+            case state.t is
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                --Fetch value of (IX/y+d)
+                f.cw.dbus_src := tmp_o; 
+                f.cw.rf_addr := rp;
+                f.cw.abus_src := dis_o;
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.cw.act_rd := '1';
+            when t4 =>
+                f.cw.alu_op := op;
+                f.cw.dbus_src := alu_o;
+                f.cw.rf_addr := regA;
+                f.cw.rf_rdd := '1';
+                f.cw.f_rd := '1';
+            when t5 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m4 =>
+            case state.t is
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end alu_a_xy_d;
 
     function ex_spx_rp(state : state_t; f_in : id_frame_t;
                        reg : integer range 0 to 15)
@@ -1532,6 +1750,8 @@ architecture arch of op_decoder is
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := rf_o;
             when t3 =>
+                f.cw.rf_addr := regA;
+                f.cw.rf_rdd := '1';
                 f.cw.tmp_rd := '1';
             when t4 =>
                 f.cw.alu_op := in_i;
@@ -1816,9 +2036,9 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
-        when m1 => -- fetch high to w
+        when m1 => -- dec sp
             case state.t is
-            when t4 => -- dec sp
+            when t4 =>
                 f.cw.rf_addr := regSP;
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
@@ -1984,25 +2204,67 @@ architecture arch of op_decoder is
         return f;
     end si;
 
-    function im0(state : state_t; f_in : id_frame_t)
+    function set_im(state : state_t; f_in : id_frame_t;
+                    mode : integer range 0 to 2)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        case state.m is
-        when m1 => -- rd instr from data bus to ir
-            f := int_rd(state, f);
-            case state.t is
-            when t3 =>
-                f.cw.ir_rd := '1';
-                f.ct.mode_next := exec;
-            when others => null; end case;
+        case state.t is
+        when t4 => 
+            f.ct.im_next := mode;
+            f.ct.cycle_end := '1';
+            f.ct.instr_end := '1';
         when others => null; end case;
         return f;
-    end im0;
+    end set_im;
 
     function im1(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        -- TODO
+        case state.m is
+        when m1 => -- dec sp, int ack
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+                f.cb.iorq := '1'; -- acknowledge interrupt
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- pch -> (sph--)
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
+            when t2 =>
+                f.cw.dbus_src := pch_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- pcl -> (sph--), rst_addr -> pc
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regSP;
+                f.cw.abus_src := rf_o;
+            when t2 =>
+                f.cw.dbus_src := pcl_o;
+                f.cw.data_rdo := '1';
+            when t3 =>
+                f.cw.abus_src := rst_o;
+                f.cw.rst_addr := "111"; -- "111" << 3 = 0x38
+                f.cw.addr_op := none;
+                f.cw.pc_rd := '1';
+                f.cw.iff_next := '0'; -- turn off interrupts
+                f.ct.mode_next := exec;
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
         return f;
     end im1;
 
@@ -2019,7 +2281,6 @@ architecture arch of op_decoder is
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
             when t3 =>
-                f.cw.dbus_src := ext_o;
                 f.cw.tmp_rd := '1';
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := pc_o;
@@ -2055,7 +2316,7 @@ architecture arch of op_decoder is
             when t3 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m4 => -- store low order byte to w
+        when m4 => -- i & tmp + 1 -> tmpa, (i & tmp) -> Z (lower byte)
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
@@ -2064,19 +2325,19 @@ architecture arch of op_decoder is
                 f.cw.addr_op := inc;
                 f.cw.tmpa_rd := '1';
             when t3 =>
-                f.cw.rf_addr := regW;
+                f.cw.rf_addr := regZ;
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m5 => -- store high order byte to z
+        when m5 => -- (tmpa) -> W (upper byte)
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
-                f.cw.dbus_src := tmp_o;
                 f.cw.abus_src := tmpa_o;
             when t3 =>
-                f.cw.rf_addr := regZ;
+                f.cw.rf_addr := regW;
                 f.cw.rf_rdd := '1';
+                f.cw.iff_next := '0'; -- turn off interrupts
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
                 f.ct.mode_next := wz;
@@ -2091,6 +2352,7 @@ architecture arch of op_decoder is
     type rp_table_t is array(0 to 3) of integer range 0 to 15;
     type alu_table_t is array(0 to 7) of instr_t;
     type xy_table_t is array(0 to 1) of integer range 0 to 15;
+    type im_table_t is array(0 to 7) of integer range 0 to 2;
     type prefix_table_t is array(0 to 1) of id_prefix_t;
     constant bli4 : bli_row_t := (ldi_i, cpi_i, ini_i, outi_i);
     constant bli5 : bli_row_t := (ldd_i, cpd_i, ind_i, outd_i);
@@ -2105,6 +2367,7 @@ architecture arch of op_decoder is
                                    sla_i, sra_i, sll_i, srl_i);
     constant afi : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
                                    daa_i, cpl_i, scf_i, ccf_i);
+    constant im : im_table_t := (0, 1, 1, 2, 0, 1, 1, 2);
     constant rxy : xy_table_t := (regIX, regIY);
     constant pxy : prefix_table_t := (ddcb_d, fdcb_d);
     constant pxy_d : prefix_table_t := (ddcb, fdcb);
@@ -2136,7 +2399,10 @@ begin
         end if;
 
         -- set all signals to defaults (overwrite below)
-        f.ct := (mode_next => state.mode, prefix_next => main, others => '0');
+        f.ct := (mode_next => state.mode,
+                 im_next => state.im,
+                 prefix_next => main,
+                 others => '0');
         f.cb := (others => '0');
         f.cw := (dbus_src => none,
                  abus_src => none,
@@ -2150,20 +2416,21 @@ begin
                  iff_next => state.iff,
                  others => '0');
 
+        if state.m = m1 then
+            f.cb.m1 := '1';
+        end if;
+
         if state.mode = int then
             case state.im is
-            when 0 => f := im0(state, f);
+            when 0 => f := unimp(state, f);
             when 1 => f := im1(state, f);
             when 2 => f := im2(state, f);
             end case;
         else
 
         -- fetch phase
-        if state.m = m1 then
-            f.cb.m1 := '1';
-            if state.mode /= halt then
-                f := mem_rd_instr(state, f);
-            end if;
+        if state.m = m1 and state.mode /= halt then
+            f := mem_rd_instr(state, f);
         end if;
 
         case state.prefix is
@@ -2228,14 +2495,14 @@ begin
                 case s.z is
                 when 6 =>
                     case s.y is
-                    when 6 =>
-                        case s.z is
-                        when 6 => f := halt(state, f);
-                        when others => f := ld_rpx_r(state, f, regHL, s.z);
-                        end case;
+                    when 6 => f := halt(state, f);
                     when others => f := ld_r_rpx(state, f, s.y, regHL);
                     end case;
-                when others => f := ld_r_r(state, f, s.z, s.y);
+                when others =>
+                    case s.y is
+                    when 6 => f := ld_rpx_r(state, f, regHL, s.z);
+                    when others => f := ld_r_r(state, f, s.z, s.y);
+                    end case;
                 end case;
             when 2 => 
                 case s.z is
@@ -2307,20 +2574,20 @@ begin
                     end case;
                 when 3 =>
                     case s.q is
-                    when 0 => f := ld_nnx_rp(state, f, rp(s.p)); -- TODO LD (nn), rp[p]
-                    when 1 => f := ld_rp_nnx(state, f, rp(s.p)); -- TODO LD rp[p], (nn)
+                    when 0 => f := ld_nnx_rp(state, f, rp(s.p));
+                    when 1 => f := ld_rp_nnx(state, f, rp(s.p));
                     end case;
                 when 4 => f := alu_af(state, f, neg_i);
                 when 5 =>
                     case s.y is
-                    when 1 => f := unimp(state, f); -- TODO RETI
-                    when others => f := unimp(state, f); -- TODO RETN
+                    when 1 => f := ret(state, f); -- int ack not needed
+                    when others => f := ret(state, f); -- nmi not implemented
                     end case;
-                when 6 => f := unimp(state, f); -- TODO IM im[y]
+                when 6 => f := set_im(state, f, im(s.y));
                 when 7 =>
                     case s.y is
-                    when 0 => --f := ld_i_a(state, f);
-                    when 1 => --f := ld_r_a(state, f);
+                    when 0 => f := ld_i_a(state, f);
+                    when 1 => f := ld_r_a(state, f);
                     when 2 => f := ld_a_i_r(state, f, i_o);
                     when 3 => f := ld_a_i_r(state, f, r_o);
                     when 4 => f := rld_rrd(state, f, rrd1_i, rrd2_i);
@@ -2394,27 +2661,27 @@ begin
                     when 0 => f := inc_dec_rp(state, f, inc, rxy(xy));
                     when 1 => f := inc_dec_rp(state, f, dec, rxy(xy));
                     end case;
-                when 4 => f := unimp(state, f); -- TODO inc (ix/y+d) (undoc?)
-                when 5 => f := unimp(state, f); -- TODO dec (ix/y+d) (undoc?)
-                when 6 => f := unimp(state, f); -- TODO ld (ix+d), n (undoc?)
+                when 4 => f := inc_dec_xy_d(state, f, inc_i, rxy(xy));
+                when 5 => f := inc_dec_xy_d(state, f, dec_i, rxy(xy));
+                when 6 => f := ld_xy_d_n(state, f, rxy(xy));
                 when 7 => f := nop(state, f);
                 end case;
             when 1 =>
                 case s.z is
                 when 6 =>
                     case s.y is
-                    when 6 =>
-                        case s.z is
-                        when 6 => f := nop(state, f);
-                        when others => f := ld_xy_d_r(state, f, s.y, rxy(xy));
-                        end case;
+                    when 6 => f := nop(state, f); -- NONI
                     when others => f := ld_r_xy_d(state, f, s.y, rxy(xy));
                     end case;
-                when others => f := nop(state, f);
+                when others => 
+                    case s.y is
+                    when 6 => f := ld_xy_d_r(state, f, rxy(xy), s.z);
+                    when others => f := nop(state, f); -- NONI
+                    end case;
                 end case;
             when 2 => 
                 case s.z is
-                when 6 => f := alu_a_rpx(state, f, alu(s.y), rxy(xy));
+                when 6 => f := alu_a_xy_d(state, f, alu(s.y), rxy(xy));
                 when others => f := nop(state, f);
                 end case;
             when 3 =>

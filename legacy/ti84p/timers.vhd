@@ -1,6 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use work.io_comm.all;
+use work.ti_comm.all;
 
 entity timers is port(
     clk, clk_z80, rst : in std_logic;
@@ -47,8 +47,7 @@ end arch_timers;
 
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.io_comm.all;
+use work.ti_comm.all;
 
 entity timer is port(
     clk, clk_cry, clk_z80, rst : in std_logic;
@@ -64,6 +63,12 @@ architecture arch_timer of timer is
         di : in std_logic_vector(size-1 downto 0);
         do : out std_logic_vector(size-1 downto 0));
     end component;
+    component buf generic(size : integer); port(
+        clk, rst : in std_logic;
+        rd : in std_logic;
+        di : in std_logic_vector(size-1 downto 0);
+        do : out std_logic_vector(size-1 downto 0));
+    end component;
     component cntr generic(size : integer); port(
         clk, rst : in std_logic;
         ce : in std_logic;
@@ -74,8 +79,7 @@ architecture arch_timer of timer is
         ld : in std_logic;
         ce1, ce2 : in std_logic;
         di : in std_logic_vector(bitwidth-1 downto 0);
-        do : out std_logic_vector(bitwidth-1 downto 0);
-        rc : out std_logic);
+        do : out std_logic_vector(bitwidth-1 downto 0));
     end component;
     component ff port(
         clk, rst : in std_logic;
@@ -84,11 +88,11 @@ architecture arch_timer of timer is
         do : out std_logic);
     end component;
 
-    signal cnt_cry : integer range 0 to 4095;
-    signal cnt_z80: integer range 0 to 63;
-    signal clk_timer, clk_timer_cry, clk_timer_z80 : std_logic;
+    signal start, stop, active : std_logic;
+    signal cntr_ld, cntr_clk : std_logic;
+    signal cntr_val : std_logic_vector(11 downto 0);
+    signal tim_clk, tim_ld : std_logic;
     signal tim_current : std_logic_vector(7 downto 0);
-    signal tim_active : std_logic;
     signal tim_finish, tim_overflow : std_logic;
 
     -- flags
@@ -99,26 +103,28 @@ architecture arch_timer of timer is
 
     signal freq_buf, count_buf : std_logic_vector(7 downto 0);
     signal sel_cntr : std_logic; -- 0 crystal, 1 z80
-    signal div : integer range 1 to 4096;
+    signal div : std_logic_vector(11 downto 0);
 begin
+    start <= count.wr and (freq_buf(7) or freq_buf(6));
+    stop <= (tim_finish and not loop_f) or not (freq_buf(7) or freq_buf(6));
+    active_ff : ff port map(clk, stop, start, '1', active);
+
     -- clock for timer
-    cry_cntr : cntr generic map(4096)
-                    port map(clk, clk_timer_cry, clk_cry, cnt_cry);
-    z80_cntr : cntr generic map(64)
-                    port map(clk, clk_timer_z80, clk_z80, cnt_z80);
-    clk_timer_cry <= '1' when cnt_cry = div-1 else '0';
-    clk_timer_z80 <= '1' when cnt_z80 = div-1 else '0';
-    clk_timer <= clk_timer_z80 when sel_cntr = '1' else clk_timer_cry;
+    cntr_clk <= clk_z80 when sel_cntr = '1' else clk_cry;
+    cntr_ld <= count.wr or tim_clk;
+    clk_cntr : dcntr generic map(12)
+                     port map(clk, rst, cntr_ld, cntr_clk,
+                              active, div, cntr_val);
+    tim_clk <= '1' when cntr_val = x"000" and cntr_clk = '1' else '0';
 
     -- timer
+    tim_ld <= count.wr or (tim_finish and loop_f);
     timer_cntr : dcntr generic map(8)
-                       port map(clk, rst, count.wr, tim_active, clk_timer,
+                       port map(clk, rst, tim_ld, active, tim_clk,
                                 count_buf, tim_current);
     tim_finish <= '1' when tim_current = x"00" and
-                           tim_active = '1' and
-                           clk_timer = '1' else '0';
-    tim_overflow <= tim_finish and finished_f;
-    tim_active <= (freq_buf(7) or freq_buf(6)) and (not finished_f or loop_f);
+                           active = '1' else '0';
+    tim_overflow <= tim_finish and finished_f and tim_clk;
 
     -- flags
     finished_ff : ff port map(clk, count.wr, tim_finish,   '1', finished_f);
@@ -126,29 +132,29 @@ begin
     loop_ff : ff port map(clk_z80, rst, status.wr, status.data(0), loop_f);
     int_ff : ff port map(clk, rst, status.wr, status.data(1), int_f);
 
-    -- port freq
+    -- port out
     freq_reg : reg generic map(8)
                    port map(clk_z80, rst, freq.wr, freq.data, freq_buf);
-    count_reg : reg generic map(8)
+    count_reg : buf generic map(8)
                     port map(clk_z80, rst, count.wr, count.data, count_buf);
     sel_cntr <= freq_buf(7);
     with freq_buf select div <=
-        3       when x"40",     -- 10925.4 Hz
-        33      when x"41",     -- 993.2 Hz
-        328     when x"42",     -- 99.9 Hz
-        3277    when x"43",     -- 10.0 Hz
-        1       when x"44",     -- 32776.1 Hz
-        16      when x"45",     -- 2048.5 Hz
-        256     when x"46",     -- 128.0 Hz
-        4096    when x"47",     -- 8.0 Hz
-        1       when x"80",
-        2       when x"81",
-        4       when x"82",
-        8       when x"84",
-        16      when x"88",
-        32      when x"90",
-        64      when x"a0",
-        1       when others;
+        x"002" when x"40",  -- 10925.4 Hz
+        x"020" when x"41",  -- 993.2 Hz
+        x"147" when x"42",  -- 99.9 Hz
+        x"ccc" when x"43",  -- 10.0 Hz
+        x"000" when x"44",  -- 32776.1 Hz
+        x"00f" when x"45",  -- 2048.5 Hz
+        x"0ff" when x"46",  -- 128.0 Hz
+        x"fff" when x"47",  -- 8.0 Hz
+        x"000" when x"80",  -- z80 / 1
+        x"001" when x"81",  -- z80 / 2
+        x"003" when x"82",  -- z80 / 4
+        x"007" when x"84",  -- z80 / 8
+        x"00f" when x"88",  -- z80 / 16
+        x"01f" when x"90",  -- z80 / 32
+        x"03f" when x"a0",  -- z80 / 64
+        x"000" when others;
 
     -- outputs
     finished <= finished_f;

@@ -28,6 +28,7 @@ package z80_comm is
         instr_end : std_logic;      -- last state of current instr
         mode_next : id_mode_t;      -- mode for next cp
         prefix_next : id_prefix_t;  -- prefix for next cp
+        im_next : integer range 0 to 2;  -- im for next cp
     end record;
 
     -- current state/context of cpu
@@ -77,7 +78,7 @@ package z80_comm is
         tmpa_rd : std_logic;             -- addr_in -> tmpa
         pc_rd : std_logic;               -- add_in -> pc
         addr_op : addr_op_t;             -- op for addr_in
-        rst_addr : std_logic_vector(2 downto 0); -- addr for RST instr
+        rst_addr : std_logic_vector(2 downto 0); -- addr >> 3 for RST
         iff_next : std_logic;            -- next value for iff
         -- alu
         alu_op : instr_t;                -- op for alu

@@ -100,7 +100,7 @@ architecture arch of regfile is
         return new_ram;
     end next_ram;
 
-    signal ram, ram_next : rf_ram_t;
+    signal ram, ram_next : rf_ram_t := (others => x"ff");
     signal s : rf_swap_state_t;
 begin
     swap_proc : process(clk) begin
@@ -122,8 +122,7 @@ begin
     ram_proc : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                ram <= (18 => x"00", 19 => x"40",
-                        others => x"00");
+                ram <= (others => x"ff");
             else
                 ram <= ram_next;
             end if;
