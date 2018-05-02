@@ -17,9 +17,9 @@ Net "btns<1>" LOC = A8 | IOSTANDARD = LVCMOS33; #Bank = 0, pin name = IO_L33N, S
 #Net "PS2KeyboardClk" LOC = L12 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L40P_GCLK11_M1A5, Sch name = PIC-SCK1
 #Net "PS2KeyboardData" LOC = J13 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L39P_M1A3, Sch name = PIC-SDI1
 
-## Pic USB-HID interface
-#Net "PS2KeyboardClk" LOC = L12 | IOSTANDARD = LVCMOS33 | PULLUP; #Bank = 1, pin name = IO_L40P_GCLK11_M1A5, Sch name = PIC-SCK1
-#Net "PS2KeyboardData" LOC = J13 | IOSTANDARD = LVCMOS33 | PULLUP; #Bank = 1, pin name = IO_L39P_M1A3, Sch name = PIC-SDI1
+# Pic USB-HID interface
+Net "PS2KeyboardClk" LOC = L12 | IOSTANDARD = LVCMOS33 | PULLUP; #Bank = 1, pin name = IO_L40P_GCLK11_M1A5, Sch name = PIC-SCK1
+Net "PS2KeyboardData" LOC = J13 | IOSTANDARD = LVCMOS33 | PULLUP; #Bank = 1, pin name = IO_L39P_M1A3, Sch name = PIC-SDI1
 
 ## 7 segment display
 Net "seg<6>" LOC = T17 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L51P_M1DQ12, Sch name = CA

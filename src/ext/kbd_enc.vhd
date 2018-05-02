@@ -220,7 +220,7 @@ begin
         x"FF" when others;
   
   -- set as keycode
-  data <=  scancode & x"0" & "000" & PS2KeyboardData;
+  data <=  scancode & keycode;
   keys_down <= keys_down_int;
 
 end behavioral;
