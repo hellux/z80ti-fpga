@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
-use work.io_comm.all;
+use work.ti_comm.all;
 
 entity key_fb is port (
     clk                 : in std_logic;
