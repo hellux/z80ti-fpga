@@ -9,7 +9,6 @@ entity kbd_enc is
 	     rst		              : in std_logic;			      -- reset signal
          PS2KeyboardCLK	      : in std_logic; 		              -- USB keyboard PS2 clock
          PS2KeyboardData	  : in std_logic;			          -- USB keyboard PS2 data
-         data			      : out std_logic_vector(15 downto 0); -- scan code data
          keys_down            : out keys_down_t;
          on_key_down          : out std_logic);
 end kbd_enc;
@@ -34,7 +33,7 @@ architecture behavioral of KBD_ENC is
   signal keycode, keycode_ext : std_logic_vector(7 downto 0);     -- key code
   signal extended : std_logic;
   signal keys_down_int        : keys_down_t := (others => x"ff"); -- keys_down mtrx set to 1 in evert group
-  signal on_key_down_int      : std_logic;                        -- On key
+  signal on_key_down_int      : std_logic := '1'; 
   
   type wr_type is (standby, wrchar, wrcur);			              -- declare state types for write cycle
   signal wrstate : wr_type;					                      -- write cycle state
@@ -131,6 +130,9 @@ begin
                     when x"e0" => 
                         extended <= '1';
                         ps2_state <= idle;
+                    when x"14" =>
+                        on_key_down_int <= '0';
+                        extended <= '0';
                     when others =>
                         keys_down_int(grp)(key) <= '0'; -- declare key pressed down
                         extended <= '0';
@@ -138,7 +140,12 @@ begin
                 end if;
             when break =>
                 if ps2bitcounter = 11 then
-                    keys_down_int(grp)(key) <= '1'; -- released key 
+                    case scancode is
+                    when x"14" =>
+                        on_key_down_int <= '1';
+                    when others =>
+                        keys_down_int(grp)(key) <= '1'; -- released key 
+                    end case;
                     ps2_state <= idle;
                     extended <= '0';
                 end if;
@@ -218,9 +225,9 @@ begin
         x"02" when x"7A",	-- KEY RIGHT | Page Down
         x"03" when x"6C",	-- KEY UP    | Home
         x"FF" when others;
-  
+    
   -- set as keycode
-  data <=  scancode & keycode;
   keys_down <= keys_down_int;
+  on_key_down <= on_key_down_int;
 
 end behavioral;
