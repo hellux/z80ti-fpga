@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.z80_comm.all;
+use work.cmp_comm.all;
 
 -- monitor displays registers and current state on FPGA leds, segment display
 -- left/right button to select register/bus to display
@@ -10,9 +10,8 @@ use work.z80_comm.all;
 
 entity monitor is port(
     clk : in std_logic;
-    btns : in std_logic_vector(4 downto 0);
-    dbg : in dbg_z80_t;
-    on_key_down : in std_logic;
+    sw : in std_logic_vector(5 downto 0);
+    dbg : in dbg_cmp_t;
     seg, led : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
 end monitor;
@@ -21,64 +20,54 @@ architecture arch of monitor is
     component segment is port(
         clk : in std_logic;
         value : in std_logic_vector(15 downto 0);
-        dp_num : in unsigned(3 downto 0);
+        dp_num : in std_logic_vector(3 downto 0);
         seg : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
 
-    signal selected : unsigned(3 downto 0) := (others => '0');
+    signal selected_val : std_logic_vector(3 downto 0);
     signal seg_value : std_logic_vector(15 downto 0);
-    signal abus_src, dbus_src : std_logic_vector(3 downto 0);
+    signal selected_dot : std_logic_vector(1 downto 0);
+    signal seg_dots : std_logic_vector(3 downto 0);
 begin
-    smt : segment port map(clk, seg_value, selected, seg, an);
+    smt : segment port map(clk, seg_value, seg_dots, seg, an);
 
-    process(clk) begin
-        if rising_edge(clk) then
-            if btns(2) = '1' then
-                selected <= selected - 1;
-            elsif btns(4) = '1' then
-                selected <= selected + 1;
-            end if;
-        end if;
-    end process;
+    selected_dot <= sw(5 downto 4);
+    selected_val <= sw(3 downto 0);
 
-    with dbg.cw.abus_src select abus_src <= 
-        x"0" when none,
-        x"1" when pc_o,
-        x"2" when rf_o,
-        x"3" when tmpa_o,
-        x"4" when dis_o,
-        x"5" when int_o,
-        x"6" when rst_o;
-    with dbg.cw.dbus_src select dbus_src <= 
-        x"0" when none,
-        x"1" when ext_o,
-        x"2" when rf_o,
-        x"3" when tmp_o,
-        x"4" when alu_o,
-        x"5" when i_o,
-        x"6" when r_o,
-        x"7" when pch_o|pcl_o,
-        x"8" when zero_o;
+    with selected_dot select seg_dots <=
+        dbg.cbi.int &
+        dbg.on_key_down &
+        dbg.mem_rd &
+        dbg.mem_wr
+            when "00",
+        dbg.z80.ct.cycle_end &
+        dbg.z80.ct.instr_end & 
+        "00"
+            when "01",
+        "0000" when others;
 
-    with selected select seg_value <=
-        dbg.regs.bc                 when "0000",
-        dbg.regs.de                 when "0001",
-        dbg.regs.hl                 when "0010",
-        dbg.regs.af                 when "0011",
-        dbg.regs.wz                 when "0100",
-        dbg.regs.sp                 when "0101",
-        dbg.regs.ix                 when "0110",
-        dbg.regs.iy                 when "0111",
-        dbg.act & dbg.tmp           when "1000",
-        dbg.ir & dbg.dbus           when "1001",
-        dbg.abus                    when "1010",
-        dbg.pc                      when "1011",
-        dbus_src & abus_src & x"00" when "1100",
-        x"0123"                     when others;
+    with selected_val select seg_value <=
+        dbg.z80.regs.af                                 when "0000",
+        dbg.z80.regs.bc                                 when "0001",
+        dbg.z80.regs.de                                 when "0010",
+        dbg.z80.regs.hl                                 when "0011",
+        dbg.z80.regs.sp                                 when "0100",
+        dbg.z80.regs.ix                                 when "0101",
+        dbg.z80.regs.iy                                 when "0110",
+        dbg.z80.regs.wz                                 when "0111",
+        dbg.z80.act & dbg.z80.tmp                       when "1000",
+        dbg.z80.ir & dbg.z80.dbus                       when "1001",
+        dbg.z80.abus                                    when "1010",
+        dbg.z80.pc                                      when "1011",
+        dbg.data & "00" & dbg.addr_phy(19 downto 16)    when "1100",
+        dbg.addr_log                                    when "1101",
+        dbg.addr_phy(15 downto 0)                       when "1110",
+        dbg.scancode & dbg.keycode                      when "1111",
+        x"0123"                                         when others;
 
-    led(7 downto 5) <= std_logic_vector(to_unsigned(dbg.state.m, 3));
-    led(4) <= on_key_down;
-    led(3) <= dbg.ct.instr_end;
-    led(2 downto 0) <= std_logic_vector(to_unsigned(dbg.state.t, 3));
+    led(7 downto 5) <= std_logic_vector(to_unsigned(dbg.z80.state.m, 3));
+    led(4) <= dbg.on_key_down;
+    led(3) <= dbg.z80.ct.instr_end;
+    led(2 downto 0) <= std_logic_vector(to_unsigned(dbg.z80.state.t, 3));
 end arch;

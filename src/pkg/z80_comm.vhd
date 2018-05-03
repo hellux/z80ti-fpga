@@ -52,8 +52,6 @@ package z80_comm is
         m1, mreq, iorq, rd, wr : std_logic;
         -- cpu control
         halt : std_logic;
-        -- cpu bus control
-        busack : std_logic;
     end record;
 
     type dbus_src_t is (none, zero_o,

@@ -68,9 +68,11 @@ architecture arch of mem_if is
     signal init_time : integer range 0 to 7;
     signal rw_time : integer range 0 to 4;
     signal buf_rd : std_logic;
+    signal data_buf : std_logic_vector(7 downto 0);
 begin
     buf : reg generic map(x"00", 8)
-              port map(clk, rst, buf_rd, mdata(7 downto 0), data_out);
+              port map(clk, rst, buf_rd, mdata(7 downto 0), data_buf);
+    data_out <= data_buf when rd = '1' else x"00";
 
     process(clk) begin
         if rising_edge(clk) then

@@ -1,5 +1,6 @@
 src/pkg/util.vhd
 src/pkg/z80_comm.vhd
+src/pkg/cmp_comm.vhd
 src/ti/ti83p/ti_comm.vhd
 src/prm/counters.vhd
 src/prm/registers.vhd

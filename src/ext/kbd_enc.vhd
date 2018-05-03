@@ -1,96 +1,78 @@
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;            -- basic IEEE library
-use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
-                                        -- and various arithmetic operations
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
 use work.ti_comm.all;
--- entity
-entity kbd_enc is
-  port ( clk	              : in std_logic;			          -- system clock(100 MHz)
-	     rst		              : in std_logic;			      -- reset signal
-         PS2KeyboardCLK	      : in std_logic; 		              -- USB keyboard PS2 clock
-         PS2KeyboardData	  : in std_logic;			          -- USB keyboard PS2 data
-         keys_down            : out keys_down_t;
-         on_key_down          : out std_logic);
+entity kbd_enc is port (
+    clk, rst : in std_logic;
+    PS2KeyboardCLK : in std_logic;
+    PS2KeyboardData	: in std_logic;
+    keys_down : out keys_down_t;
+    on_key_down : out std_logic;
+-- debug
+    scancode_out : out std_logic_vector(7 downto 0);
+    keycode_out : out std_logic_vector(7 downto 0));
 end kbd_enc;
 
--- architecture
 architecture behavioral of KBD_ENC is
-  signal ps2clk			      : std_logic;			              -- synchronized ps2 clock
-  signal ps2data		      : std_logic;			              -- synchronized ps2 data
-  signal ps2clk_q1, ps2clk_q2 : std_logic;			              -- ps2 clock one pulse flip flop
-  signal ps2clk_op 		      : std_logic;			              -- ps2 clock one pulse 
-	
-  signal ps2data_sr 	      : std_logic_vector(10 downto 0);    -- ps2 data shift register
-	
-  signal ps2bitcounter	      : unsigned(3 downto 0);		      -- ps2 bit counter
-  signal make_q			      : std_logic;			              -- make one pulselse flip flop
-  signal make_op		      : std_logic;			              -- make one pulse
+    signal ps2clk : std_logic;
+    signal ps2data : std_logic;
+    signal ps2clk_q1, ps2clk_q2 : std_logic;
+    signal ps2clk_op : std_logic;
+    signal ps2data_sr : std_logic_vector(10 downto 0); 
+    signal ps2bitcounter : unsigned(3 downto 0);
 
-  type state_type is (idle, break);			              -- declare state types for ps2
-  signal ps2_state : state_type;					              -- ps2 state
+    type state_type is (idle, break);
+    signal ps2_state : state_type;
 
-  signal scancode		      : std_logic_vector(7 downto 0); 	  -- scan code
-  signal keycode, keycode_ord, keycode_ext : std_logic_vector(7 downto 0);
-  signal extended : std_logic;
-  signal keys_down_int        : keys_down_t := (others => x"ff"); -- keys_down mtrx set to 1 in evert group
-  signal on_key_down_int      : std_logic := '1'; 
-  
-  type wr_type is (standby, wrchar, wrcur);			              -- declare state types for write cycle
-  signal wrstate : wr_type;					                      -- write cycle state
-
+    signal scancode : std_logic_vector(7 downto 0);
+    signal keycode, keycode_ord, keycode_ext : std_logic_vector(7 downto 0);
+    signal extended : std_logic;
+    signal keys_down_int : keys_down_t := (others => x"ff");
+    signal on_key_down_int : std_logic := '1';
 begin
-
-  -- Synchronize PS2-KBD signals
-  process(clk)
-  begin
-    if rising_edge(clk) then
-      ps2clk <= ps2keyboardclk;
-      ps2data <= ps2keyboarddata;
-    end if;
-  end process;
-
-	
-  -- Generate one cycle pulse from PS2 clock, negative edge
-
-  process(clk)
-  begin
-    if rising_edge(clk) then
-      if rst='1' then
-        PS2Clk_Q1 <= '1';
-        PS2Clk_Q2 <= '0';
-      else
-        PS2Clk_Q1 <= PS2Clk;
-        PS2Clk_Q2 <= not PS2Clk_Q1;
-      end if;
-    end if;
-  end process;
-	
-  ps2clk_op <= (not ps2clk_q1) and (not ps2clk_q2);
-  -- PS2 data shift register
-    process(clk)
-      begin
+    process(clk) begin
         if rising_edge(clk) then
-          if rst='1' then
-            ps2data_sr <= (others => '0');
-          elsif ps2clk_op = '1' then 
-            ps2data_sr(9 downto 0) <= ps2data_sr(10 downto 1);
-            ps2data_sr(10) <= ps2data;
-          end if;
+            ps2clk <= ps2keyboardclk;
+            ps2data <= ps2keyboarddata;
         end if;
-     end process;
-  scancode <= ps2data_sr(8 downto 1);
+    end process;
+
 	
-  -- PS2 bit counter
-    process(clk)
-      begin
+    process(clk) begin
         if rising_edge(clk) then
-          if rst='1' or ps2bitcounter = 11 then
-            ps2bitcounter <= (others => '0');
-          elsif ps2clk_op = '1' then 
-              ps2bitcounter <= ps2bitcounter + 1;
-          end if;
+            if rst = '1' then
+                PS2Clk_Q1 <= '1';
+                PS2Clk_Q2 <= '0';
+            else
+                PS2Clk_Q1 <= PS2Clk;
+                PS2Clk_Q2 <= not PS2Clk_Q1;
+            end if;
         end if;
-     end process;
+    end process;
+	
+    ps2clk_op <= (not ps2clk_q1) and (not ps2clk_q2);
+    process(clk) begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                ps2data_sr <= (others => '0');
+            elsif ps2clk_op = '1' then 
+                ps2data_sr(9 downto 0) <= ps2data_sr(10 downto 1);
+                ps2data_sr(10) <= ps2data;
+            end if;
+        end if;
+    end process;
+    scancode <= ps2data_sr(8 downto 1);
+	
+    process(clk) begin
+        if rising_edge(clk) then
+            if rst = '1' or ps2bitcounter = 11 then
+                ps2bitcounter <= (others => '0');
+            elsif ps2clk_op = '1' then 
+                ps2bitcounter <= ps2bitcounter + 1;
+            end if;
+        end if;
+    end process;
 	
     process(clk)
         variable grp : integer;
@@ -99,7 +81,7 @@ begin
         if rising_edge(clk) then
             grp := to_integer(unsigned(keycode(7 downto 4)));
             key := to_integer(unsigned(keycode(3 downto 0)));
-            if rst='1' then
+            if rst = '1' then
                 ps2_state <= idle;
                 extended <= '0';
             end if;
@@ -116,7 +98,7 @@ begin
                         on_key_down_int <= '0';
                         extended <= '0';
                     when others =>
-                        keys_down_int(grp)(key) <= '0'; -- declare key pressed down
+                        keys_down_int(grp)(key) <= '0';
                         extended <= '0';
                     end case;
                 end if;
@@ -126,7 +108,7 @@ begin
                     when x"14" =>
                         on_key_down_int <= '1';
                     when others =>
-                        keys_down_int(grp)(key) <= '1'; -- released key 
+                        keys_down_int(grp)(key) <= '1';
                     end case;
                     ps2_state <= idle;
                     extended <= '0';
@@ -135,8 +117,6 @@ begin
         end if;
     end process;
 	
-
-  -- Scan Code -> Key Code mapping
     with scancode select keycode_ord <=
         x"10" when x"5A",	-- ENTER     | ENTER
         x"11" when x"79",	-- ADD +     | KP_Add 
@@ -214,4 +194,7 @@ begin
     keys_down <= keys_down_int;
     on_key_down <= on_key_down_int;
 
+    -- debug
+    scancode_out <= scancode;
+    keycode_out <= keycode;
 end behavioral;

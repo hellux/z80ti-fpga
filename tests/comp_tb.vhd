@@ -9,6 +9,7 @@ architecture arch of comp_tb is
         clk : in std_logic;
     -- buttons
         btns : in std_logic_vector(4 downto 0);
+        sw : in std_logic_vector(7 downto 0);
     -- keyboard
         ps2_kbd_clk : in std_logic;
         ps2_kbd_data : in std_logic;
@@ -55,7 +56,7 @@ architecture arch of comp_tb is
     signal an : std_logic_vector(3 downto 0);
     signal sw : std_logic_vector(7 downto 0) := x"00";
 begin
-    c : comp port map(clk, btns,
+    c : comp port map(clk, btns, sw,
                       ps2_kbd_clk, ps2_kbd_data,
                       vga_red, vga_green, vga_blue, hsync, vsync,
                       maddr, mdata, mclk, madv_c, mcre, mce_c,

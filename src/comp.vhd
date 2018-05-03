@@ -1,12 +1,14 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use work.cmp_comm.all;
 use work.z80_comm.all;
 use work.ti_comm.all;
 
 entity comp is port(
     clk : in std_logic;
--- buttons
+-- dbg input
     btns : in std_logic_vector(4 downto 0);
+    sw : in std_logic_vector(7 downto 0);
 -- keyboard
     ps2_kbd_clk : in std_logic;
     ps2_kbd_data : in std_logic;
@@ -83,7 +85,9 @@ architecture arch of comp is
         PS2KeyboardCLK : in std_logic;
         PS2KeyboardData	: in std_logic;
         keys_down : out keys_down_t;
-        on_key_down : out std_logic);
+        on_key_down : out std_logic;
+        scancode_out : out std_logic_vector(7 downto 0);
+        keycode_out : out std_logic_vector(7 downto 0));
     end component;
 
     component memory port(
@@ -96,21 +100,22 @@ architecture arch of comp is
 
     component monitor port(
         clk : in std_logic;
-        btns : in std_logic_vector(4 downto 0);
-        dbg : in dbg_z80_t;
-        on_key_down : in std_logic;
+        sw : in std_logic_vector(5 downto 0);
+        dbg : in dbg_cmp_t;
         seg, led : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
 
-    constant Z80_DIV : integer := 17;
-    constant TI_DIV : integer := 2;
-    constant VGA_DIV : integer := 4;
+    constant DIV_6MHZ : integer := 17;
+    constant DIV_TI : integer := 2;
+    constant DIV_10HZ : integer := 10*10**6;
+    constant DIV_1HZ : integer := 100*10**6;
 
-    signal clk_z80, clk_vga, clk_ti : std_logic;
-    signal clk_z80_div : integer range 0 to Z80_DIV-1;
-    signal clk_ti_div : integer range 0 to TI_DIV-1;
-    signal clk_vga_div : integer range 0 to VGA_DIV-1;
+    signal clk_cpu, clk_6mhz, clk_ti, clk_10hz, clk_1hz: std_logic;
+    signal clk_6mhz_div : integer range 0 to DIV_6MHZ-1;
+    signal clk_ti_div : integer range 0 to DIV_TI-1;
+    signal clk_10hz_div : integer range 0 to DIV_10HZ-1;
+    signal clk_1hz_div : integer range 0 to DIV_1HZ-1;
 
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
@@ -122,7 +127,7 @@ architecture arch of comp is
 
     signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
 
-    signal dbg_z80 : dbg_z80_t;
+    signal dbg : dbg_cmp_t;
 
     -- ti <-> kbd
     signal keys_down : keys_down_t;
@@ -132,7 +137,7 @@ architecture arch of comp is
     signal x_vga : std_logic_vector(6 downto 0);
     signal y_vga : std_logic_vector(5 downto 0);
     -- ti <-> mem controller
-    signal rd, wr : std_logic;
+    signal mem_rd, mem_wr : std_logic;
     signal addr_phy : std_logic_vector(19 downto 0);
 begin
     -- input sync
@@ -147,30 +152,43 @@ begin
     -- clock sync
     process(clk) begin
         if rising_edge(clk) then
-            if clk_z80_div = Z80_DIV-1 then
-                clk_z80_div <= 0;
+            if clk_6mhz_div = DIV_6MHZ-1 then
+                clk_6mhz_div <= 0;
             else
-                clk_z80_div <= clk_z80_div + 1;
+                clk_6mhz_div <= clk_6mhz_div + 1;
             end if;
-            if clk_ti_div = TI_DIV-1 then
+            if clk_ti_div = DIV_TI-1 then
                 clk_ti_div <= 0;
             else
                 clk_ti_div <= clk_ti_div + 1;
             end if;
-            if clk_vga_div = VGA_DIV-1 then
-                clk_vga_div <= 0;
+            if clk_10hz_div = DIV_10HZ-1 then
+                clk_10hz_div <= 0;
             else
-                clk_vga_div <= clk_vga_div + 1;
+                clk_10hz_div <= clk_10hz_div + 1;
+            end if;
+            if clk_1hz_div = DIV_1HZ-1 then
+                clk_1hz_div <= 0;
+            else
+                clk_1hz_div <= clk_1hz_div + 1;
             end if;
             if rst = '1' then
-                clk_z80_div <= 0;
-                clk_vga_div <= 0;
+                clk_6mhz_div <= 0;
+                clk_ti_div <= 0;
+                clk_10hz_div <= 0;
+                clk_1hz_div <= 0;
             end if;
         end if;
     end process;
-    clk_z80 <= '1' when clk_z80_div = 0 else '0';
-    clk_ti  <= '1' when clk_ti_div  = 0 else '0';
-    clk_vga <= '1' when clk_vga_div = 0 else '0';
+    clk_6mhz <= '1' when clk_6mhz_div = 0 else '0';
+    clk_ti   <= '1' when clk_ti_div   = 0 else '0';
+    clk_10hz <= '1' when clk_10hz_div = 0 else '0';
+    clk_1hz  <= '1' when clk_1hz_div  = 0 else '0';
+    with sw(7 downto 6) select
+        clk_cpu <= clk_1hz    when "01",
+                   clk_10hz   when "10",
+                   btns_op(0) when "11",
+                   clk_6mhz   when others;
 
     -- buses
     rst <= btns(1);
@@ -181,22 +199,31 @@ begin
     data <= data_z80 or data_mem or data_ti;
 
     -- cpu / asic
-    cpu : z80 port map(btns_op(0), cbi, cbo, addr, data, data_z80, dbg_z80);
+    cpu : z80 port map(clk_cpu, cbi, cbo, addr, data, data_z80, dbg.z80);
     ti_comp : ti port map(clk_ti, rst,
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
                           x_vga, y_vga, data_vga,
-                          rd, wr, addr_phy);
+                          mem_rd, mem_wr, addr_phy);
 
     -- external controllers
     vga : vga_motor port map(clk, data_vga, rst, x_vga, y_vga,
                              vga_red, vga_green, vga_blue, hsync, vsync);
-    mif : mem_if port map(clk, rst, rd, wr, addr_phy, data, data_mem,
+    mif : mem_if port map(clk, rst, mem_rd, mem_wr, addr_phy, data, data_mem,
                           maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                           mwe_c, mlb_c, mub_c);
     kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_data,
-                           keys_down, on_key_down);
+                           keys_down, on_key_down, dbg.scancode, dbg.keycode);
 
     -- debug
-    mon : monitor port map(clk, btns_op, dbg_z80, on_key_down, seg, led, an);
+    dbg.mem_rd <= mem_rd;
+    dbg.mem_wr <= mem_wr;
+    dbg.on_key_down <= on_key_down;
+    dbg.data <= data;
+    dbg.addr_log <= addr;
+    dbg.addr_phy <= addr_phy;
+    dbg.cbi <= cbi;
+    dbg.cbo <= cbo;
+
+    mon : monitor port map(clk, sw(5 downto 0), dbg, seg, led, an);
 end arch;
