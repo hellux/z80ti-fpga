@@ -18,8 +18,8 @@ end vga_motor;
 architecture Behavioral of vga_motor is
     constant VGA_VIS_X : integer := 640;
     constant VGA_VIS_Y : integer := 480;
-    constant LCD_VIS_X : integer := 120;
-    constant LCD_VIS_Y : integer := 96;
+    constant LCD_VIS_X : integer := 96;
+    constant LCD_VIS_Y : integer := 64;
     constant PIXEL_SIZE : integer := 4;
 
     signal Xpixel : integer range 0 to 800; -- horizontal pixel counter

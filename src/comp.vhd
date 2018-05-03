@@ -114,7 +114,7 @@ architecture arch of comp is
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
     signal cbi : ctrlbus_in;
-    signal int, wt : std_logic;
+    signal int : std_logic;
     signal data, data_z80, data_mem, data_ti : std_logic_vector(7 downto 0);
 
     signal rst : std_logic;
@@ -173,7 +173,7 @@ begin
 
     -- buses
     rst <= btns(1);
-    cbi.wt <= wt;
+    cbi.wt <= '0';
     cbi.int <= int;
     cbi.reset <= rst;
     -- OR data bus instead of tristate
