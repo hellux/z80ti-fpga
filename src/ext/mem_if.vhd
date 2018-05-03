@@ -136,9 +136,9 @@ begin
                     state <= idle;
                 end if;
             end case;
-        end if;
-        if rst = '1' then
-            state <= idle;
+            if rst = '1' then
+                state <= idle;
+            end if;
         end if;
     end process;
 

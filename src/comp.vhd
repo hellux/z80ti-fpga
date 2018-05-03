@@ -194,7 +194,7 @@ begin
     mif : mem_if port map(clk, rst, rd, wr, addr_phy, data, data_mem,
                           maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                           mwe_c, mlb_c, mub_c);
-    kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_clk,
+    kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_data,
                            keys_down, on_key_down);
 
     -- debug
