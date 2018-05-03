@@ -749,12 +749,12 @@ architecture arch of op_decoder is
             when t4 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-            
         when m2 =>
             case op is
-            when ldi_i|cpi_i|ldd_i|cpd_i|outi_i|outd_i =>
+            when ldi_i|cpi_i|ldd_i|cpd_i|outi_i|outd_i|
+                 ldir_i|lddr_i|cpir_i|cpdr_i|otir_i|otdr_i => 
                 f := mem_rd(state, f);
-            when ini_i|ind_i =>
+            when ini_i|ind_i|inir_i|indr_i =>
                 f := io_rd(state, f);
             when others => null; end case;
      
@@ -852,11 +852,11 @@ architecture arch of op_decoder is
                 f.cw.pv_src := anz_f;
                 f.cw.rf_rda := '1';
             when t3 =>
-                -- dec BC
                 f.cw.rf_addr := regBC;
                 f.cw.abus_src := rf_o;
                 case op is
                 when ldi_i|cpi_i|ldd_i|cpd_i|ldir_i|cpir_i|lddr_i|cpdr_i =>
+                    -- dec BC
                     f.cw.addr_op := dec;
                     f.cw.pv_src := anz_f; --addr not zero flag
                 when ini_i|outi_i|ind_i|outd_i|inir_i|otir_i|indr_i|otdr_i =>
@@ -883,9 +883,13 @@ architecture arch of op_decoder is
                 when ldi_i|ldd_i|cpi_i|cpd_i|ini_i|ind_i|outi_i|outd_i =>
                     f.ct.instr_end := '1';
                 when ldir_i|lddr_i|cpir_i|cpdr_i =>
-                    f.cw.alu_op := op;
-                    f.cw.f_rd := '1';
                     if state.cc(PO_c) then
+                        f.ct.instr_end := '1';
+                    end if;
+                when inir_i|indr_i|otir_i|otdr_i =>
+                    --f.cw.alu_op := op;
+                    --f.cw.f_rd := '1';
+                    if state.cc(Z_c) then
                         f.ct.instr_end := '1';
                     end if;
                 when others => null; end case;

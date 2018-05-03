@@ -77,6 +77,14 @@ architecture arch of comp is
          Vsync : out std_logic);
     end component;
 
+    component kbd_enc port (
+        clk, rst : in std_logic;
+        PS2KeyboardCLK : in std_logic;
+        PS2KeyboardData	: in std_logic;
+        keys_down : out keys_down_t;
+        on_key_down : out std_logic);
+    end component;
+
     component memory port(
         clk, rst : in std_logic;
         cbo : in ctrlbus_out;
@@ -89,18 +97,11 @@ architecture arch of comp is
         clk : in std_logic;
         btns : in std_logic_vector(4 downto 0);
         dbg : in dbg_z80_t;
+        on_key_down : in std_logic;
         seg, led : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
 
-    component mem_rom port(
-        clk, rst : in std_logic;
-        rd, wr, ce : in std_logic;
-        addr : in std_logic_vector(13 downto 0);
-        data_in : in std_logic_vector(7 downto 0);
-        data_out : out std_logic_vector(7 downto 0));
-    end component;
-    
     constant Z80_DIV : integer := 17;
     constant TI_DIV : integer := 2;
     constant VGA_DIV : integer := 4;
@@ -132,10 +133,6 @@ architecture arch of comp is
     -- ti <-> mem controller
     signal rd, wr : std_logic;
     signal addr_phy : std_logic_vector(19 downto 0);
-
-    -- signals for temporary on-chip rom until flash
-    signal data_mem_rom, data_mem_ext : std_logic_vector(7 downto 0);
-    signal rom_ce : std_logic;
 begin
     -- input sync
     op_btns : process(clk) begin
@@ -182,16 +179,6 @@ begin
     -- OR data bus instead of tristate
     data <= data_z80 or data_mem or data_ti;
 
-    -- TEMP (until we can flash after prog)
-    rom_ce <= '1' when cbo.mreq = '1' and
-                       addr_phy(19 downto 7) = "0000000000000" else
-              '0';
-    data_mem <= data_mem_rom when rom_ce = '1' else data_mem_ext; 
-
-    mem_tmp : mem_rom port map(clk, rst, cbo.wr, cbo.rd, rom_ce,
-                               addr(13 downto 0), data, data_mem_rom);
-    --
-
     -- cpu / asic
     cpu : z80 port map(clk_z80, cbi, cbo, addr, data, data_z80, dbg_z80);
     ti_comp : ti port map(clk_ti, rst,
@@ -203,13 +190,12 @@ begin
     -- external controllers
     vga : vga_motor port map(clk, data_vga, rst, x_vga, y_vga,
                              vga_red, vga_green, vga_blue, hsync, vsync);
-    mif : mem_if port map(rd, wr, addr_phy, data, data_mem_ext,
+    mif : mem_if port map(rd, wr, addr_phy, data, data_mem,
                           maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                           mwe_c, mlb_c, mub_c);
-    -- TODO add kbd enc
-    -- kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_clk,
-    --                        keys_down, on_key_down);
+    kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_clk,
+                           keys_down, on_key_down);
 
     -- debug
-    mon : monitor port map(clk, btns_op, dbg_z80, seg, led, an);
+    mon : monitor port map(clk, btns_op, dbg_z80, on_key_down, seg, led, an);
 end arch;

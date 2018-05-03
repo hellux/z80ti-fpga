@@ -19,7 +19,7 @@ src/ti/ti83p/asic.vhd
 src/ti/ti83p/ti.vhd
 src/ti/ti83p/status.vhd
 tests/ext/m45w8mw16.vhd
-tests/mem_rom.vhd
+src/ext/kbd_enc.vhd
 src/ext/vga_motor.vhd
 src/ext/mem_if.vhd
 src/dbg/monitor.vhd

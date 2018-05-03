@@ -12,6 +12,7 @@ entity monitor is port(
     clk : in std_logic;
     btns : in std_logic_vector(4 downto 0);
     dbg : in dbg_z80_t;
+    on_key_down : in std_logic;
     seg, led : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
 end monitor;
@@ -77,7 +78,7 @@ begin
         x"0123"                     when others;
 
     led(7 downto 5) <= std_logic_vector(to_unsigned(dbg.state.m, 3));
-    led(4) <= dbg.ct.cycle_end;
+    led(4) <= on_key_down;
     led(3) <= dbg.ct.instr_end;
     led(2 downto 0) <= std_logic_vector(to_unsigned(dbg.state.t, 3));
 end arch;
