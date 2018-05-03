@@ -50,8 +50,8 @@ architecture arch of lcd_ctrl is
     signal x_ld, y_ld : std_logic;   -- load x/y counter
     signal z_ld : std_logic;
 
-    signal x, x_in : integer range 0 to LCD_ROWS-1; -- row
-    signal y, y_in, y_wrap : integer range 0 to LCD_COLS/6-1; -- column page
+    signal x, x_in : integer range 0 to 2**6-1; -- row
+    signal y, y_in, y_wrap : integer range 0 to 2**5-1; -- column page
     signal z, z_in : std_logic_vector(5 downto 0);
 
     constant MODE_INIT : lcd_mode_t := (inc => "11",

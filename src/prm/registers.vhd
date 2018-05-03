@@ -1,8 +1,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-entity reg is generic(size : integer;
-                      init : std_logic_vector); port(
+entity reg is generic(init : std_logic_vector;
+                      size : integer); port(
     clk, rst : in std_logic;
     rd : in std_logic;
     di : in std_logic_vector(size-1 downto 0);

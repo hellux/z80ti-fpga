@@ -4,6 +4,7 @@ use work.z80_comm.all;
 
 entity mem_if is port(
 -- ti/z80 <-> interface
+    clk, rst : in std_logic;
     rd, wr : in std_logic;
     addr_phy : in std_logic_vector(19 downto 0);
     data_in : in std_logic_vector(7 downto 0);
@@ -45,24 +46,103 @@ end mem_if;
 -- memory: Micron M45W8MW16
 
 architecture arch of mem_if is
-    signal ce : std_logic;
+    component dcntr is generic(bitwidth : integer); port(
+        clk, rst : in std_logic;
+        ld : in std_logic;
+        ce1, ce2 : in std_logic;
+        di : in std_logic_vector(bitwidth-1 downto 0);
+        do : out std_logic_vector(bitwidth-1 downto 0));
+    end component;
+
+    component reg generic(init : std_logic_vector;
+                          size : integer); port(
+        clk, rst : in std_logic;
+        rd : in std_logic;
+        di : in std_logic_vector(size-1 downto 0);
+        do : out std_logic_vector(size-1 downto 0));
+    end component;
+
+    type mif_state_t is (idle, pulse, init, rw, stall);
+
+    signal state : mif_state_t := idle;
+    signal init_time : integer range 0 to 7;
+    signal rw_time : integer range 0 to 4;
+    signal buf_rd : std_logic;
 begin
-    ce <= rd or wr;
+    buf : reg generic map(x"00", 8)
+              port map(clk, rst, buf_rd, mdata(7 downto 0), data_out);
 
-    -- DQ -> z80
-    data_out <= mdata(7 downto 0) when rd = '1' else x"00";
-    -- z80 -> DQ
-    mdata <= x"00" & data_in when wr = '1' else (others => 'Z');
-    -- z80/mmap -> A
-    maddr <= "000000" & addr_phy;
+    process(clk) begin
+        if rising_edge(clk) then
+            case state is
+            when idle =>
+                buf_rd <= '0';
+                mce_c <= '0';
+                mlb_c <= '1';
+                mub_c <= '1';
+                moe_c <= '1';
+                mwe_c <= '1';
+                maddr <= (others => '0');
+                mdata <= (others => 'Z');
+                if rd = '1' or wr = '1' then
+                    mce_c <= '1';
+                    maddr <= "000000" & addr_phy;
+                    state <= pulse;
+                end if;
+            when pulse =>
+                mce_c <= '0';
+                mub_c <= '0';
+                mlb_c <= '0';
+                state <= init;
+                if rd = '1' then
+                    init_time <= 6;
+                elsif wr = '1' then
+                    mwe_c <= '1';
+                    init_time <= 1;
+                end if;
+            when init =>
+                if init_time = 0 then
+                    state <= rw;
+                    if rd = '1' then
+                        mwe_c <= '1';
+                        moe_c <= '0';
+                        rw_time <= 3;
+                    elsif wr ='1' then
+                        mwe_c <= '0';
+                        mdata <= x"00" & data_in;
+                        rw_time <= 4;
+                    end if;
+                else
+                    init_time <= init_time - 1;
+                end if;
+            when rw =>
+                if rd = '1' then
+                    buf_rd <= '1';
+                end if;
+                if rw_time = 0 then
+                    buf_rd <= '0';
+                    mlb_c <= '1';
+                    mub_c <= '1';
+                    moe_c <= '1';
+                    mwe_c <= '1';
+                    maddr <= (others => '0');
+                    state <= stall;
+                else
+                    rw_time <= rw_time - 1;
+                end if;
+            when stall =>
+                if rd = '0' and wr = '0' then
+                    mdata <= (others => 'Z');
+                    state <= idle;
+                end if;
+            end case;
+        end if;
+        if rst = '1' then
+            state <= idle;
+        end if;
+    end process;
 
+    mclk <= '0';
     madv_c <= '0';
-    mce_c <= not ce;
-    mub_c <= not ce;
-    mlb_c <= not ce;
-    moe_c <= not rd;
-    mwe_c <= not wr;
-
-    mclk <= '0'; -- use asynchronous ops
-    mcre <= '0'; -- do not configure
+    mcre <= '0';
 end arch;
