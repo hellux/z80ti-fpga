@@ -31,7 +31,7 @@ architecture arch of lcd_ctrl is
         do : out integer range 0 to size-1);
     end component;
 
-    component reg generic(size : integer); port(
+    component reg generic(init : std_logic_vector; size : integer); port(
         clk, rst : in std_logic;
         rd : in std_logic;
         di : in std_logic_vector(size-1 downto 0);
@@ -79,7 +79,7 @@ begin
 
     z_ld <= p10_command.wr and bool_sl(p10_command.data(7 downto 6) = "01");
     z_in <= p10_command.data(5 downto 0);
-    z_reg : reg generic map(6)
+    z_reg : reg generic map("000000", 6)
                 port map(clk, rst, z_ld, z_in, z);
 
     -- mode / ctrl

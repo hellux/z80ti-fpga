@@ -1,7 +1,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-entity reg is generic(size : integer); port(
+entity reg is generic(size : integer;
+                      init : std_logic_vector); port(
     clk, rst : in std_logic;
     rd : in std_logic;
     di : in std_logic_vector(size-1 downto 0);
@@ -9,13 +10,13 @@ entity reg is generic(size : integer); port(
 end reg;
 
 architecture Behavioral of reg is
-    signal bits : std_logic_vector(size-1 downto 0);
+    signal bits : std_logic_vector(size-1 downto 0) := init;
     signal bits_next : std_logic_vector(size-1 downto 0);
 begin  
     process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                bits <= (others => '0');
+                bits <= init;
             else 
                 bits <= bits_next;
             end if;

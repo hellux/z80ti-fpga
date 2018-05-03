@@ -30,7 +30,7 @@ architecture behavioral of KBD_ENC is
   signal ps2_state : state_type;					              -- ps2 state
 
   signal scancode		      : std_logic_vector(7 downto 0); 	  -- scan code
-  signal keycode, keycode_ext : std_logic_vector(7 downto 0);     -- key code
+  signal keycode, keycode_ord, keycode_ext : std_logic_vector(7 downto 0);
   signal extended : std_logic;
   signal keys_down_int        : keys_down_t := (others => x"ff"); -- keys_down mtrx set to 1 in evert group
   signal on_key_down_int      : std_logic := '1'; 
@@ -92,31 +92,13 @@ begin
         end if;
      end process;
 	
-	
-
-  -- PS2 state
-  -- Either MAKE or BREAK state is identified from the scancode
-  -- Only single character scan codes are identified
-  -- The behavior of multiple character scan codes is undefined
-
-  -- ***********************************
-  -- *                                 *
-  -- *  VHDL for :                     *
-  -- *  PS2_State                      *
-  -- *                                 *
-  -- ***********************************
     process(clk)
-        variable grp : integer range 0 to 6;
-        variable key : integer range 0 to 7;
+        variable grp : integer;
+        variable key : integer;
     begin
         if rising_edge(clk) then
-            if extended = '1' then
-                grp := to_integer(unsigned(keycode_ext(7 downto 4)));
-                key := to_integer(unsigned(keycode_ext(3 downto 0)));
-            else
-                grp := to_integer(unsigned(keycode(7 downto 4)));
-                key := to_integer(unsigned(keycode(3 downto 0)));
-            end if;
+            grp := to_integer(unsigned(keycode(7 downto 4)));
+            key := to_integer(unsigned(keycode(3 downto 0)));
             if rst='1' then
                 ps2_state <= idle;
                 extended <= '0';
@@ -155,13 +137,13 @@ begin
 	
 
   -- Scan Code -> Key Code mapping
-    with scancode select keycode <=
+    with scancode select keycode_ord <=
         x"10" when x"5A",	-- ENTER     | ENTER
         x"11" when x"79",	-- ADD +     | KP_Add 
         x"12" when x"7B",	-- SUB -     | KP_Sub
         x"13" when x"7C",	-- MULT x    | 
         x"14" when x"4E",	-- DIV \     | (+ ? \)   
-        x"15" when x"5B",	-- POWER ^   | (Key next to Å)
+        x"15" when x"5B",	-- POWER ^   | ^
         x"16" when x"77",	-- CLEAR     | Num Lock
         x"41" when x"69",	-- 1         | KP1
         x"31" when x"72",	-- 2         | KP2
@@ -225,9 +207,11 @@ begin
         x"02" when x"7A",	-- KEY RIGHT | Page Down
         x"03" when x"6C",	-- KEY UP    | Home
         x"FF" when others;
+
+    keycode <= keycode_ext when extended = '1' else keycode_ord;
     
-  -- set as keycode
-  keys_down <= keys_down_int;
-  on_key_down <= on_key_down_int;
+    -- set as keycode
+    keys_down <= keys_down_int;
+    on_key_down <= on_key_down_int;
 
 end behavioral;

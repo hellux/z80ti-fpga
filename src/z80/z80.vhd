@@ -23,7 +23,7 @@ architecture arch of z80 is
         do : out std_logic);
     end component;
 
-    component reg generic(size : integer); port(
+    component reg generic(init : std_logic_vector; size : integer); port(
         clk, rst : in std_logic;
         rd : in std_logic;
         di : in std_logic_vector(size-1 downto 0);
@@ -104,7 +104,7 @@ architecture arch of z80 is
     signal abus : std_logic_vector(15 downto 0);
 begin
     -- -- CONTROL SECTION -- --
-    ir : reg generic map(8)
+    ir : reg generic map(x"ff", 8)
              port map(clk, cbi.reset, cw.ir_rd, dbus, ir_out);
     id : op_decoder port map(state, ir_out, ctrl, cbo, cw);
     sm : state_machine port map(clk, cbi, fi_out, iff, ctrl, state);
@@ -114,13 +114,13 @@ begin
         cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_swp,
         dbus, addr_in, flags, rf_do, rf_ao, rf_dis, acc, f_alu_in,
         dbg.regs);
-    i : reg generic map(8)
+    i : reg generic map(x"ff", 8)
             port map(clk, cbi.reset, cw.i_rd, dbus, i_out);
-    r : reg generic map(8)
+    r : reg generic map(x"ff", 8)
             port map(clk, cbi.reset, cw.r_rd, dbus, r_out);
-    pc : reg generic map(16)
+    pc : reg generic map(x"0000", 16)
              port map(clk, cbi.reset, cw.pc_rd, addr_in, pc_out);
-    tmpa : reg generic map(16)
+    tmpa : reg generic map(x"ffff", 16)
                port map(clk, cbi.reset, cw.tmpa_rd, addr_in, tmpa_out);
     dis_out <= std_logic_vector(signed(rf_dis) + resize(signed(dbus), 16));
 
@@ -136,13 +136,13 @@ begin
     alu_comp : alu port map(act_out, tmp_out, f_alu_in,
                             cw.alu_op, cw.alu_bs,
                             alu_out, f_alu_out);
-    act : reg generic map(8)
+    act : reg generic map(x"ff", 8)
               port map(clk, cbi.reset, act_rd, act_in, act_out);
     act_rd <= cw.act_rd or cw.act_rd_dbus;
     act_in <= dbus when cw.act_rd_dbus = '1' else acc;
-    tmp : reg generic map(8)
+    tmp : reg generic map(x"ff", 8)
               port map(clk, cbi.reset, cw.tmp_rd, dbus, tmp_out);
-    fi : reg generic map(8) -- flags internal
+    fi : reg generic map(x"ff", 8) -- flags internal
              port map(clk, cbi.reset, fi_rd, flags, fi_out);
     iff_r : ff port map(clk, cbi.reset, '1', cw.iff_next, iff);
     fi_rd <= cw.fi_rd or cw.f_rd;
@@ -176,13 +176,13 @@ begin
                 int_addr        when int_o,
                 rst_addr        when rst_o;
     -- buffer dbus both ways
-    dbufi : reg generic map(8)
+    dbufi : reg generic map(x"ff", 8)
                 port map(clk, cbi.reset, cw.data_rdi, data_in, dbufi_out);
-    dbufo : reg generic map(8)
+    dbufo : reg generic map(x"ff", 8)
                 port map(clk, cbi.reset, cw.data_rdo, dbus, dbufo_out);
     data_out <= dbufo_out when cw.data_wro = '1' else x"00";
     -- buffer abus outgoing
-    abuf : reg generic map(16)
+    abuf : reg generic map(x"ffff", 16)
                port map(clk, cbi.reset, cw.addr_rd, abus, addr);
 
     -- debug
