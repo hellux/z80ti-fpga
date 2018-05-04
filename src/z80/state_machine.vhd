@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 use work.z80_comm.all;
 
 entity state_machine is port(
-    clk : in std_logic;
+    clk, ce : in std_logic;
     cbi : in ctrlbus_in;
     flags : in std_logic_vector(7 downto 0);
     iff : in std_logic;
@@ -16,7 +16,7 @@ architecture arch of state_machine is
     signal state : state_t;
 begin 
     process(clk) begin
-        if rising_edge(clk) then
+        if rising_edge(clk) and ce = '1' then
             -- set t state
             if ctrl.cycle_end = '1' then
                 state.t <= t1;

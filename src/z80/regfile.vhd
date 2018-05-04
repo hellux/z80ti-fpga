@@ -21,7 +21,7 @@ use work.z80_comm.all;
 
 entity regfile is port(
     -- ctrl
-    clk, rst : in std_logic;
+    clk, rst, ce : in std_logic;
     reg_addr : in integer range 0 to 15;
     rdd, rda, rdf : in std_logic;
     swp : in rf_swap_t;
@@ -104,7 +104,7 @@ architecture arch of regfile is
     signal s : rf_swap_state_t;
 begin
     swap_proc : process(clk) begin
-        if rising_edge(clk) then
+        if rising_edge(clk) and ce = '1' then
             if rst = '1' then
                 s <= (others => '0');
             else
@@ -120,7 +120,7 @@ begin
     end process;
 
     ram_proc : process(clk) begin
-        if rising_edge(clk) then
+        if rising_edge(clk) and ce = '1' then
             if rst = '1' then
                 ram <= (others => x"ff");
             else

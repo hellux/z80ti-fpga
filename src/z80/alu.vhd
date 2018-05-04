@@ -4,9 +4,6 @@ use ieee.numeric_std.all;
 use work.z80_comm.all;
 use work.util.all;
 
--- TODO
---  * rest of instructions
-
 entity alu is port(
     op1, op2, flags_in : in std_logic_vector(7 downto 0);
     op : in instr_t;

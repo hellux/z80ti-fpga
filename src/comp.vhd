@@ -199,7 +199,7 @@ begin
     data <= data_z80 or data_mem or data_ti;
 
     -- cpu / asic
-    cpu : z80 port map(clk_cpu, cbi, cbo, addr, data, data_z80, dbg.z80);
+    cpu : z80 port map(clk, clk_cpu, cbi, cbo, addr, data, data_z80, dbg.z80);
     ti_comp : ti port map(clk_ti, rst,
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
