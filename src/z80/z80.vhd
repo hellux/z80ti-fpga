@@ -98,23 +98,23 @@ architecture arch of z80 is
 begin
     -- -- CONTROL SECTION -- --
     ir : reg generic map(x"ff", 8)
-             port map(clk, ce, cbi.reset, cw.ir_rd, dbus, ir_out);
+             port map(clk, cbi.reset, ce, cw.ir_rd, dbus, ir_out);
     id : op_decoder port map(state, ir_out, ctrl, cbo, cw);
     sm : state_machine port map(clk, ce, cbi, fi_out, iff, ctrl, state);
 
     -- -- REGISTER SECTION -- --
-    rf : regfile port map(clk, ce, cbi.reset,
+    rf : regfile port map(clk, cbi.reset, ce,
         cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_swp,
         dbus, addr_in, flags, rf_do, rf_ao, rf_dis, acc, f_alu_in,
         dbg.regs);
     i : reg generic map(x"ff", 8)
-            port map(clk, ce, cbi.reset, cw.i_rd, dbus, i_out);
+            port map(clk, cbi.reset, ce, cw.i_rd, dbus, i_out);
     r : reg generic map(x"ff", 8)
-            port map(clk, ce, cbi.reset, cw.r_rd, dbus, r_out);
+            port map(clk, cbi.reset, ce, cw.r_rd, dbus, r_out);
     pc : reg generic map(x"8000", 16)
-             port map(clk, ce, cbi.reset, cw.pc_rd, addr_in, pc_out);
+             port map(clk, cbi.reset, ce, cw.pc_rd, addr_in, pc_out);
     tmpa : reg generic map(x"ffff", 16)
-               port map(clk, ce, cbi.reset, cw.tmpa_rd, addr_in, tmpa_out);
+               port map(clk, cbi.reset, ce, cw.tmpa_rd, addr_in, tmpa_out);
     dis_out <= std_logic_vector(signed(rf_dis) + resize(signed(dbus), 16));
 
     with cw.addr_op select addr_in <=
@@ -130,14 +130,14 @@ begin
                             cw.alu_op, cw.alu_bs,
                             alu_out, f_alu_out);
     act : reg generic map(x"ff", 8)
-              port map(clk, ce, cbi.reset, act_rd, act_in, act_out);
+              port map(clk, cbi.reset, ce, act_rd, act_in, act_out);
     act_rd <= cw.act_rd or cw.act_rd_dbus;
     act_in <= dbus when cw.act_rd_dbus = '1' else acc;
     tmp : reg generic map(x"ff", 8)
-              port map(clk, ce, cbi.reset, cw.tmp_rd, dbus, tmp_out);
+              port map(clk, cbi.reset, ce, cw.tmp_rd, dbus, tmp_out);
     fi : reg generic map(x"ff", 8) -- flags internal
-             port map(clk, ce, cbi.reset, fi_rd, flags, fi_out);
-    iff_r : ff port map(clk, ce,cbi.reset, '1', cw.iff_next, iff);
+             port map(clk, cbi.reset, ce, fi_rd, flags, fi_out);
+    iff_r : ff port map(clk, cbi.reset, ce, '1', cw.iff_next, iff);
     fi_rd <= cw.fi_rd or cw.f_rd;
     flags(7 downto PV_f+1) <= f_alu_out(7 downto PV_f+1);
     flags(PV_f) <= f_pv;
@@ -170,13 +170,13 @@ begin
                 rst_addr        when rst_o;
     -- buffer dbus both ways
     dbufi : reg generic map(x"ff", 8)
-                port map(clk, ce, cbi.reset, cw.data_rdi, data_in, dbufi_out);
+                port map(clk, cbi.reset, ce, cw.data_rdi, data_in, dbufi_out);
     dbufo : reg generic map(x"ff", 8)
-                port map(clk, ce, cbi.reset, cw.data_rdo, dbus, dbufo_out);
+                port map(clk, cbi.reset, ce, cw.data_rdo, dbus, dbufo_out);
     data_out <= dbufo_out when cw.data_wro = '1' else x"00";
     -- buffer abus outgoing
     abuf : reg generic map(x"ffff", 16)
-               port map(clk, ce, cbi.reset, cw.addr_rd, abus, addr);
+               port map(clk, cbi.reset, ce, cw.addr_rd, abus, addr);
 
     -- debug
     dbg.state <= state;

@@ -39,7 +39,7 @@ architecture arch of comp is
     end component;
 
     component ti port(
-        clk, rst : in std_logic;
+        clk, rst, ce : in std_logic;
         int : out std_logic;
         cbo : in ctrlbus_out;
         addr_log : in std_logic_vector(15 downto 0);
@@ -200,7 +200,7 @@ begin
 
     -- cpu / asic
     cpu : z80 port map(clk, clk_cpu, cbi, cbo, addr, data, data_z80, dbg.z80);
-    ti_comp : ti port map(clk_ti, rst,
+    ti_comp : ti port map(clk_ti, rst, clk_ti,
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
                           x_vga, y_vga, data_vga,

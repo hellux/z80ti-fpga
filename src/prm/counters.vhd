@@ -20,7 +20,7 @@ begin
                 count <= 0;
             elsif ld = '1' then
                 count <= di;
-            elsif cnten then
+            elsif cnten = '1' then
                 if ud = '1' then
                     if count = wrap then
                         count <= 0;

@@ -42,7 +42,7 @@ architecture arch of pict_mem is
     signal state : gmem_state_t;
 begin
     gmem : bram generic map(1, LCD_COLS*LCD_ROWS, 13)
-        port map(clk, ce
+        port map(clk, ce,
                  gmem_we_lcd, '0',
                  gmem_a_lcd, gmem_a_vga,
                  gmem_di_lcd, "0", 

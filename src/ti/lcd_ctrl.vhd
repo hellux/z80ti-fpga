@@ -69,7 +69,6 @@ begin
                     port map(clk, rst, ce,
                              x_cnten, x_ld, mode.inc(0), LCD_ROWS-1, x_in, x);
 
-    y_cnt <= mode.inc(1);
     y_cnten <= ptr_upd and mode.inc(1);
     y_ld <= p10_command.wr and bool_sl(p10_command.data(7 downto 5) = "001");
     y_in <= to_integer(unsigned(p10_command.data(4 downto 0)));
