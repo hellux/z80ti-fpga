@@ -57,7 +57,7 @@ begin
                         mem_stack(a) <= mdata(7 downto 0);
                     end if;
                     if mem_rom'left <= a and a <= mem_rom'right then
-                        mem_stack(a) <= mdata(7 downto 0);
+                        mem_rom(a) <= mdata(7 downto 0);
                     end if;
                 end if;
             end if;

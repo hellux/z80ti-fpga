@@ -1,7 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.z80_comm.all;
 
 entity mem_ext_fb is port(
     clk : in std_logic;
@@ -10,38 +9,37 @@ entity mem_ext_fb is port(
     mdata : inout std_logic_vector(15 downto 0);
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
     mlb_c, mub_c : out std_logic;
-    mwait : in std_logic;
 -- 7 segment
     seg : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
 end mem_ext_fb;
 
 architecture arch of mem_ext_fb is
-    component reg generic(size : integer); port(
+    component reg generic(init : std_logic_vector; size : integer); port(
         clk, rst : in std_logic;
         rd : in std_logic;
         di : in std_logic_vector(size-1 downto 0);
         do : out std_logic_vector(size-1 downto 0));
     end component;
 
-    component mem_ctrl port(
+    component mem_if port(
+    -- ti/z80 <-> interface
         clk, rst : in std_logic;
-        cbo : in ctrlbus_out;
-        addr_ext : in std_logic_vector(19 downto 0);
+        rd, wr : in std_logic;
+        addr_phy : in std_logic_vector(19 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
-    -- external
+    -- external memory <-> interface
         maddr : out std_logic_vector(25 downto 0);
         mdata : inout std_logic_vector(15 downto 0);
         mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
-        mlb_c, mub_c : out std_logic;
-        mwait : in std_logic);
+        mlb_c, mub_c : out std_logic);
     end component;
     
     component segment is port(
         clk : in std_logic;
         value : in std_logic_vector(15 downto 0);
-        dp_num : in unsigned(3 downto 0);
+        dp_num : in std_logic_vector(3 downto 0);
         seg : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
@@ -54,9 +52,9 @@ architecture arch of mem_ext_fb is
     signal clk_z80_div : integer range 0 to Z80_DIV-1 := 0;
     signal clk_z80 : std_logic;
     
-    signal cbo : ctrlbus_out;
     signal data, data_mem : std_logic_vector(7 downto 0);
     signal addr : std_logic_vector(19 downto 0);
+    signal rd, wr : std_logic;
 
     signal dreg_rd : std_logic;
     signal dreg_o : std_logic_vector(7 downto 0);
@@ -81,9 +79,9 @@ begin
     clk_z80 <= '1' when clk_z80_div = 0 else '0';
 
 
-    mem : mem_ctrl port map(clk, '0', cbo, addr, data, data_mem,
-                            maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
-                            mwe_c, mlb_c, mub_c, mwait);
+    mem : mem_if port map(clk, '0', rd, wr, addr, data, data_mem,
+                          maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
+                          mwe_c, mlb_c, mub_c);
 
     process(clk) begin
         if rising_edge(clk) then
@@ -95,26 +93,25 @@ begin
         end if;
     end process;
 
-    dreg : reg generic map(8) port map(clk_z80, '0', dreg_rd, data_mem, dreg_o);
+    dreg : reg generic map(x"00", 8)
+               port map(clk_z80, '0', dreg_rd, data_mem, dreg_o);
 
     process(t) begin
-        cbo <= (others => '0');
+        rd <= '0';
+        wr <= '0';
         data <= (others => '0');
         addr <= (others => '0');
         dreg_rd <= '0';
 
-        addr <= x"00096";
         case t is
         when 0 => null; -- init
         when 1 =>
             addr <= x"00096";
             data <= x"55";
-            cbo.mreq <= '1';
-            cbo.wr <= '1';
+            wr <= '1';
         when 4 =>
             addr <= x"00096";
-            cbo.mreq <= '1';
-            cbo.rd <= '1';
+            rd <= '1';
             dreg_rd <= '1';
         when others => null;
         end case;

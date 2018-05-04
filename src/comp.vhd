@@ -220,7 +220,9 @@ begin
     dbg.mem_wr <= mem_wr;
     dbg.on_key_down <= on_key_down;
     dbg.data <= data;
+    dbg.data_mem <= data_mem;
     dbg.addr_log <= addr;
+    dbg.data_mem <= data_mem;
     dbg.addr_phy <= addr_phy;
     dbg.cbi <= cbi;
     dbg.cbo <= cbo;

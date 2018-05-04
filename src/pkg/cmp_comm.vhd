@@ -10,6 +10,7 @@ package cmp_comm is
         on_key_down : std_logic;
         mem_rd, mem_wr : std_logic;
         data : std_logic_vector(7 downto 0);
+        data_mem : std_logic_vector(7 downto 0);
         addr_log : std_logic_vector(15 downto 0);
         addr_phy : std_logic_vector(19 downto 0);
         cbi : ctrlbus_in;

@@ -1,6 +1,6 @@
 src/dbg/segment.vhd
 src/prm/registers.vhd
-src/ext/mem_ctrl.vhd
+src/ext/mem_if.vhd
 tests/ext/m45w8mw16.vhd
 tests/mem_ext_fb.vhd
 tests/mem_ext_ftb.vhd
