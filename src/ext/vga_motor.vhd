@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity vga_motor is port ( 
-     clk : in std_logic;
+     clk, ce : in std_logic;
 	 data : in std_logic;
 	 rst : in std_logic;
      x : out std_logic_vector(6 downto 0);
@@ -24,27 +24,15 @@ architecture Behavioral of vga_motor is
 
     signal Xpixel : integer range 0 to 800; -- horizontal pixel counter
     signal Ypixel : integer range 0 to 521; -- vertical pixel counter
-    signal clk_count : unsigned(1 downto 0);
-    signal vga_clk : std_logic;
     signal colour : std_logic_vector(7 downto 0);	
     signal blank : std_logic;
 begin
-    clk_div : process(clk) begin
-        if rising_edge(clk) then
-            if rst = '1' then
-                clk_count <= (others => '0');
-            else
-	            clk_count <= clk_count + 1;
-            end if;
-        end if;
-    end process;
-    vga_clk <= '1' when (clk_count = 3) else '0';
 
     x_cntr : process(clk) begin
         if rising_edge(clk) then
             if rst ='1' then
                 Xpixel <= 0;     
-            elsif vga_clk = '1'  then    
+            elsif ce = '1'  then    
                 if Xpixel = 799 then
                     Xpixel <= 0;
                 else
@@ -57,7 +45,7 @@ begin
         if rising_edge(clk) then   
             if rst = '1' then
                 Ypixel <= 0;  
-            elsif vga_clk = '1' then  
+            elsif ce = '1' then  
                 if Ypixel = 520 then
                     Ypixel <= 0;
                 elsif Xpixel = 799 then 

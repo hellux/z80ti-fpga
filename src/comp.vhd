@@ -68,7 +68,7 @@ architecture arch of comp is
     end component;
 
     component vga_motor port(
-         clk : in std_logic;
+         clk, ce : in std_logic;
          data : in std_logic;
          rst : in std_logic;
          x : out std_logic_vector(6 downto 0);
@@ -112,11 +112,11 @@ architecture arch of comp is
     end component;
 
     constant DIV_6MHZ : integer := 17;
-    constant DIV_TI : integer := 2;
+    constant DIV_VGA : integer := 4;
     constant DIV_10HZ : integer := 10*10**6;
     constant DIV_100HZ : integer := 10**6;
 
-    signal clk_cpu, clk_6mhz, clk_ti, clk_10hz, clk_100hz: std_logic;
+    signal clk_cpu, clk_6mhz, clk_ti, clk_vga, clk_10hz, clk_100hz: std_logic;
 
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
@@ -151,7 +151,8 @@ begin
     btns_op <= btns_sync and not btns_q;
 
     gen_6mhz  : clkgen generic map(DIV_6MHZ)  port map(clk, clk_6mhz);
-    gen_ti    : clkgen generic map(TI_DIV)    port map(clk, clk_ti);
+    gen_ti    : clkgen generic map(DIV_TI)    port map(clk, clk_ti);
+    gen_vga   : clkgen generic map(DIV_VGA)   port map(clk, clk_vga);
     gen_100hz : clkgen generic map(DIV_100HZ) port map(clk, clk_100hz);
     gen_10hz  : clkgen generic map(DIV_10HZ)  port map(clk, clk_10hz);
 
@@ -178,7 +179,7 @@ begin
                           mem_rd, mem_wr, addr_phy);
 
     -- external controllers
-    vga : vga_motor port map(clk, data_vga, rst, x_vga, y_vga,
+    vga : vga_motor port map(clk, clk_vga, data_vga, rst, x_vga, y_vga,
                              vga_red, vga_green, vga_blue, hsync, vsync);
     mif : mem_if port map(clk, rst, mem_rd, mem_wr, addr_phy, data, data_mem,
                           maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
