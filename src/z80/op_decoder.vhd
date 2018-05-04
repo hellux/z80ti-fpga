@@ -210,6 +210,7 @@ architecture arch of op_decoder is
             case state.t is
             when t3 =>
                 f.cw.rf_addr := regW;
+                f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.mode_next := wz;
                 f.ct.instr_end := '1';

@@ -73,12 +73,11 @@ begin
              '1';
     blank <= '1' when Xpixel >= VGA_VIS_X or Ypixel >= VGA_VIS_Y else '0';
     colour <= x"00" when blank = '1' else
-              -- 010 010 01_
-              x"49" when Xpixel >= LCD_VIS_X*PIXEL_SIZE or
+              x"00" when Xpixel >= LCD_VIS_X*PIXEL_SIZE or
                          Ypixel >= LCD_VIS_Y*PIXEL_SIZE else
               x"ff" when data = '1' else
               -- 010 010 00_
-              x"ff" when data = '0' else
+              x"48" when data = '0' else
               (others => '-');
   
     x <= std_logic_vector(to_unsigned(Xpixel/PIXEL_SIZE, x'length))
