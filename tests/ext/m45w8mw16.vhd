@@ -12,7 +12,7 @@ entity m45 is port(
 end m45;
 
 architecture arch of m45 is
-    constant ROM_START : integer := 16#74000#;
+    constant ROM_START : integer := 16#7c000#;
     constant ROM_SIZE : integer := 256;
     constant STACK_TOP : integer := 16#83fff#;
     constant STACK_SIZE : integer := 128;
