@@ -26,7 +26,7 @@ architecture arch of key_fb is
     component segment is port(
         clk : in std_logic;
         value : in std_logic_vector(15 downto 0);
-        dp_num : in unsigned(3 downto 0);
+        dp_num : in std_logic_vector(3 downto 0);
         seg : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;

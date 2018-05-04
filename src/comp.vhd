@@ -109,13 +109,13 @@ architecture arch of comp is
     constant DIV_6MHZ : integer := 17;
     constant DIV_TI : integer := 2;
     constant DIV_10HZ : integer := 10*10**6;
-    constant DIV_1HZ : integer := 100*10**6;
+    constant DIV_100HZ : integer := 10**6;
 
-    signal clk_cpu, clk_6mhz, clk_ti, clk_10hz, clk_1hz: std_logic;
+    signal clk_cpu, clk_6mhz, clk_ti, clk_10hz, clk_100hz: std_logic;
     signal clk_6mhz_div : integer range 0 to DIV_6MHZ-1;
     signal clk_ti_div : integer range 0 to DIV_TI-1;
     signal clk_10hz_div : integer range 0 to DIV_10HZ-1;
-    signal clk_1hz_div : integer range 0 to DIV_1HZ-1;
+    signal clk_100hz_div : integer range 0 to DIV_100HZ-1;
 
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
@@ -167,25 +167,25 @@ begin
             else
                 clk_10hz_div <= clk_10hz_div + 1;
             end if;
-            if clk_1hz_div = DIV_1HZ-1 then
-                clk_1hz_div <= 0;
+            if clk_100hz_div = DIV_100HZ-1 then
+                clk_100hz_div <= 0;
             else
-                clk_1hz_div <= clk_1hz_div + 1;
+                clk_100hz_div <= clk_100hz_div + 1;
             end if;
             if rst = '1' then
                 clk_6mhz_div <= 0;
                 clk_ti_div <= 0;
                 clk_10hz_div <= 0;
-                clk_1hz_div <= 0;
+                clk_100hz_div <= 0;
             end if;
         end if;
     end process;
-    clk_6mhz <= '1' when clk_6mhz_div = 0 else '0';
-    clk_ti   <= '1' when clk_ti_div   = 0 else '0';
-    clk_10hz <= '1' when clk_10hz_div = 0 else '0';
-    clk_1hz  <= '1' when clk_1hz_div  = 0 else '0';
+    clk_6mhz  <= '1' when clk_6mhz_div  = 0 else '0';
+    clk_ti    <= '1' when clk_ti_div    = 0 else '0';
+    clk_100hz <= '1' when clk_100hz_div = 0 else '0';
+    clk_10hz  <= '1' when clk_10hz_div  = 0 else '0';
     with sw(7 downto 6) select
-        clk_cpu <= clk_1hz    when "01",
+        clk_cpu <= clk_100hz  when "01",
                    clk_10hz   when "10",
                    btns_op(0) when "11",
                    clk_6mhz   when others;
