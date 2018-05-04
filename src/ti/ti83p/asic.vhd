@@ -34,7 +34,7 @@ architecture arch of asic is
     type ports_in_array_t is array(0 to PORT_COUNT-1) of port_in_t;
     type rw_array_t is array(0 to PORT_COUNT-1) of std_logic;
 
-    type ctrl_state_t is (idle, pulse, stall);
+    type ctrl_state_t is (idle, hold_in, hold_out);
 
     function "or" (a : port_ctrl_t; b : port_ctrl_t) return port_ctrl_t is 
     begin
@@ -52,7 +52,7 @@ architecture arch of asic is
 
     -- pulse rd / wr signal
     signal ctrl_state : ctrl_state_t;
-    signal ctrl_pulse : std_logic;
+    signal ports_rd, ports_wr : std_logic;
 
     -- port buffers / ctrl signals -> controllers
     signal p01_kbd_ctrl : port_ctrl_t;
@@ -80,18 +80,26 @@ architecture arch of asic is
     signal p11_lcd_data_buf : std_logic_vector(7 downto 0);
 begin
     -- one pulse delay rd/wr signals
-    ctrl_pulse <= '1' when ctrl_state = pulse else '0';
     process(clk) begin
         if rising_edge(clk) then
             case ctrl_state is
             when idle =>
-                if in_op = '1' or out_op = '1' then
-                    ctrl_state <= pulse;
+                ports_rd <= '0';
+                ports_wr <= '0';
+
+                if in_op = '1' then
+                    ctrl_state <= hold_in;
+                elsif out_op = '1' then
+                    ctrl_state <= hold_out;
                 end if;
-            when pulse =>
-                ctrl_state <= stall;
-            when stall =>
-                if in_op = '0' and out_op = '0' then
+            when hold_in =>
+                if in_op = '0' then
+                    ports_rd <= '1';
+                    ctrl_state <= idle;
+                end if;
+            when hold_out =>
+                if out_op = '0' then
+                    ports_wr <= '1';
                     ctrl_state <= idle;
                 end if;
             end case;
@@ -102,12 +110,12 @@ begin
     -- port(a) -> data bus
     data_out <= parr_in(a).data when in_op = '1' else x"00";
     -- rd/wr
-    port_array : process(a, ctrl_pulse, in_op, out_op) begin
+    port_array : process(a, ports_rd, ports_wr, out_op) begin
         for i in 0 to PORT_COUNT-1 loop
             carr(i) <= (others => '0');
         end loop;
-        carr(a) <= (rd => ctrl_pulse and in_op,
-                    wr => ctrl_pulse and out_op,
+        carr(a) <= (rd => ports_rd,
+                    wr => ports_wr,
                     buf => out_op);
     end process;
 

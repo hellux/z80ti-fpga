@@ -1,7 +1,3 @@
-jr start
-
-gbuf: dw 0xf0
-
 start:
 di
 ld c, 0x10  ; lcd status port
