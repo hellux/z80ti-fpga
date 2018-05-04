@@ -78,7 +78,7 @@ begin
                          Ypixel >= LCD_VIS_Y*PIXEL_SIZE else
               x"ff" when data = '1' else
               -- 010 010 00_
-              x"48" when data = '0' else
+              x"ff" when data = '0' else
               (others => '-');
   
     x <= std_logic_vector(to_unsigned(Xpixel/PIXEL_SIZE, x'length))

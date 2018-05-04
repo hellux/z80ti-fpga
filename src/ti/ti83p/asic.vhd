@@ -139,13 +139,13 @@ begin
     ports_out.p01_kbd <= (p01_kbd_buf, 
                           p01_kbd_ctrl.rd, p01_kbd_ctrl.wr);
 
-    p03_buf : reg generic map(x"00", 8)
+    p03_buf : reg generic map(x"0b", 8)
                   port map(clk, rst, p03_intmask_ctrl.buf,
                            data_in, p03_intmask_buf);
     ports_out.p03_intmask <= (p03_intmask_buf,
                               p03_intmask_ctrl.rd, p03_intmask_ctrl.wr);
 
-    p04_buf : reg generic map(x"00", 8)
+    p04_buf : reg generic map(x"77", 8)
                   port map(clk, rst, p04_mmap_int_ctrl.buf,
                            data_in, p04_mmap_int_buf);
     ports_out.p04_mmap_int <= (p04_mmap_int_buf,
@@ -157,13 +157,13 @@ begin
     ports_out.p05_protect <= (p05_protect_buf,
                               p05_protect_ctrl.rd, p05_protect_ctrl.wr);
 
-    p06_buf : reg generic map(x"00", 8)
+    p06_buf : reg generic map(x"1f", 8)
                   port map(clk, rst, p06_mempage_a_ctrl.buf,
                            data_in, p06_mempage_a_buf);
     ports_out.p06_mempage_a <= (p06_mempage_a_buf,
                                 p06_mempage_a_ctrl.rd, p06_mempage_a_ctrl.wr);
 
-    p07_buf : reg generic map(x"00", 8)
+    p07_buf : reg generic map(x"1f", 8)
                   port map(clk, rst, p07_mempage_b_ctrl.buf,
                            data_in, p07_mempage_b_buf);
     ports_out.p07_mempage_b <= (p07_mempage_b_buf,

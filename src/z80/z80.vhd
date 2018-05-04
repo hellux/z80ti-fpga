@@ -118,7 +118,7 @@ begin
             port map(clk, cbi.reset, cw.i_rd, dbus, i_out);
     r : reg generic map(x"ff", 8)
             port map(clk, cbi.reset, cw.r_rd, dbus, r_out);
-    pc : reg generic map(x"0000", 16)
+    pc : reg generic map(x"8000", 16)
              port map(clk, cbi.reset, cw.pc_rd, addr_in, pc_out);
     tmpa : reg generic map(x"ffff", 16)
                port map(clk, cbi.reset, cw.tmpa_rd, addr_in, tmpa_out);
