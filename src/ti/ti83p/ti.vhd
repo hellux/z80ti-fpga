@@ -4,7 +4,7 @@ use work.z80_comm.all;
 use work.ti_comm.all;
 
 entity ti is port(
-    clk, rst : in std_logic;
+    clk, rst, ce : in std_logic;
 -- z80 buses
     int : out std_logic;
     cbo : in ctrlbus_out;
@@ -25,7 +25,7 @@ end ti;
 
 architecture arch of ti is
     component asic port(
-        clk, rst : in std_logic;
+        clk, rst, ce : in std_logic;
         in_op, out_op : in std_logic;
         addr : in std_logic_vector(7 downto 0);
         data_in : in std_logic_vector(7 downto 0);
@@ -40,7 +40,7 @@ architecture arch of ti is
     end component;
 
     component interrupt port(
-        clk, rst : in std_logic;
+        clk, rst, ce : in std_logic;
         p03_intmask_o, p04_mmap_int_o : in port_out_t;
         p04_mmap_int_i : out port_in_t;
         hwt_fin : in std_logic_vector(1 to 2);
@@ -58,7 +58,7 @@ architecture arch of ti is
     end component;
 
     component hw_timers port(
-        clk, rst : in std_logic;
+        clk, rst, ce : in std_logic;
         p03_intmask : port_out_t;
         p04_mmap_int : port_out_t;
         fin : out std_logic_vector(1 to 2));
@@ -71,7 +71,7 @@ architecture arch of ti is
     end component;
 
     component lcd_ctrl port(
-        clk, rst : in std_logic;
+        clk, rst, ce : in std_logic;
         gmem_lcd_data : in std_logic_vector(7 downto 0);
         lcd_gmem_data : out std_logic_vector(7 downto 0);
         gmem_x : out std_logic_vector(5 downto 0);
@@ -82,7 +82,7 @@ architecture arch of ti is
     end component;
 
     component pict_mem port(
-        clk : in std_logic;
+        clk, ce : in std_logic;
         rd, wl : in std_logic;
         page_in : in std_logic_vector(7 downto 0);
         x_lcd : in std_logic_vector(5 downto 0); -- row
@@ -115,14 +115,14 @@ begin
     in_op   <= cbo.iorq and not cbo.m1 and cbo.rd;
     out_op  <= cbo.iorq and not cbo.m1 and cbo.wr;
 
-    asic_c : asic port map(clk, rst,
+    asic_c : asic port map(clk, rst, ce,
                            in_op, out_op,
                            addr_log(7 downto 0), data_in, data_out,
                            ports_in, ports_out);
 
     stat : status port map(ports_out.p05_protect, ports_in.p02_status);
 
-    inth : interrupt port map(clk, rst,
+    inth : interrupt port map(clk, rst, ce,
                               ports_out.p03_intmask, ports_out.p04_mmap_int,
                               ports_in.p04_mmap_int,
                               hwt_fin, on_key_down,
@@ -135,17 +135,18 @@ begin
                               addr_log,
                               addr_phy, rd, wr);
 
-    hwtim : hw_timers port map(clk, rst, ports_out.p03_intmask,
+    hwtim : hw_timers port map(clk, rst, ce, ports_out.p03_intmask,
                                ports_out.p04_mmap_int, hwt_fin);
 
     kbd : kbd_ctrl port map(keys_down, ports_out.p01_kbd, ports_in.p01_kbd);
 
-    lcd : lcd_ctrl port map(clk, rst,
+    lcd : lcd_ctrl port map(clk, rst, ce,
         gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd,
         gmem_rd, gmem_wl,
         ports_out.p10_lcd_status, ports_out.p11_lcd_data,
         ports_in.p10_lcd_status, ports_in.p11_lcd_data);
-    gmem : pict_mem port map(clk, gmem_rd, gmem_wl,
+    gmem : pict_mem port map(clk, ce,
+                             gmem_rd, gmem_wl,
                              lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,
                              data_vga, gmem_lcd_data);
 end arch;

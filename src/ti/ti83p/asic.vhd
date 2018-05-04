@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 use work.ti_comm.all;
 
 entity asic is port(
-    clk, rst : in std_logic;
+    clk, rst, ce : in std_logic;
 -- ctrl
     in_op, out_op : in std_logic;
 -- buses
@@ -18,7 +18,7 @@ end asic;
 
 architecture arch of asic is
     component reg generic(init : std_logic_vector; size : integer); port(
-        clk, rst : in std_logic;
+        clk, rst, ce: in std_logic;
         rd : in std_logic;
         di : in std_logic_vector(size-1 downto 0);
         do : out std_logic_vector(size-1 downto 0));
@@ -34,7 +34,7 @@ architecture arch of asic is
     type ports_in_array_t is array(0 to PORT_COUNT-1) of port_in_t;
     type rw_array_t is array(0 to PORT_COUNT-1) of std_logic;
 
-    type ctrl_state_t is (idle, pulse, stall);
+    type ctrl_state_t is (idle, hold_in, hold_out);
 
     function "or" (a : port_ctrl_t; b : port_ctrl_t) return port_ctrl_t is 
     begin
@@ -52,7 +52,7 @@ architecture arch of asic is
 
     -- pulse rd / wr signal
     signal ctrl_state : ctrl_state_t;
-    signal ctrl_pulse : std_logic;
+    signal ports_rd, ports_wr : std_logic;
 
     -- port buffers / ctrl signals -> controllers
     signal p01_kbd_ctrl : port_ctrl_t;
@@ -80,18 +80,26 @@ architecture arch of asic is
     signal p11_lcd_data_buf : std_logic_vector(7 downto 0);
 begin
     -- one pulse delay rd/wr signals
-    ctrl_pulse <= '1' when ctrl_state = pulse else '0';
     process(clk) begin
         if rising_edge(clk) then
             case ctrl_state is
             when idle =>
-                if in_op = '1' or out_op = '1' then
-                    ctrl_state <= pulse;
+                ports_rd <= '0';
+                ports_wr <= '0';
+
+                if in_op = '1' then
+                    ctrl_state <= hold_in;
+                elsif out_op = '1' then
+                    ctrl_state <= hold_out;
                 end if;
-            when pulse =>
-                ctrl_state <= stall;
-            when stall =>
-                if in_op = '0' and out_op = '0' then
+            when hold_in =>
+                if in_op = '0' then
+                    ports_rd <= '1';
+                    ctrl_state <= idle;
+                end if;
+            when hold_out =>
+                if out_op = '0' then
+                    ports_wr <= '1';
                     ctrl_state <= idle;
                 end if;
             end case;
@@ -102,12 +110,12 @@ begin
     -- port(a) -> data bus
     data_out <= parr_in(a).data when in_op = '1' else x"00";
     -- rd/wr
-    port_array : process(a, ctrl_pulse, in_op, out_op) begin
+    port_array : process(a, ports_rd, ports_wr, out_op) begin
         for i in 0 to PORT_COUNT-1 loop
             carr(i) <= (others => '0');
         end loop;
-        carr(a) <= (rd => ctrl_pulse and in_op,
-                    wr => ctrl_pulse and out_op,
+        carr(a) <= (rd => ports_rd,
+                    wr => ports_wr,
                     buf => out_op);
     end process;
 
@@ -126,49 +134,49 @@ begin
 
     -- out data -> buffers (for controllers)
     p01_buf : reg generic map(x"00", 8)
-                  port map(clk, rst, p01_kbd_ctrl.buf,
+                  port map(clk, rst, ce, p01_kbd_ctrl.buf,
                            data_in, p01_kbd_buf);
     ports_out.p01_kbd <= (p01_kbd_buf, 
                           p01_kbd_ctrl.rd, p01_kbd_ctrl.wr);
 
-    p03_buf : reg generic map(x"00", 8)
-                  port map(clk, rst, p03_intmask_ctrl.buf,
+    p03_buf : reg generic map(x"0b", 8)
+                  port map(clk, rst, ce, p03_intmask_ctrl.buf,
                            data_in, p03_intmask_buf);
     ports_out.p03_intmask <= (p03_intmask_buf,
                               p03_intmask_ctrl.rd, p03_intmask_ctrl.wr);
 
-    p04_buf : reg generic map(x"00", 8)
-                  port map(clk, rst, p04_mmap_int_ctrl.buf,
+    p04_buf : reg generic map(x"77", 8)
+                  port map(clk, rst, ce, p04_mmap_int_ctrl.buf,
                            data_in, p04_mmap_int_buf);
     ports_out.p04_mmap_int <= (p04_mmap_int_buf,
                                p04_mmap_int_ctrl.rd, p04_mmap_int_ctrl.wr);
 
     p05_buf : reg generic map(x"00", 8)
-                  port map(clk, rst, p05_protect_ctrl.buf,
+                  port map(clk, rst, ce, p05_protect_ctrl.buf,
                            data_in, p05_protect_buf);
     ports_out.p05_protect <= (p05_protect_buf,
                               p05_protect_ctrl.rd, p05_protect_ctrl.wr);
 
-    p06_buf : reg generic map(x"00", 8)
-                  port map(clk, rst, p06_mempage_a_ctrl.buf,
+    p06_buf : reg generic map(x"1f", 8)
+                  port map(clk, rst, ce, p06_mempage_a_ctrl.buf,
                            data_in, p06_mempage_a_buf);
     ports_out.p06_mempage_a <= (p06_mempage_a_buf,
                                 p06_mempage_a_ctrl.rd, p06_mempage_a_ctrl.wr);
 
-    p07_buf : reg generic map(x"00", 8)
-                  port map(clk, rst, p07_mempage_b_ctrl.buf,
+    p07_buf : reg generic map(x"1f", 8)
+                  port map(clk, rst, ce, p07_mempage_b_ctrl.buf,
                            data_in, p07_mempage_b_buf);
     ports_out.p07_mempage_b <= (p07_mempage_b_buf,
                                 p07_mempage_b_ctrl.rd, p07_mempage_b_ctrl.wr);
 
     p10_buf : reg generic map(x"00", 8)
-                  port map(clk, rst, p10_lcd_status_ctrl.buf,
+                  port map(clk, rst, ce, p10_lcd_status_ctrl.buf,
                            data_in, p10_lcd_status_buf);
     ports_out.p10_lcd_status <= (p10_lcd_status_buf,
                                  p10_lcd_status_ctrl.rd, p10_lcd_status_ctrl.wr);
 
     p11_buf : reg generic map(x"00", 8)
-                  port map(clk, rst, p11_lcd_data_ctrl.buf,
+                  port map(clk, rst, ce, p11_lcd_data_ctrl.buf,
                            data_in, p11_lcd_data_buf);
     ports_out.p11_lcd_data <= (p11_lcd_data_buf,
                                p11_lcd_data_ctrl.rd, p11_lcd_data_ctrl.wr);

@@ -1,12 +1,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.z80_comm.all;
 use work.cmp_comm.all;
-
--- monitor displays registers and current state on FPGA leds, segment display
--- left/right button to select register/bus to display
--- dp:s indicate current selection (see mux below)
--- mstate leftmost bits of leds, tstate rightmost bits of leds
 
 entity monitor is port(
     clk : in std_logic;
@@ -56,7 +52,7 @@ begin
         dbg.z80.regs.ix                                 when "0101",
         dbg.z80.regs.iy                                 when "0110",
         dbg.z80.regs.wz                                 when "0111",
-        dbg.z80.act & "00" & dbg.addr_phy(19 downto 16) when "1000",
+        dbg.z80.act & x"0" & dbg.addr_phy(19 downto 16) when "1000",
         dbg.z80.ir & dbg.z80.dbus                       when "1001",
         dbg.z80.abus                                    when "1010",
         dbg.z80.pc                                      when "1011",

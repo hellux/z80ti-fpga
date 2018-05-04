@@ -17,21 +17,14 @@ end z80;
 
 architecture arch of z80 is
     component ff port(
-        clk, rst : in std_logic;
+        clk, rst, ce : in std_logic;
         rd : in std_logic;
         di : in std_logic;
         do : out std_logic);
     end component;
 
     component reg generic(init : std_logic_vector; size : integer); port(
-        clk, rst : in std_logic;
-        rd : in std_logic;
-        di : in std_logic_vector(size-1 downto 0);
-        do : out std_logic_vector(size-1 downto 0));
-    end component;
-
-    component buf generic (size : integer); port(
-        clk, rst : in std_logic;
+        clk, rst, ce : in std_logic;
         rd : in std_logic;
         di : in std_logic_vector(size-1 downto 0);
         do : out std_logic_vector(size-1 downto 0));
@@ -46,7 +39,7 @@ architecture arch of z80 is
     end component;
 
     component regfile port(
-        clk, rst : in std_logic;
+        clk, rst, ce : in std_logic;
         reg_addr : in integer range 0 to 15;
         rdd, rda, rdf : in std_logic;
         swp : in rf_swap_t;
@@ -68,7 +61,7 @@ architecture arch of z80 is
     end component;
 
     component state_machine port(
-        clk : in std_logic;
+        clk, ce : in std_logic;
         cbi : in ctrlbus_in;
         flags : in std_logic_vector(7 downto 0);
         iff : in std_logic;
@@ -118,7 +111,7 @@ begin
             port map(clk, ce, cbi.reset, cw.i_rd, dbus, i_out);
     r : reg generic map(x"ff", 8)
             port map(clk, ce, cbi.reset, cw.r_rd, dbus, r_out);
-    pc : reg generic map(x"0000", 16)
+    pc : reg generic map(x"8000", 16)
              port map(clk, ce, cbi.reset, cw.pc_rd, addr_in, pc_out);
     tmpa : reg generic map(x"ffff", 16)
                port map(clk, ce, cbi.reset, cw.tmpa_rd, addr_in, tmpa_out);

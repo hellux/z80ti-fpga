@@ -5,7 +5,7 @@ use work.ti_comm.all;
 use work.util.all;
 
 entity interrupt is port(
-    clk, rst : in std_logic;
+    clk, rst, ce : in std_logic;
 -- ports
     p03_intmask_o, p04_mmap_int_o : in port_out_t;
     p04_mmap_int_i : out port_in_t;
@@ -39,7 +39,7 @@ begin
 
     int <= bool_sl(int_dev /= none);
     process(clk) begin
-        if rising_edge(clk) then
+        if rising_edge(clk) and ce = '1' then
             if rst = '1' then
                 int_dev <= none;
             elsif int_dev = none then

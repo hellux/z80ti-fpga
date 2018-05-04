@@ -10,7 +10,7 @@ use work.util.all;
 --  - gmem reset
 
 entity lcd_ctrl is port(
-    clk, rst : in std_logic;
+    clk, rst, ce : in std_logic;
     gmem_lcd_data : in std_logic_vector(7 downto 0);
     lcd_gmem_data : out std_logic_vector(7 downto 0);
     gmem_x : out std_logic_vector(5 downto 0);
@@ -22,17 +22,17 @@ end lcd_ctrl;
 
 architecture arch of lcd_ctrl is
     component udcntr generic(size : integer); port(
-        clk, rst : in std_logic;
+        clk, rst, ce : in std_logic;
+        cnten : in std_logic;
         ld : in std_logic;
-        ud : in std_logic;
-        ce1, ce2 : in std_logic;
+        ud : in std_logic; -- 0: down, 1: up
         wrap : in integer range 0 to size-1;
         di : in integer range 0 to size-1;
         do : out integer range 0 to size-1);
     end component;
 
     component reg generic(init : std_logic_vector; size : integer); port(
-        clk, rst : in std_logic;
+        clk, rst, ce : in std_logic;
         rd : in std_logic;
         di : in std_logic_vector(size-1 downto 0);
         do : out std_logic_vector(size-1 downto 0));
@@ -45,9 +45,9 @@ architecture arch of lcd_ctrl is
     end record;
 
     -- ctrl interpret
-    signal ptr_upd : std_logic;      -- increment/decrement pulse
-    signal x_cnt, y_cnt : std_logic; -- x/y counter is selected
-    signal x_ld, y_ld : std_logic;   -- load x/y counter
+    signal ptr_upd : std_logic; -- increment/decrement enable pulse
+    signal x_cnten, y_cnten : std_logic; -- x/y count enable
+    signal x_ld, y_ld : std_logic; -- load x/y counter
     signal z_ld : std_logic;
 
     signal x, x_in : integer range 0 to 2**6-1; -- row
@@ -62,29 +62,30 @@ begin
     -- x, y, z registers / counters
     ptr_upd <= p11_data_o.rd or p11_data_o.wr;
 
-    x_cnt <= not mode.inc(1);
+    x_cnten <= ptr_upd and not mode.inc(1);
     x_ld <= p10_command.wr and bool_sl(p10_command.data(7 downto 6) = "10");
     x_in <= to_integer(unsigned(p10_command.data(5 downto 0)));
     x_cntr : udcntr generic map(LCD_ROWS)
-                    port map(clk, rst, x_ld, mode.inc(0), ptr_upd, x_cnt,
-                             LCD_ROWS-1, x_in, x);
+                    port map(clk, rst, ce,
+                             x_cnten, x_ld, mode.inc(0), LCD_ROWS-1, x_in, x);
 
     y_cnt <= mode.inc(1);
+    y_cnten <= ptr_upd and mode.inc(1);
     y_ld <= p10_command.wr and bool_sl(p10_command.data(7 downto 5) = "001");
     y_in <= to_integer(unsigned(p10_command.data(4 downto 0)));
     y_wrap <= LCD_COLS/6-1 when mode.wl = '1' else LCD_COLS/8-1;
     y_cntr : udcntr generic map(LCD_COLS/6)
-                    port map(clk, rst, y_ld, mode.inc(0), ptr_upd, y_cnt,
-                             y_wrap, y_in, y);
+                    port map(clk, rst, ce,
+                             y_cnten, y_ld, mode.inc(0), y_wrap, y_in, y);
 
     z_ld <= p10_command.wr and bool_sl(p10_command.data(7 downto 6) = "01");
     z_in <= p10_command.data(5 downto 0);
     z_reg : reg generic map("000000", 6)
-                port map(clk, rst, z_ld, z_in, z);
+                port map(clk, rst, ce, z_ld, z_in, z);
 
     -- mode / ctrl
     set_mode : process(clk) begin
-        if rising_edge(clk) then
+        if rising_edge(clk) and ce = '1' then
             if rst = '1' then
                 mode <= MODE_INIT;
             else

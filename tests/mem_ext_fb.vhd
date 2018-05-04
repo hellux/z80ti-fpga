@@ -9,8 +9,10 @@ entity mem_ext_fb is port(
     mdata : inout std_logic_vector(15 downto 0);
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
     mlb_c, mub_c : out std_logic;
--- 7 segment
-    seg : out std_logic_vector(7 downto 0);
+-- dbg in
+    btns : in std_logic_vector(4 downto 0);
+-- dbg out
+    seg, led : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
 end mem_ext_fb;
 
@@ -45,7 +47,7 @@ architecture arch of mem_ext_fb is
     end component;
 
     constant INIT_TIME : integer := 20000; -- * 10 ns = 200us
-    constant Z80_DIV : integer := 7;
+    constant Z80_DIV : integer := 16;
     constant CYCLES : integer := 16;
 
     signal init_cnt : integer range 0 to INIT_TIME;
@@ -61,7 +63,18 @@ architecture arch of mem_ext_fb is
     signal t : integer range 0 to CYCLES-1 := 0;
 
     signal seg_value : std_logic_vector(15 downto 0);
+
+    signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
 begin
+    -- input sync
+    op_btns : process(clk) begin
+        if rising_edge(clk) then
+            btns_sync <= btns;
+            btns_q <= btns_sync;
+        end if;
+    end process;
+    btns_op <= btns_sync and not btns_q;
+
     -- clock sync
     process(clk) begin
         if rising_edge(clk) then
@@ -76,7 +89,8 @@ begin
             end if;
         end if;
     end process;
-    clk_z80 <= '1' when clk_z80_div = 0 else '0';
+    --clk_z80 <= '1' when clk_z80_div = 0 else '0';
+    clk_z80 <= btns_op(0);
 
 
     mem : mem_if port map(clk, '0', rd, wr, addr, data, data_mem,
@@ -107,7 +121,7 @@ begin
         when 0 => null; -- init
         when 1 =>
             addr <= x"00096";
-            data <= x"55";
+            data <= x"77";
             wr <= '1';
         when 4 =>
             addr <= x"00096";
@@ -117,6 +131,10 @@ begin
         end case;
     end process;
 
+    led <= (0 => rd,
+            1 => wr,
+            2 => dreg_rd,
+            others => '0');
+    seg_value <= dreg_o & std_logic_vector(to_unsigned(t, 8));
     smt : segment port map(clk, seg_value, x"0", seg, an);
-    seg_value <= dreg_o & x"cc";
 end arch;
