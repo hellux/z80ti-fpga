@@ -98,6 +98,11 @@ architecture arch of comp is
         data_out : out std_logic_vector(7 downto 0));
     end component;
 
+    component clkgen generic(div : natural); port(
+        clk : in std_logic;
+        clk_out : out std_logic);
+    end component;
+
     component monitor port(
         clk : in std_logic;
         sw : in std_logic_vector(5 downto 0);
@@ -112,10 +117,6 @@ architecture arch of comp is
     constant DIV_100HZ : integer := 10**6;
 
     signal clk_cpu, clk_6mhz, clk_ti, clk_10hz, clk_100hz: std_logic;
-    signal clk_6mhz_div : integer range 0 to DIV_6MHZ-1;
-    signal clk_ti_div : integer range 0 to DIV_TI-1;
-    signal clk_10hz_div : integer range 0 to DIV_10HZ-1;
-    signal clk_100hz_div : integer range 0 to DIV_100HZ-1;
 
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
@@ -149,41 +150,11 @@ begin
     end process;
     btns_op <= btns_sync and not btns_q;
 
-    -- clock sync
-    process(clk) begin
-        if rising_edge(clk) then
-            if clk_6mhz_div = DIV_6MHZ-1 then
-                clk_6mhz_div <= 0;
-            else
-                clk_6mhz_div <= clk_6mhz_div + 1;
-            end if;
-            if clk_ti_div = DIV_TI-1 then
-                clk_ti_div <= 0;
-            else
-                clk_ti_div <= clk_ti_div + 1;
-            end if;
-            if clk_10hz_div = DIV_10HZ-1 then
-                clk_10hz_div <= 0;
-            else
-                clk_10hz_div <= clk_10hz_div + 1;
-            end if;
-            if clk_100hz_div = DIV_100HZ-1 then
-                clk_100hz_div <= 0;
-            else
-                clk_100hz_div <= clk_100hz_div + 1;
-            end if;
-            if rst = '1' then
-                clk_6mhz_div <= 0;
-                clk_ti_div <= 0;
-                clk_10hz_div <= 0;
-                clk_100hz_div <= 0;
-            end if;
-        end if;
-    end process;
-    clk_6mhz  <= '1' when clk_6mhz_div  = 0 else '0';
-    clk_ti    <= '1' when clk_ti_div    = 0 else '0';
-    clk_100hz <= '1' when clk_100hz_div = 0 else '0';
-    clk_10hz  <= '1' when clk_10hz_div  = 0 else '0';
+    gen_6mhz  : clkgen generic map(DIV_6MHZ)  port map(clk, clk_6mhz);
+    gen_ti    : clkgen generic map(TI_DIV)    port map(clk, clk_ti);
+    gen_100hz : clkgen generic map(DIV_100HZ) port map(clk, clk_100hz);
+    gen_10hz  : clkgen generic map(DIV_10HZ)  port map(clk, clk_10hz);
+
     with sw(7 downto 6) select
         clk_cpu <= clk_100hz  when "01",
                    clk_10hz   when "10",
