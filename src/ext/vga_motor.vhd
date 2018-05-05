@@ -32,6 +32,9 @@ architecture Behavioral of vga_motor is
     constant LCD_VIS_Y : integer := 64;
     constant PIXEL_SIZE : integer := 6;
 
+    signal colour : std_logic_vector(7 downto 0);	
+    signal blank : std_logic;
+
     signal x_ld, xp_ld : std_logic;
     signal x_vga : unsigned(9 downto 0);
     signal xp : unsigned(2 downto 0);
@@ -41,26 +44,23 @@ architecture Behavioral of vga_motor is
     signal y_vga : unsigned(8 downto 0);
     signal yp : unsigned(2 downto 0);
     signal y_lcd : unsigned(5 downto 0);
-
-    signal colour : std_logic_vector(7 downto 0);	
-    signal blank : std_logic;
 begin
-    -- vga pixel counters
-    x_ld <= '1' when x_vga = to_unsigned(VGA_X-1, x_vga'length) else '0';
+    x_ld <= '1' when x_vga = VGA_X-1 else '0';
     xv_cntr : cntr generic map(x_vga'length)
                    port map(clk, rst, ce, '1', x_ld,
                             to_unsigned(0, x_vga'length), x_vga);
-    y_ld <= '1' when y_vga = to_unsigned(VGA_Y-1, y_vga'length) else '0';
+
+    y_ld <= '1' when y_vga = VGA_Y-1 else '0';
     yv_cntr : cntr generic map(y_vga'length)
                    port map(clk, rst, ce, x_ld, y_ld,
                             to_unsigned(0, y_vga'length), y_vga);
-
+    
     -- vga on lcd pixel
-    xp_ld <= '1' when xp = to_unsigned(PIXEL_SIZE-1, xp'length) else '0';
+    xp_ld <= '1' when x_ld = '1' or xp = PIXEL_SIZE-1 else '0';
     xp_cntr : cntr generic map(xp'length)
                    port map(clk, rst, ce, '1', xp_ld,
                             to_unsigned(0, xp'length), xp);
-    yp_ld <= '1' when yp = to_unsigned(PIXEL_SIZE-1, yp'length) else '0';
+    yp_ld <= '1' when y_ld = '1' or yp = PIXEL_SIZE-1 else '0';
     yp_cntr : cntr generic map(yp'length)
                    port map(clk, rst, ce, x_ld, yp_ld,
                             to_unsigned(0, yp'length), yp);
@@ -92,3 +92,4 @@ begin
     vgaGreen    <= colour(4 downto 2);
     vgaBlue 	<= colour(1 downto 0);
 end Behavioral;
+

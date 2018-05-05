@@ -41,19 +41,20 @@ entity cntr is generic(bitwidth : integer); port(
 end cntr;
 
 architecture arch of cntr is
-    signal count, count_next : unsigned(bitwidth-1 downto 0);
+    signal count : unsigned(bitwidth-1 downto 0);
 begin
     process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
                 count <= (others => '0');
             elsif ce = '1' then
-                count <= count_next;
+                if ld = '1' then
+                    count <= di;
+                elsif cnten = '1' then
+                    count <= count + 1;
+                end if;
             end if;
         end if;
     end process;
-    count_next <= di        when ld = '1' else
-                  count + 1 when cnten = '1' else
-                  count;
     do <= count;
 end arch;
