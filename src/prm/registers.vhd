@@ -37,7 +37,7 @@ entity ff is port(
 end ff;
 
 architecture arch of ff is
-    signal data : std_logic;
+    signal data : std_logic := '0';
     signal data_next : std_logic;
 begin  
     process(clk) begin
