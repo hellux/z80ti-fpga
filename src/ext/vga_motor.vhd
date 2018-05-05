@@ -32,26 +32,28 @@ architecture Behavioral of vga_motor is
     constant LCD_VIS_X : integer := 96;
     constant LCD_VIS_Y : integer := 64;
     constant PIXEL_SIZE : integer := 6;
+    constant X_OFS : integer := 30;
+    constant Y_OFS : integer := 48;
 
     signal colour : std_logic_vector(7 downto 0);	
     signal blank : std_logic;
 
-    signal x_ld, xp_ld : std_logic;
+    signal x_ld, xp_ld, xl_ld : std_logic;
     signal x_vga : unsigned(9 downto 0);
     signal xp : unsigned(2 downto 0);
     signal x_lcd : unsigned(6 downto 0);
 
-    signal y_ld, yp_ld : std_logic;
+    signal y_ld, yp_ld, yl_ld : std_logic;
     signal y_vga : unsigned(9 downto 0);
     signal yp : unsigned(2 downto 0);
     signal y_lcd : unsigned(5 downto 0);
 begin
-    x_ld <= '1' when x_vga = VGA_X-1 else '0';
+    x_ld <= bool_sl(x_vga = VGA_X-1);
     xv_cntr : cntr generic map(x_vga'length)
                    port map(clk, rst, ce, '1', x_ld,
                             to_unsigned(0, x_vga'length), x_vga);
 
-    y_ld <= '1' when y_vga = VGA_Y-1 else '0';
+    y_ld <= bool_sl(y_vga = VGA_Y-1);
     yv_cntr : cntr generic map(y_vga'length)
                    port map(clk, rst, ce, x_ld, y_ld,
                             to_unsigned(0, y_vga'length), y_vga);
@@ -66,11 +68,13 @@ begin
                    port map(clk, rst, ce, x_ld, yp_ld,
                             to_unsigned(0, yp'length), yp);
     -- lcd pixels
+    xl_ld <= bool_sl(x_vga = X_OFS-1) and xp_ld;
     xl_cntr : cntr generic map(x_lcd'length)
-                   port map(clk, rst, ce, xp_ld, x_ld,
+                   port map(clk, rst, ce, xp_ld, xl_ld,
                             to_unsigned(0, x_lcd'length), x_lcd);
+    yl_ld <= bool_sl(y_vga = Y_OFS-1) and yp_ld;
     yl_cntr : cntr generic map(y_lcd'length)
-                   port map(clk, rst, ce, yp_ld, y_ld,
+                   port map(clk, rst, ce, yp_ld, yl_ld,
                             to_unsigned(0, y_lcd'length), y_lcd);
 
     Hsync <= '0' when x_vga > 656 and x_vga <= 752 else
@@ -79,8 +83,10 @@ begin
              '1';
     blank <= '1' when x_vga >= VGA_VIS_X or y_vga >= VGA_VIS_Y else '0';
     colour <= x"00" when blank = '1' else
-              x"00" when x_vga >= LCD_VIS_X*PIXEL_SIZE or
-                         y_vga >= LCD_VIS_Y*PIXEL_SIZE else
+              x"00" when x_vga < X_OFS or
+                         x_vga >= X_OFS + LCD_VIS_X*PIXEL_SIZE or
+                         y_vga < Y_OFS or
+                         y_vga >= Y_OFS + LCD_VIS_Y*PIXEL_SIZE else
               x"ff" when data = '1' else
               -- 010 010 00_
               x"48" when data = '0' else

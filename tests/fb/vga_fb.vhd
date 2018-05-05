@@ -42,7 +42,8 @@ begin
 
     gmem_vga_data <= '1' when x = "0000000" or
                               x = "1011111" or
-                              y = "000000" else '0';
+                              y = "000000" or
+                              y = "111111" else '0';
     rst <= '0';
     vga : vga_motor port map(clk, clk_vga, gmem_vga_data, rst, x, y,
                              vgaRed, vgaGreen, vgaBlue, Hsync, Vsync);
