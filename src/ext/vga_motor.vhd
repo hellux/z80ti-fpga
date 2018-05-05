@@ -42,7 +42,7 @@ architecture Behavioral of vga_motor is
     signal x_lcd : unsigned(6 downto 0);
 
     signal y_ld, yp_ld : std_logic;
-    signal y_vga : unsigned(8 downto 0);
+    signal y_vga : unsigned(9 downto 0);
     signal yp : unsigned(2 downto 0);
     signal y_lcd : unsigned(5 downto 0);
 begin
