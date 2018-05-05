@@ -40,10 +40,8 @@ architecture arch of bootloader is
     signal bit_count : unsigned(9 downto 0) := (others => '0');
     signal bit_index : unsigned(3 downto 0) := (others => '0');
     signal next_bit : std_logic;
-
-    signal uart_ce : std_logic := '0';
     signal byte_done : std_logic;
-
+    signal data_init : std_logic_vector(7 downto 0);
     signal dreg_in : std_logic_vector(7 downto 0);
     signal sreg : std_logic_vector(9 downto 0);
     signal sreg_ce : std_logic;
@@ -57,24 +55,32 @@ begin
 
     load_ctrl : process(clk) begin
         if rising_edge(clk) then
-            mem_wr <= '0';
             case load_state is
             when idle =>
                 if ld = '1' then
                     load_state <= init;
+                    addr <= x"08000";
                 end if;
             when init =>
-                -- TODO "jp 0x0000" at 0x8000
-                if ld = '0' then
-                    load_state <= init;
-                    addr <= (others => '0');
-                    uart_ce <= '1';
+                if next_bit = '1' then
+                    addr <= addr + 1;
+                    case addr is
+                    when x"08000" => data_init <= x"c3"; -- jp 0
+                    when x"08001" => data_init <= x"00";
+                    when x"08002" => data_init <= x"00";
+                    when others => 
+                        if ld = '0' then
+                            load_state <= load;
+                            addr <= (others => '0');
+                        end if;
+                    end case;
                 end if;
             when load =>
+                if done = '1' then
+                    load_state <= idle;
+                end if;
                 if byte_done = '1' then
-                    mem_wr <= '1';
-                    if addr = ROM_SIZE or done = '1' then
-                        uart_ce <= '0';
+                    if addr = ROM_SIZE then
                         load_state <= idle;
                     else
                         addr <= addr + 1;
@@ -83,25 +89,26 @@ begin
             end case;
         end if;
     end process;
+    mem_wr <= '0' when load_state = idle else '1';
 
     bit_cntr : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' or bit_count = UART_DIV then
                 bit_count <= (others => '0');
-            elsif uart_ce = '1' then
+            else
                 bit_count <= bit_count + 1;
             end if;
         end if;
     end process;
 
-    next_bit <= '1' when bit_count = UART_DIV/2 else '0';
+    next_bit <= '1' when bit_count = 0 else '0';
 
     uart_ctrl : process(clk) begin
         if rising_edge(clk) then
             byte_done <= '0';
             if rst = '1' then
                 uart_state <= idle;
-            elsif next_bit = '1' then
+            elsif next_bit = '1' and load_state = load then
                 case uart_state is
                 when idle =>
                     if rx1 = '0' then
@@ -110,14 +117,12 @@ begin
                     end if;
                 when read =>
                     if bit_index = 8 then
-                        case rx1 is
-                        when '0' =>
-                            uart_state <= idle;
-                        when '1' =>
+                        if rx1 = '1' then
                             uart_state <= succ;
                             byte_done <= '1';
-                        when others => null;
-                        end case;
+                        else 
+                            uart_state <= idle;
+                        end if;
                     else
                         bit_index <= bit_index + 1;
                     end if;
@@ -135,6 +140,7 @@ begin
         end if;
     end process;
 
+    sreg_ce <= '1' when uart_state = read and next_bit = '1' else '0';
     sreg_proc : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -146,7 +152,7 @@ begin
         end if;
     end process;
 
-    dreg_in <= sreg(8 downto 1) when load_state = load else x"00";
+    dreg_in <= sreg(8 downto 1) when load_state = load else data_init;
     dreg : reg generic map(x"00", 8)
                port map(clk, rst, '1', byte_done, dreg_in, mem_data_out);
 

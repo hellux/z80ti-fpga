@@ -58,11 +58,13 @@ architecture arch of boot_fb is
     signal addr : std_logic_vector(19 downto 0);
 
     signal seg_val : std_logic_vector(15 downto 0);
+    signal seg_dots : std_logic_vector(3 downto 0);
 begin
     ld <= btns(3);
     done <= btns(4);
     rd <= '0';
-    seg_val <= x"00" & boot_mem_data;
+    seg_dots <= "00" & wr & rx;
+    seg_val <= addr(7 downto 0) & boot_mem_data;
 
     mem : mem_if port map(clk, '0', rd, wr, addr, boot_mem_data, mem_boot_data,
                           maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
@@ -72,5 +74,5 @@ begin
                                wr, mem_boot_data, boot_mem_data, addr,
                                rx);
 
-    smt : segment port map(clk, seg_val, x"0", seg, an);
+    smt : segment port map(clk, seg_val, seg_dots, seg, an);
 end arch;
