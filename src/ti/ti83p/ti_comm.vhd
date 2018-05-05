@@ -33,8 +33,6 @@ package ti_comm is
         p10_lcd_status, p11_lcd_data : port_out_t;
     end record;
 
-    type keys_down_t is array(0 to 6) of std_logic_vector(7 downto 0);
-
     type int_dev_t is (none, on_key, hwt1, hwt2);
 
     impure function fdiv(freq : natural) return std_logic_vector;

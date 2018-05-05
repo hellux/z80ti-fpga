@@ -13,10 +13,7 @@ entity z80 is port(
     data_in : in std_logic_vector(7 downto 0);
     data_out : out std_logic_vector(7 downto 0);
 -- dbd stat
-    dbg : out dbg_z80_t;
--- dbg ctrl
-    step_pulse : in std_logic;
-    run_mode : in run_mode_t);
+    dbg : out dbg_z80_t);
 end z80;
 
 architecture arch of z80 is
@@ -70,10 +67,7 @@ architecture arch of z80 is
         flags : in std_logic_vector(7 downto 0);
         iff : in std_logic;
         ctrl : in id_ctrl_t;
-        state_out : out state_t;
-    -- dbg ctrl
-        step_pulse : std_logic;
-        run_mode : run_mode_t);
+        state_out : out state_t);
     end component;
 
     signal ir_out : std_logic_vector(7 downto 0);
@@ -107,8 +101,7 @@ begin
     ir : reg generic map(x"ff", 8)
              port map(clk, cbi.reset, ce, cw.ir_rd, dbus, ir_out);
     id : op_decoder port map(state, ir_out, ctrl, cbo, cw);
-    sm : state_machine port map(clk, ce, cbi, fi_out, iff, ctrl, state,
-                                step_pulse, run_mode);
+    sm : state_machine port map(clk, ce, cbi, fi_out, iff, ctrl, state); 
 
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset, ce,

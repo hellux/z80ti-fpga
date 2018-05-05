@@ -16,65 +16,60 @@ entity vga_motor is port (
 end vga_motor;
 
 architecture Behavioral of vga_motor is
+    component cntr generic(bitwidth : integer); port(
+        clk, rst, ce : in std_logic;
+        cnten : in std_logic;
+        ld : in std_logic;
+        di : in std_logic_vector(bitwidth-1 downto 0);
+        do : out std_logic_vector(bitwidth-1 downto 0));
+    end component;
+
     constant VGA_VIS_X : integer := 640;
     constant VGA_VIS_Y : integer := 480;
+    constant VGA_X : integer := 800;
+    constant VGA_y : integer := 521;
     constant LCD_VIS_X : integer := 96;
     constant LCD_VIS_Y : integer := 64;
     constant PIXEL_SIZE : integer := 4;
 
-    signal Xpixel : integer range 0 to 800; -- horizontal pixel counter
-    signal Ypixel : integer range 0 to 521; -- vertical pixel counter
+    signal x_ld, y_ld : std_logic;
+    signal x_out : std_logic_vector(9 downto 0);
+    signal y_out : std_logic_vector(8 downto 0);
+    signal x_vga : unsigned(9 downto 0);
+    signal y_vga : unsigned(8 downto 0);
+
     signal colour : std_logic_vector(7 downto 0);	
     signal blank : std_logic;
 begin
+    x_vga <= unsigned(x_out);
+    x_ld <= '1' when x_vga = to_unsigned(VGA_X-1, x_vga'length) else '0';
+    x_cntr : cntr generic map(x_vga'length)
+                  port map(clk, rst, ce, '1', x_ld, "0000000000", x_out);
 
-    x_cntr : process(clk) begin
-        if rising_edge(clk) then
-            if rst ='1' then
-                Xpixel <= 0;     
-            elsif ce = '1'  then    
-                if Xpixel = 799 then
-                    Xpixel <= 0;
-                else
-                    Xpixel <= Xpixel + 1;
-                end if;
-            end if;
-        end if;
-    end process;
-    y_cntr : process(clk) begin
-        if rising_edge(clk) then   
-            if rst = '1' then
-                Ypixel <= 0;  
-            elsif ce = '1' then  
-                if Ypixel = 520 then
-                    Ypixel <= 0;
-                elsif Xpixel = 799 then 
-                    Ypixel <= Ypixel + 1;
-                end if;
-            end if;
-        end if;
-    end process;
+    y_vga <= unsigned(y_out);
+    y_ld <= '1' when y_vga = to_unsigned(VGA_Y-1, y_vga'length) else '0';
+    y_cntr : cntr generic map(y_vga'length)
+                  port map(clk, rst, ce, x_ld, y_ld, "000000000", y_out);
 
-    Hsync <= '0' when Xpixel > 656 and Xpixel <= 752 else
+    Hsync <= '0' when x_vga > 656 and x_vga <= 752 else
              '1';
-    Vsync <= '0' when Ypixel > 490 and Ypixel <= 492 else
+    Vsync <= '0' when y_vga > 490 and y_vga <= 492 else
              '1';
-    blank <= '1' when Xpixel >= VGA_VIS_X or Ypixel >= VGA_VIS_Y else '0';
+    blank <= '1' when x_vga >= VGA_VIS_X or y_vga >= VGA_VIS_Y else '0';
     colour <= x"00" when blank = '1' else
-              x"00" when Xpixel >= LCD_VIS_X*PIXEL_SIZE or
-                         Ypixel >= LCD_VIS_Y*PIXEL_SIZE else
+              x"00" when x_vga >= LCD_VIS_X*PIXEL_SIZE or
+                         y_vga >= LCD_VIS_Y*PIXEL_SIZE else
               x"ff" when data = '1' else
               -- 010 010 00_
               x"48" when data = '0' else
               (others => '-');
   
-    x <= std_logic_vector(to_unsigned(Xpixel/PIXEL_SIZE, x'length))
-        when Xpixel < LCD_VIS_X*PIXEL_SIZE else (others => '0');
-    y <= std_logic_vector(to_unsigned(Ypixel/PIXEL_SIZE, y'length))
-        when Ypixel < LCD_VIS_Y*PIXEL_SIZE else (others => '0');
+    x <= x_out(8 downto 2)
+        when x_vga < LCD_VIS_X*PIXEL_SIZE else (others => '0');
+    y <= y_out(7 downto 2)
+        when y_vga < LCD_VIS_Y*PIXEL_SIZE else (others => '0');
 
     vgaRed 	    <= colour(7 downto 5);
     vgaGreen    <= colour(4 downto 2);
     vgaBlue 	<= colour(1 downto 0);
 end Behavioral;
-

@@ -3,11 +3,12 @@ use ieee.std_logic_1164.all;
 use work.cmp_comm.all;
 use work.z80_comm.all;
 use work.ti_comm.all;
+use work.util.all;
 
 entity comp is port(
     clk : in std_logic;
 -- dbg input
-    btns : in std_logic_vector(4 downto 0);
+    step, rst, boot_ld, boot_done : std_logic;
     sw : in std_logic_vector(7 downto 0);
 -- keyboard
     ps2_kbd_clk : in std_logic;
@@ -22,6 +23,8 @@ entity comp is port(
     mdata : inout std_logic_vector(15 downto 0);
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
     mlb_c, mub_c : out std_logic;
+-- uart
+    rx : in std_logic;
 -- 7 segment, led
     seg, led : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
@@ -35,9 +38,7 @@ architecture arch of comp is
         addr : out std_logic_vector(15 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
-        dbg : out dbg_z80_t;
-        step_pulse : in std_logic;
-        run_mode : in run_mode_t);
+        dbg : out dbg_z80_t);
     end component;
 
     component ti port(
@@ -113,37 +114,57 @@ architecture arch of comp is
         an : out std_logic_vector(3 downto 0));
     end component;
 
+    component bootloader port(
+        clk, rst : in std_logic;
+        ld, done : in std_logic;
+        mem_wr : out std_logic;
+        mem_data : out std_logic_vector(7 downto 0);
+        mem_addr : out std_logic_vector(19 downto 0);
+        rx : in std_logic);
+    end component;
+
+    -- clk divisors
     constant DIV_6MHZ : integer := 17;
     constant DIV_VGA : integer := 4;
     constant DIV_10HZ : integer := 10*10**6;
     constant DIV_100HZ : integer := 10**6;
-
+    
+    -- clocks
     signal clk_cpu, clk_ti, clk_vga : std_logic;
     signal clk_6mhz, clk_100hz, clk_10hz : std_logic;
 
+    -- control bus
     signal cbo : ctrlbus_out;
-    signal addr : std_logic_vector(15 downto 0);
     signal cbi : ctrlbus_in;
     signal int : std_logic;
-    signal data, data_z80, data_mem, data_ti : std_logic_vector(7 downto 0);
 
-    signal step_pulse : std_logic;
+    -- data bus / addr bus
+    signal addr : std_logic_vector(15 downto 0);
+    signal addr_phy, addr_bl, addr_ti : std_logic_vector(19 downto 0);
+    signal data : std_logic_vector(7 downto 0);
+    signal data_z80, data_mem : std_logic_vector(7 downto 0);
+    signal data_ti, data_bl : std_logic_vector(7 downto 0);
+
+    -- debug
+    type run_mode_t is (normal, step_i, step_m, step_t);
     signal run_mode : run_mode_t;
-
-    signal rst : std_logic;
-
+    signal cpu_stop, cpu_ce : std_logic;
+    signal sp_s, sp_q, sp_op : std_logic;
     signal dbg : dbg_cmp_t;
 
     -- ti <-> kbd
     signal keys_down : keys_down_t;
     signal on_key_down : std_logic := '0';
+
     -- ti <-> vga
     signal data_vga : std_logic;
     signal x_vga : std_logic_vector(6 downto 0);
     signal y_vga : std_logic_vector(5 downto 0);
-    -- ti <-> mem controller
+
+    -- ti/bootloader <-> mem controller
+    signal mem_wr_bl, mem_wr_ti : std_logic;
+    signal mem_data : std_logic_vector(7 downto 0);
     signal mem_rd, mem_wr : std_logic;
-    signal addr_phy : std_logic_vector(19 downto 0);
 begin
 
     -- generate clocks
@@ -160,39 +181,62 @@ begin
                    clk_6mhz   when others;
 
     -- buses
-    rst <= btns(1);
     cbi.int <= int;
     cbi.reset <= rst;
+    addr_phy <= addr_bl when mem_wr_bl = '1' else addr_ti;
     -- OR data bus instead of tristate
     data <= data_z80 or data_mem or data_ti;
 
-    -- cpu / asic
+    -- cpu step
+    step_op : process(clk) begin
+        if rising_edge(clk) then
+            if clk_cpu = '1' then
+                sp_s <= step;
+                sp_q <= sp_s;
+            end if;
+        end if;
+    end process;
+    sp_op <= sp_s and not sp_q;
     with sw(5 downto 4) select
         run_mode <= step_i when "01",
                     step_m when "10",
                     step_t when "11",
                     normal when others;
+    cpu_stop <= not sp_op and 
+        (bool_sl(run_mode = step_t) or
+        (bool_sl(run_mode = step_m) and dbg.z80.ct.cycle_end) or
+        (bool_sl(run_mode = step_i) and dbg.z80.ct.instr_end));
+    cpu_ce <= clk_cpu and not cpu_stop;
 
-    cpu : z80 port map(clk, clk_cpu, cbi, cbo, addr, data, data_z80,
-                       dbg.z80, btns(0), run_mode);
+    cpu : z80 port map(clk, cpu_ce, cbi, cbo, addr, data, data_z80,
+                       dbg.z80);
     ti_comp : ti port map(clk, rst, clk_ti,
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
                           x_vga, y_vga, data_vga,
-                          mem_rd, mem_wr, addr_phy);
+                          mem_rd, mem_wr_ti, addr_ti);
+
+    -- mem signals (bootloader priority)
+    mem_wr <= mem_wr_bl or mem_wr_ti;
+    mem_data <= data_bl when mem_wr_bl = '1' else data;
 
     -- external controllers
     vga : vga_motor port map(clk, clk_vga, data_vga, rst, x_vga, y_vga,
                              vga_red, vga_green, vga_blue, hsync, vsync);
-    mif : mem_if port map(clk, rst, mem_rd, mem_wr, addr_phy, data, data_mem,
+    mif : mem_if port map(clk, rst,
+                          mem_rd, mem_wr, addr_phy, mem_data, data_mem,
                           maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                           mwe_c, mlb_c, mub_c);
     kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_data,
                            keys_down, on_key_down, dbg.scancode, dbg.keycode);
+    boot : bootloader port map(clk, rst, boot_ld, boot_done,
+                               mem_wr_bl, data_bl, addr_bl, rx);
 
     -- debug
     dbg.mem_rd <= mem_rd;
     dbg.mem_wr <= mem_wr;
+    dbg.mem_wr_bl <= mem_wr_bl;
+    dbg.keys_down <= keys_down;
     dbg.on_key_down <= on_key_down;
     dbg.data <= data;
     dbg.data_mem <= data_mem;

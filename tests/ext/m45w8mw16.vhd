@@ -12,12 +12,13 @@ entity m45 is port(
 end m45;
 
 architecture arch of m45 is
-    constant ROM_START : integer := 16#7c000#;
+    constant PC_START : integer := 16#7c000#;
     constant ROM_SIZE : integer := 256;
     constant STACK_TOP : integer := 16#83fff#;
     constant STACK_SIZE : integer := 128;
 
-    type mem_rom_t is array(ROM_START/2 to ROM_START/2+ROM_SIZE/2)
+    type mem_jp_t is array(PC_START/2 to PC_START/2+1);
+    type mem_rom_t is array(0 to ROM_SIZE/2)
         of std_logic_vector(15 downto 0);
     type mem_stack_t is array(STACK_TOP/2-STACK_SIZE/2 to STACK_TOP/2)
         of std_logic_vector(15 downto 0);
@@ -49,8 +50,9 @@ architecture arch of m45 is
         return mem;
     end function;
 
-    signal mem_stack : mem_stack_t := (others => x"0000");
     signal mem_rom : mem_rom_t := file_to_mem("a.bin");
+    signal mem_jp : mem_jp_t := (x"c300", x"0000");
+    signal mem_stack : mem_stack_t := (others => x"0000");
 
     signal word_out : std_logic_vector(15 downto 0);
     signal a : integer;
@@ -83,6 +85,8 @@ begin
                 word_out <= mem_stack(a);
             elsif mem_rom'left <= a and a <= mem_rom'right then
                 word_out <= mem_rom(a);
+            elsif mem_jp'left <= a and a <= mem_jp'right then
+                word_out <= mem_jp(a);
             else
                 word_out <= x"abcd";
             end if;

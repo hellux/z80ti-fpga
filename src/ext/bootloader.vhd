@@ -6,10 +6,9 @@ entity bootloader is port(
     clk, rst : in std_logic;
 -- board -> bootloader
     ld, done : in std_logic;
--- bootloader <-> memory interface
+-- bootloader -> memory interface
     mem_wr : out std_logic;
-    mem_data_in : in std_logic_vector(7 downto 0);
-    mem_data_out : out std_logic_vector(7 downto 0);
+    mem_data : out std_logic_vector(7 downto 0);
     mem_addr : out std_logic_vector(19 downto 0);
 -- bootloader <-> uart
     rx : in std_logic);
@@ -36,15 +35,17 @@ architecture arch of bootloader is
     signal uart_state : bl_uart_state_t := idle;
     signal load_state : bl_load_state_t := idle;
 
-    signal addr : unsigned(19 downto 0);
     signal bit_count : unsigned(9 downto 0) := (others => '0');
     signal bit_index : unsigned(3 downto 0) := (others => '0');
     signal next_bit : std_logic;
     signal byte_done : std_logic;
-    signal data_init : std_logic_vector(7 downto 0);
-    signal dreg_in : std_logic_vector(7 downto 0);
+
     signal sreg : std_logic_vector(9 downto 0);
     signal sreg_ce : std_logic;
+
+    signal data_init : std_logic_vector(7 downto 0);
+    signal addr : unsigned(19 downto 0);
+    signal dreg_in : std_logic_vector(7 downto 0);
 begin
     sync_rx : process(clk) begin
         if rising_edge(clk) then
@@ -59,21 +60,15 @@ begin
             when idle =>
                 if ld = '1' then
                     load_state <= init;
-                    addr <= x"08000";
+                    addr <= x"7bfff";
                 end if;
             when init =>
-                if next_bit = '1' then
+                if next_bit = '1' then -- use for time delay
                     addr <= addr + 1;
-                    case addr is
-                    when x"08000" => data_init <= x"c3"; -- jp 0
-                    when x"08001" => data_init <= x"00";
-                    when x"08002" => data_init <= x"00";
-                    when others => 
-                        if ld = '0' then
-                            load_state <= load;
-                            addr <= (others => '0');
-                        end if;
-                    end case;
+                end if;
+                if addr >= x"7c003" and ld = '0' then
+                    load_state <= load;
+                    addr <= (others => '0');
                 end if;
             when load =>
                 if done = '1' then
@@ -89,7 +84,13 @@ begin
             end case;
         end if;
     end process;
+
     mem_wr <= '0' when load_state = idle else '1';
+    with addr select
+        data_init <= x"c3" when x"7c000",
+                     x"00" when x"7c001",
+                     x"00" when x"7c002",
+                     x"00" when others;
 
     bit_cntr : process(clk) begin
         if rising_edge(clk) then
@@ -127,14 +128,12 @@ begin
                         bit_index <= bit_index + 1;
                     end if;
                 when succ => 
-                    case rx1 is
-                    when '0' => 
+                    if rx1 = '1' then
+                        uart_state <= idle;
+                    else 
                         uart_state <= read;
                         bit_index <= (others => '0');
-                    when '1' => 
-                        uart_state <= idle;
-                    when others => null;
-                    end case;
+                    end if;
                 end case;
             end if;
         end if;
@@ -154,7 +153,7 @@ begin
 
     dreg_in <= sreg(8 downto 1) when load_state = load else data_init;
     dreg : reg generic map(x"00", 8)
-               port map(clk, rst, '1', byte_done, dreg_in, mem_data_out);
+               port map(clk, rst, '1', byte_done, dreg_in, mem_data);
 
     mem_addr <= std_logic_vector(addr);
 end arch;

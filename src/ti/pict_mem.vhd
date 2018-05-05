@@ -75,32 +75,34 @@ begin
     do_vga <= gmem_do_vga(0);
 
     lcd : process(clk) begin
-        if rising_edge(clk) and ce = '1' then
-            if bit_sel = 7 then
-                bit_sel <= 0;
-            else
-                bit_sel <= bit_sel + 1;
+        if rising_edge(clk) then
+            if ce = '1' then
+                if bit_sel = 7 then
+                    bit_sel <= 0;
+                else
+                    bit_sel <= bit_sel + 1;
+                end if;
+
+                case state is
+                when load =>
+                    if (wl = '1' and bit_sel = 7) or
+                       (wl = '0' and bit_sel = 5)
+                    then
+                        bit_sel <= 0;
+                        state <= idle;
+                    end if;
+                when idle =>
+                    do_lcd(bit_sel) <= gmem_do_lcd(0);
+
+                    if rd = '1' then
+                        state <= load;
+                        page_buf <= page_in;
+                        x_buf <= x_lcd;
+                        y_buf <= y_lcd;
+                        bit_sel <= 0;
+                    end if;
+                end case;
             end if;
-
-            case state is
-            when load =>
-                if (wl = '1' and bit_sel = 7) or
-                   (wl = '0' and bit_sel = 5)
-                then
-                    bit_sel <= 0;
-                    state <= idle;
-                end if;
-            when idle =>
-                do_lcd(bit_sel) <= gmem_do_lcd(0);
-
-                if rd = '1' then
-                    state <= load;
-                    page_buf <= page_in;
-                    x_buf <= x_lcd;
-                    y_buf <= y_lcd;
-                    bit_sel <= 0;
-                end if;
-            end case;
         end if;
     end process;
 end arch;

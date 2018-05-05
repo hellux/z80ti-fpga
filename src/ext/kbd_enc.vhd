@@ -1,8 +1,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.cmp_comm.all;
 
-use work.ti_comm.all;
 entity kbd_enc is port (
     clk, rst : in std_logic;
     PS2KeyboardCLK : in std_logic;

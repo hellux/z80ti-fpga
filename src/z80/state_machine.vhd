@@ -10,26 +10,12 @@ entity state_machine is port(
     flags : in std_logic_vector(7 downto 0);
     iff : in std_logic;
     ctrl : in id_ctrl_t;
-    state_out : out state_t;
--- dbg ctrl
-    step_pulse : in std_logic;
-    run_mode : in run_mode_t);
+    state_out : out state_t);
 end state_machine;
 
 architecture arch of state_machine is
     signal state : state_t;
-    signal sp_s, sp_q, sp_op : std_logic;
 begin 
-    step_op : process(clk) begin
-        if rising_edge(clk) then
-            if ce = '1' then
-                sp_s <= step_pulse;
-                sp_q <= sp_s;
-            end if;
-        end if;
-    end process;
-    sp_op <= sp_s and not sp_q;
-
     process(clk) begin
         if rising_edge(clk) then
             if cbi.reset = '1' then
@@ -38,12 +24,7 @@ begin
                 state.prefix <= main;
                 state.m <= m1;
                 state.t <= t1;
-            elsif ce = '1' and not (
-                sp_op = '0' and (
-                    (run_mode = step_t) or
-                    (run_mode = step_m and ctrl.cycle_end = '1') or
-                    (run_mode = step_i and ctrl.instr_end = '1')))
-            then
+            elsif ce = '1' then
                 -- set t state
                 if ctrl.cycle_end = '1' then
                     state.t <= t1;

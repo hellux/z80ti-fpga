@@ -14,10 +14,10 @@ architecture Behavioral of reg is
     signal bits_next : std_logic_vector(size-1 downto 0);
 begin  
     process(clk) begin
-        if rising_edge(clk) and ce = '1' then
+        if rising_edge(clk) then
             if rst = '1' then
                 bits <= init;
-            else 
+            elsif ce = '1' then
                 bits <= bits_next;
             end if;
         end if;
@@ -41,10 +41,10 @@ architecture arch of ff is
     signal data_next : std_logic;
 begin  
     process(clk) begin
-        if rising_edge(clk) and ce = '1' then
+        if rising_edge(clk) then
             if rst = '1' then
                 data <= '0';
-            else 
+            elsif ce = '1' then
                 data <= data_next;
             end if;
         end if;
@@ -68,10 +68,10 @@ architecture arch of buf is
     signal bits, bits_next : std_logic_vector(size-1 downto 0);
 begin
     process(clk) begin
-        if rising_edge(clk) and ce = '1' then
+        if rising_edge(clk) then
             if rst = '1' then
                 bits <= (others => '0');
-            else
+            elsif ce = '1' then
                 bits <= bits_next;
             end if;
         end if;

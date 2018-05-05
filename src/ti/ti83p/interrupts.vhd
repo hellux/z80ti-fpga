@@ -39,20 +39,22 @@ begin
 
     int <= bool_sl(int_dev /= none);
     process(clk) begin
-        if rising_edge(clk) and ce = '1' then
+        if rising_edge(clk) then
             if rst = '1' then
                 int_dev <= none;
-            elsif int_dev = none then
-                if on_key_down = '1' and int_on_key = '1' then
-                    int_dev <= on_key;
-                elsif hwt_int(1) = '1' and hwt_fin(1) = '1' then
-                    int_dev <= hwt1;
-                elsif hwt_int(2) = '1' and hwt_fin(2) = '1' then
-                    int_dev <= hwt2;
+            elsif ce = '1' then
+                if int_dev = none then
+                    if on_key_down = '1' and int_on_key = '1' then
+                        int_dev <= on_key;
+                    elsif hwt_int(1) = '1' and hwt_fin(1) = '1' then
+                        int_dev <= hwt1;
+                    elsif hwt_int(2) = '1' and hwt_fin(2) = '1' then
+                        int_dev <= hwt2;
+                    end if;
+                elsif int_ack = '1' then
+                    -- don't bother sending address to dbus, is random
+                    int_dev <= none;
                 end if;
-            elsif int_ack = '1' then
-                -- don't bother sending address to dbus, appears to be random
-                int_dev <= none;
             end if;
         end if;
     end process;

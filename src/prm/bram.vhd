@@ -18,16 +18,18 @@ architecture arch of bram is
     signal mem : bram_mem_t := (others => (others => '0'));
 begin
     process(clk) begin
-        if rising_edge(clk) and ce = '1' then
-            if wea = '1' then
-                mem(to_integer(unsigned(addra))) <= data_ina;
-            end if;
-            data_outa <= mem(to_integer(unsigned(addra)));
+        if rising_edge(clk) then
+            if ce = '1' then
+                if wea = '1' then
+                    mem(to_integer(unsigned(addra))) <= data_ina;
+                end if;
+                data_outa <= mem(to_integer(unsigned(addra)));
 
-            if web = '1' then
-                mem(to_integer(unsigned(addrb))) <= data_inb;
+                if web = '1' then
+                    mem(to_integer(unsigned(addrb))) <= data_inb;
+                end if;
+                data_outb <= mem(to_integer(unsigned(addrb)));
             end if;
-            data_outb <= mem(to_integer(unsigned(addrb)));
         end if;
     end process;
 end arch;

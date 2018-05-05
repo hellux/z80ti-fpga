@@ -114,10 +114,10 @@ begin
 
     -- mode / ctrl
     set_mode : process(clk) begin
-        if rising_edge(clk) and ce = '1' then
+        if rising_edge(clk) then
             if rst = '1' then
                 mode <= MODE_INIT;
-            else
+            elsif ce = '1' then
                 if p10_command.wr = '1' then
                     case p10_command.data is
                     when x"00"|x"01" => 

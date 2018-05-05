@@ -47,12 +47,11 @@ Net "sw<6>" LOC = V8 | IOSTANDARD = LVCMOS33; #Bank = 2, pin name = IO_L41N_VREF
 Net "sw<7>" LOC = T5 | IOSTANDARD = LVCMOS33; #Bank = MISC, pin name = IO_L48N_RDWR_B_VREF_2, Sch name = SW7
 
 ## Buttons
-Net "btns<0>" LOC = B8 | IOSTANDARD = LVCMOS33; #Bank = 0, pin name = IO_L33P, Sch name = BTNS
-#NET "btns<0>" CLOCK_DEDICATED_ROUTE = FALSE;
-Net "btns<1>" LOC = A8 | IOSTANDARD = LVCMOS33; #Bank = 0, pin name = IO_L33N, Sch name = BTNU
-Net "btns<2>" LOC = C4 | IOSTANDARD = LVCMOS33; #Bank = 0, pin name = IO_L1N_VREF, Sch name = BTNL
-Net "btns<3>" LOC = C9 | IOSTANDARD = LVCMOS33; #Bank = 0, pin name = IO_L34N_GCLK18, Sch name = BTND
-Net "btns<4>" LOC = D9 | IOSTANDARD = LVCMOS33; # Bank = 0, pin name = IO_L34P_GCLK19, Sch name = BTNR
+Net "step" LOC = B8 | IOSTANDARD = LVCMOS33; #Bank = 0, pin name = IO_L33P, Sch name = BTNS
+Net "rst" LOC = A8 | IOSTANDARD = LVCMOS33; #Bank = 0, pin name = IO_L33N, Sch name = BTNU
+#Net "btns<2>" LOC = C4 | IOSTANDARD = LVCMOS33; #Bank = 0, pin name = IO_L1N_VREF, Sch name = BTNL
+Net "boot_ld" LOC = C9 | IOSTANDARD = LVCMOS33; #Bank = 0, pin name = IO_L34N_GCLK18, Sch name = BTND
+Net "boot_done" LOC = D9 | IOSTANDARD = LVCMOS33; # Bank = 0, pin name = IO_L34P_GCLK19, Sch name = BTNR
 
 ## VGA Connector
 NET "vga_Red<0>" LOC = U7 | IOSTANDARD = LVCMOS33; # Bank = 2, pin name = IO_L43P, Sch name = RED0
@@ -129,3 +128,6 @@ Net "mdata<12>"  LOC = V13 |  IOSTANDARD = LVCMOS33; #Bank = 2, pin name = IO_L1
 Net "mdata<13>"  LOC = U10 |  IOSTANDARD = LVCMOS33; #Bank = 2, pin name = IO_L30P_GCLK1_D13, Sch name = P30-DQ13
 Net "mdata<14>"  LOC = R8  |  IOSTANDARD = LVCMOS33; #Bank = 2, pin name = IO_L31P_GCLK31_D14, Sch name = P30-DQ14
 Net "mdata<15>"  LOC = T8  |  IOSTANDARD = LVCMOS33; #Bank = 2, pin name = IO_L31N_GCLK30_D15, Sch name = P30-DQ15
+
+## Usb-RS232 interface
+Net "rx" LOC = N17 | IOSTANDARD=LVCMOS33; #Bank = 1, pin name = IO_L48P_HDC_M1DQ8    , Sch name = MCU-RX

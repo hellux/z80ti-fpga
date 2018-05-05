@@ -22,18 +22,19 @@ architecture arch of monitor is
         an : out std_logic_vector(3 downto 0));
     end component;
 
+    signal dots_mem : std_logic_vector(2 downto 0);
     signal dots_int : std_logic_vector(3 downto 0);
     signal dots_cbo : std_logic_vector(3 downto 0);
     signal dots_cond : std_logic_vector(3 downto 0);
     signal dots_prefix : std_logic_vector(3 downto 0);
     signal dots_mode : std_logic_vector(1 downto 0);
-    signal dots_mem : std_logic_vector(1 downto 0);
 
     signal seg_value : std_logic_vector(15 downto 0);
     signal seg_dots : std_logic_vector(3 downto 0);
 begin
     smt : segment port map(clk, seg_value, seg_dots, seg, an);
 
+    dots_mem <= dbg.mem_rd & dbg.mem_wr & dbg.mem_wr_bl;
     dots_int <= dbg.cbi.int & dbg.z80.state.iff &
                 std_logic_vector(to_unsigned(dbg.z80.state.im, 2));
     dots_cbo <= dbg.cbo.mreq & dbg.cbo.iorq & dbg.cbo.rd & dbg.cbo.wr;
@@ -56,14 +57,14 @@ begin
                      "01" when wz,
                      "10" when halt,
                      "11" when int;
-    dots_mem <= dbg.mem_rd & dbg.mem_wr;
 
     with sel select seg_dots <=
-        dots_int                when "0000",
+        dots_mem & "0"          when "0000",
         dots_cbo                when "0001",
         dots_cond               when "0010",
         dots_prefix             when "0011",
-        dots_mode & dots_mem    when "0100",
+        dots_mode & "00"        when "0100",
+        dots_int                when "0101",
         "0000"                  when others;
 
     with sel select seg_value <=

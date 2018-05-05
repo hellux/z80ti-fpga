@@ -150,6 +150,4 @@ package z80_comm is
         pc, abus, tmpa : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
     end record;
-
-    type run_mode_t is (normal, step_i, step_m, step_t);
 end z80_comm;
