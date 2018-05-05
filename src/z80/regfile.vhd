@@ -104,10 +104,10 @@ architecture arch of regfile is
     signal s : rf_swap_state_t;
 begin
     swap_proc : process(clk) begin
-        if rising_edge(clk) and ce = '1' then
+        if rising_edge(clk) then
             if rst = '1' then
                 s <= (others => '0');
-            else
+            elsif ce = '1' then
                 case swp is
                 when none => null;
                 when reg  => s.reg  <= not s.reg;
@@ -120,10 +120,10 @@ begin
     end process;
 
     ram_proc : process(clk) begin
-        if rising_edge(clk) and ce = '1' then
+        if rising_edge(clk) then
             if rst = '1' then
                 ram <= (others => x"ff");
-            else
+            elsif ce = '1' then
                 ram <= ram_next;
             end if;
         end if;
