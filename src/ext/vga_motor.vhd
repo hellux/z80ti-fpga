@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.util.all;
 
 entity vga_motor is port ( 
      clk, ce : in std_logic;
@@ -56,11 +57,11 @@ begin
                             to_unsigned(0, y_vga'length), y_vga);
     
     -- vga on lcd pixel
-    xp_ld <= '1' when x_ld = '1' or xp = PIXEL_SIZE-1 else '0';
+    xp_ld <= x_ld or bool_sl(xp = PIXEL_SIZE-1);
     xp_cntr : cntr generic map(xp'length)
                    port map(clk, rst, ce, '1', xp_ld,
                             to_unsigned(0, xp'length), xp);
-    yp_ld <= '1' when y_ld = '1' or yp = PIXEL_SIZE-1 else '0';
+    yp_ld <= y_ld or (bool_sl(yp = PIXEL_SIZE-1) and x_ld);
     yp_cntr : cntr generic map(yp'length)
                    port map(clk, rst, ce, x_ld, yp_ld,
                             to_unsigned(0, yp'length), yp);
