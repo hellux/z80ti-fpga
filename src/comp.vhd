@@ -132,8 +132,7 @@ architecture arch of comp is
 
     signal rst : std_logic;
 
-    signal btns_sync, btns_q, btns_op : std_logic_vector(4 downto 0);
-
+    signal sp_s, sp_q : std_logic;
     signal dbg : dbg_cmp_t;
 
     -- ti <-> kbd
@@ -147,14 +146,15 @@ architecture arch of comp is
     signal mem_rd, mem_wr : std_logic;
     signal addr_phy : std_logic_vector(19 downto 0);
 begin
-    -- input sync
-    op_btns : process(clk) begin
+    step_op : process(clk) begin
         if rising_edge(clk) then
-            btns_sync <= btns;
-            btns_q <= btns_sync;
+            if clk_cpu = '1' then
+                sp_s <= btns(0);
+                sp_q <= sp_s;
+            end if;
         end if;
     end process;
-    btns_op <= btns_sync and not btns_q;
+    step_pulse <= sp_s and not sp_q;
 
     -- generate clocks
     gen_6mhz  : clkgen generic map(DIV_6MHZ)  port map(clk, clk_6mhz);
@@ -177,7 +177,6 @@ begin
     data <= data_z80 or data_mem or data_ti;
 
     -- cpu / asic
-    step_pulse <= btns_op(0);
     with sw(5 downto 4) select
         run_mode <= step_i when "01",
                     step_m when "10",
