@@ -1,0 +1,6 @@
+src/pkg/util.vhd
+src/prm/counters.vhd
+src/prm/clkgen.vhd
+src/ext/vga_motor.vhd
+tests/fb/vga_fb.vhd
+tests/fb/vga_fb_tb.vhd

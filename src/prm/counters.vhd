@@ -41,7 +41,7 @@ entity cntr is generic(bitwidth : integer); port(
 end cntr;
 
 architecture arch of cntr is
-    signal count : unsigned(bitwidth-1 downto 0);
+    signal count : unsigned(bitwidth-1 downto 0) := (others => '0');
 begin
     process(clk) begin
         if rising_edge(clk) then
