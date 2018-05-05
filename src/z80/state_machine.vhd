@@ -18,7 +18,18 @@ end state_machine;
 
 architecture arch of state_machine is
     signal state : state_t;
+    signal sp_s, sp_q, sp_op : std_logic;
 begin 
+    step_op : process(clk) begin
+        if rising_edge(clk) then
+            if ce = '1' then
+                sp_s <= step_pulse;
+                sp_q <= sp_s;
+            end if;
+        end if;
+    end process;
+    sp_op <= sp_s and not sp_q;
+
     process(clk) begin
         if rising_edge(clk) then
             if cbi.reset = '1' then
@@ -28,7 +39,7 @@ begin
                 state.m <= m1;
                 state.t <= t1;
             elsif ce = '1' and not (
-                step_pulse = '0' and (
+                sp_op = '0' and (
                     (run_mode = step_t) or
                     (run_mode = step_m and ctrl.cycle_end = '1') or
                     (run_mode = step_i and ctrl.instr_end = '1')))

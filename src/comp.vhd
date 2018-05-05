@@ -132,7 +132,6 @@ architecture arch of comp is
 
     signal rst : std_logic;
 
-    signal sp_s, sp_q : std_logic;
     signal dbg : dbg_cmp_t;
 
     -- ti <-> kbd
@@ -146,15 +145,6 @@ architecture arch of comp is
     signal mem_rd, mem_wr : std_logic;
     signal addr_phy : std_logic_vector(19 downto 0);
 begin
-    step_op : process(clk) begin
-        if rising_edge(clk) then
-            if clk_cpu = '1' then
-                sp_s <= btns(0);
-                sp_q <= sp_s;
-            end if;
-        end if;
-    end process;
-    step_pulse <= sp_s and not sp_q;
 
     -- generate clocks
     gen_6mhz  : clkgen generic map(DIV_6MHZ)  port map(clk, clk_6mhz);
@@ -184,7 +174,7 @@ begin
                     normal when others;
 
     cpu : z80 port map(clk, clk_cpu, cbi, cbo, addr, data, data_z80,
-                       dbg.z80, step_pulse, run_mode);
+                       dbg.z80, btns(0), run_mode);
     ti_comp : ti port map(clk, rst, clk_ti,
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
