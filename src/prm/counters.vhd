@@ -36,8 +36,8 @@ entity cntr is generic(bitwidth : integer); port(
     clk, rst, ce : in std_logic;
     cnten : in std_logic;
     ld : in std_logic;
-    di : in std_logic_vector(bitwidth-1 downto 0);
-    do : out std_logic_vector(bitwidth-1 downto 0));
+    di : in unsigned(bitwidth-1 downto 0);
+    do : out unsigned(bitwidth-1 downto 0));
 end cntr;
 
 architecture arch of cntr is
@@ -52,8 +52,8 @@ begin
             end if;
         end if;
     end process;
-    count_next <= unsigned(di) when ld = '1' else
-                  count + 1    when cnten = '1' else
+    count_next <= di        when ld = '1' else
+                  count + 1 when cnten = '1' else
                   count;
-    do <= std_logic_vector(count);
+    do <= count;
 end arch;

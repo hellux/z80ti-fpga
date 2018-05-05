@@ -59,10 +59,10 @@ begin
                      "11" when int;
 
     with sel select seg_dots <=
-        dots_mem & "0"          when "0000",
-        dots_cbo                when "0001",
+        dots_mem & "0"          when "1100|1101|1110",
+        dots_prefix             when "1001",
+        dots_cbo                when "0000",
         dots_cond               when "0010",
-        dots_prefix             when "0011",
         dots_mode & "00"        when "0100",
         dots_int                when "0101",
         "0000"                  when others;

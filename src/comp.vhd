@@ -180,13 +180,6 @@ begin
                    '0'        when "11",
                    clk_6mhz   when others;
 
-    -- buses
-    cbi.int <= int;
-    cbi.reset <= rst;
-    addr_phy <= addr_bl when mem_wr_bl = '1' else addr_ti;
-    -- OR data bus instead of tristate
-    data <= data_z80 or data_mem or data_ti;
-
     -- cpu step
     step_op : process(clk) begin
         if rising_edge(clk) then
@@ -208,6 +201,12 @@ begin
         (bool_sl(run_mode = step_i) and dbg.z80.ct.instr_end));
     cpu_ce <= clk_cpu and not cpu_stop;
 
+    -- buses
+    cbi.int <= int;
+    cbi.reset <= rst;
+    -- OR data bus instead of tristate
+    data <= data_z80 or data_mem or data_ti;
+
     cpu : z80 port map(clk, cpu_ce, cbi, cbo, addr, data, data_z80,
                        dbg.z80);
     ti_comp : ti port map(clk, rst, clk_ti,
@@ -218,6 +217,7 @@ begin
 
     -- mem signals (bootloader priority)
     mem_wr <= mem_wr_bl or mem_wr_ti;
+    addr_phy <= addr_bl when mem_wr_bl = '1' else addr_ti;
     mem_data <= data_bl when mem_wr_bl = '1' else data;
 
     -- external controllers
