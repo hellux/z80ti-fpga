@@ -43,9 +43,8 @@ architecture arch of bootloader is
     signal sreg : std_logic_vector(9 downto 0);
     signal sreg_ce : std_logic;
 
-    signal data_init : std_logic_vector(7 downto 0);
+    signal data_init, data_load : std_logic_vector(7 downto 0);
     signal addr : unsigned(19 downto 0);
-    signal dreg_in : std_logic_vector(7 downto 0);
 begin
     sync_rx : process(clk) begin
         if rising_edge(clk) then
@@ -151,9 +150,9 @@ begin
         end if;
     end process;
 
-    dreg_in <= sreg(8 downto 1) when load_state = load else data_init;
     dreg : reg generic map(x"00", 8)
-               port map(clk, rst, '1', byte_done, dreg_in, mem_data);
+               port map(clk, rst, '1', byte_done, sreg(8 downto 1), data_load);
 
+    mem_data <= data_load when load_state = load else data_init;
     mem_addr <= std_logic_vector(addr);
 end arch;

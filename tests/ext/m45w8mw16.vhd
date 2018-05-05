@@ -1,7 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.z80_comm.all;
 
 entity m45 is port(
     clk : in std_logic;
@@ -17,7 +16,8 @@ architecture arch of m45 is
     constant STACK_TOP : integer := 16#83fff#;
     constant STACK_SIZE : integer := 128;
 
-    type mem_jp_t is array(PC_START/2 to PC_START/2+1);
+    type mem_jp_t is array(PC_START/2 to PC_START/2+1)
+        of std_logic_vector(15 downto 0);
     type mem_rom_t is array(0 to ROM_SIZE/2)
         of std_logic_vector(15 downto 0);
     type mem_stack_t is array(STACK_TOP/2-STACK_SIZE/2 to STACK_TOP/2)

@@ -45,8 +45,7 @@ architecture arch of boot_fb is
         clk, rst : in std_logic;
         ld, done : in std_logic;
         mem_wr : out std_logic;
-        mem_data_in : in std_logic_vector(7 downto 0);
-        mem_data_out : out std_logic_vector(7 downto 0);
+        mem_data : out std_logic_vector(7 downto 0);
         mem_addr : out std_logic_vector(19 downto 0);
         rx : in std_logic);
     end component;
@@ -54,7 +53,7 @@ architecture arch of boot_fb is
     signal rd, wr : std_logic;
     signal ld, done : std_logic;
     signal rst : std_logic;
-    signal boot_mem_data, mem_boot_data : std_logic_vector(7 downto 0);
+    signal data_boot, data_mem : std_logic_vector(7 downto 0);
     signal addr : std_logic_vector(19 downto 0);
 
     signal seg_val : std_logic_vector(15 downto 0);
@@ -64,14 +63,14 @@ begin
     done <= btns(4);
     rd <= '0';
     seg_dots <= "00" & wr & rx;
-    seg_val <= addr(7 downto 0) & boot_mem_data;
+    seg_val <= addr(7 downto 0) & data_boot;
 
-    mem : mem_if port map(clk, '0', rd, wr, addr, boot_mem_data, mem_boot_data,
+    mem : mem_if port map(clk, '0', rd, wr, addr, data_boot, data_mem,
                           maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                           mwe_c, mlb_c, mub_c);
 
     boot : bootloader port map(clk, rst, ld, done,
-                               wr, mem_boot_data, boot_mem_data, addr,
+                               wr, data_boot, addr,
                                rx);
 
     smt : segment port map(clk, seg_val, seg_dots, seg, an);
