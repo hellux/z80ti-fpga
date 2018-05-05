@@ -38,7 +38,7 @@ architecture arch of comp_tb is
 
     signal clk, rst : std_logic;
 
-    signal btns : std_logic_vector(4 downto 0);
+    signal btns : std_logic_vector(4 downto 0) := (others => '0');
 
     signal ps2_kbd_data, ps2_kbd_clk : std_logic;
 
@@ -72,13 +72,23 @@ begin
         wait for 5 ns;
     end process;
 
-    btns <= (1 => rst, others => '0');
     process begin
-        rst <= '0';
+        sw(5 downto 4) <= "01"; -- step instr
+
+        -- reset
+        btns(1) <= '0';
         wait for 10 ns;
-        rst <= '1';
+        btns(1) <= '1';
         wait for 25 ns;
-        rst <= '0';
+        btns(1) <= '0';
+
+        -- step
+        wait for 10 us;
+        btns(0) <= '1'; 
+        wait for 2500 ns;
+        btns(0) <= '0';
+
+        -- wait
         wait for 1000 ms;
     end process;
 end arch;

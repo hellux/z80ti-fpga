@@ -1,0 +1,34 @@
+##Clock signal
+Net "clk" LOC=V10 | IOSTANDARD=LVCMOS33;
+Net "clk" TNM_NET = sys_clk_pin;
+TIMESPEC TS_sys_clk_pin = PERIOD sys_clk_pin 100000 kHz;
+
+## Usb-RS232 interface
+Net "rx" LOC = N17 | IOSTANDARD=LVCMOS33; #Bank = 1, pin name = IO_L48P_HDC_M1DQ8    , Sch name = MCU-RX
+
+## 7 segment display
+Net "seg<6>" LOC = T17 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L51P_M1DQ12, Sch name = CA
+Net "seg<5>" LOC = T18 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L51N_M1DQ13, Sch name = CB
+Net "seg<4>" LOC = U17 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L52P_M1DQ14, Sch name = CC
+Net "seg<3>" LOC = U18 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L52N_M1DQ15, Sch name = CD
+Net "seg<2>" LOC = M14 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L53P, Sch name = CE
+Net "seg<1>" LOC = N14 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L53N_VREF, Sch name = CF
+Net "seg<0>" LOC = L14 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L61P, Sch name = CG
+Net "seg<7>" LOC = M13 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L61N, Sch name = DP
+
+Net "an<0>" LOC = N16 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L50N_M1UDQSN, Sch name = AN0
+Net "an<1>" LOC = N15 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L50P_M1UDQS, Sch name = AN1
+Net "an<2>" LOC = P18 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L49N_M1DQ11, Sch name = AN2
+Net "an<3>" LOC = P17 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L49P_M1DQ10, Sch name = AN3
+
+## onBoard Cellular RAM, Numonyx StrataFlash and Numonyx Quad Flash
+Net "moe_c" LOC = L18 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L46N_FOE_B_M1DQ3, Sch name = P30-OE
+Net "mwe_c" LOC = M16 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L47P_FWE_B_M1DQ0, Sch name = P30-WE
+Net "mclk" LOC = R10 | IOSTANDARD = LVCMOS33; #Bank = 2, pin name = IO_L29P_GCLK3, Sch name = P30-CLK
+Net "madv_c" LOC = H18 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L43N_GCLK4_M1DQ5, Sch name = P30-ADV
+#Net "mwait" LOC = V4 | IOSTANDARD = LVCMOS33; #Bank = 2, pin name = IO_L63N, Sch name = P30-WAIT
+
+Net "mce_c" LOC = L15 | IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L42P_GCLK7_M1UDM, Sch name = MT-CE
+Net "mub_c" LOC = K15  |  IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L41P_GCLK9_IRDY1_M1RASN, Sch name = MT-UB
+Net "mlb_c" LOC = K16  |  IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L41N_GCLK8_M1CASN, Sch name = MT-LB
+Net "mcre" LOC = M18 |  IOSTANDARD = LVCMOS33; #Bank = 1, pin name = IO_L47N_LDC_M1DQ1, Sch name = MT-CRE

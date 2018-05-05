@@ -23,7 +23,7 @@ ld a, 0x20 ; set col to 0
 out (c), a
 inc d
 ld a, d
-cp 0xc0 ; last row + 1
+cp 0x85 ; last row + 1
 jr nz, row
 
 halt
