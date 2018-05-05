@@ -3,6 +3,18 @@ use ieee.std_logic_1164.all;
 use work.z80_comm.all;
 
 package cmp_comm is
+    type ctrlbus_in is record
+        -- cpu control
+        int, reset : std_logic;
+    end record;
+
+    type ctrlbus_out is record
+        -- system control
+        m1, mreq, iorq, rd, wr : std_logic;
+        -- cpu control
+        halt : std_logic;
+    end record;
+
     type dbg_cmp_t is record
         z80 : dbg_z80_t;
         scancode : std_logic_vector(7 downto 0);

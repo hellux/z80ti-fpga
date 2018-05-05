@@ -35,7 +35,9 @@ architecture arch of comp is
         addr : out std_logic_vector(15 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
-        dbg : out dbg_z80_t);
+        dbg : out dbg_z80_t;
+        step_pulse : in std_logic;
+        run_mode : in run_mode_t);
     end component;
 
     component ti port(
@@ -105,7 +107,7 @@ architecture arch of comp is
 
     component monitor port(
         clk : in std_logic;
-        sw : in std_logic_vector(5 downto 0);
+        sel : in std_logic_vector(3 downto 0);
         dbg : in dbg_cmp_t;
         seg, led : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
@@ -116,13 +118,17 @@ architecture arch of comp is
     constant DIV_10HZ : integer := 10*10**6;
     constant DIV_100HZ : integer := 10**6;
 
-    signal clk_cpu, clk_6mhz, clk_ti, clk_vga, clk_10hz, clk_100hz: std_logic;
+    signal clk_cpu, clk_ti, clk_vga : std_logic;
+    signal clk_6mhz, clk_100hz, clk_10hz : std_logic;
 
     signal cbo : ctrlbus_out;
     signal addr : std_logic_vector(15 downto 0);
     signal cbi : ctrlbus_in;
     signal int : std_logic;
     signal data, data_z80, data_mem, data_ti : std_logic_vector(7 downto 0);
+
+    signal step_pulse : std_logic;
+    signal run_mode : run_mode_t;
 
     signal rst : std_logic;
 
@@ -150,6 +156,7 @@ begin
     end process;
     btns_op <= btns_sync and not btns_q;
 
+    -- generate clocks
     gen_6mhz  : clkgen generic map(DIV_6MHZ)  port map(clk, clk_6mhz);
     gen_ti    : clkgen generic map(DIV_TI)    port map(clk, clk_ti);
     gen_vga   : clkgen generic map(DIV_VGA)   port map(clk, clk_vga);
@@ -159,20 +166,27 @@ begin
     with sw(7 downto 6) select
         clk_cpu <= clk_100hz  when "01",
                    clk_10hz   when "10",
-                   btns_op(0) when "11",
+                   '0'        when "11",
                    clk_6mhz   when others;
 
     -- buses
     rst <= btns(1);
-    cbi.wt <= '0';
     cbi.int <= int;
     cbi.reset <= rst;
     -- OR data bus instead of tristate
     data <= data_z80 or data_mem or data_ti;
 
     -- cpu / asic
-    cpu : z80 port map(clk, clk_cpu, cbi, cbo, addr, data, data_z80, dbg.z80);
-    ti_comp : ti port map(clk_ti, rst, clk_ti,
+    step_pulse <= btns_op(0);
+    with sw(5 downto 4) select
+        run_mode <= step_i when "01",
+                    step_m when "10",
+                    step_t when "11",
+                    normal when others;
+
+    cpu : z80 port map(clk, clk_cpu, cbi, cbo, addr, data, data_z80,
+                       dbg.z80, step_pulse, run_mode);
+    ti_comp : ti port map(clk, rst, clk_ti,
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
                           x_vga, y_vga, data_vga,
@@ -199,5 +213,5 @@ begin
     dbg.cbi <= cbi;
     dbg.cbo <= cbo;
 
-    mon : monitor port map(clk, sw(5 downto 0), dbg, seg, led, an);
+    mon : monitor port map(clk, sw(3 downto 0), dbg, seg, led, an);
 end arch;

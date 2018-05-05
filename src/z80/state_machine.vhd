@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
+use work.cmp_comm.all;
 
 entity state_machine is port(
     clk, ce : in std_logic;
@@ -9,7 +10,10 @@ entity state_machine is port(
     flags : in std_logic_vector(7 downto 0);
     iff : in std_logic;
     ctrl : in id_ctrl_t;
-    state_out : out state_t);
+    state_out : out state_t;
+-- dbg ctrl
+    step_pulse : in std_logic;
+    run_mode : in run_mode_t);
 end state_machine;
 
 architecture arch of state_machine is
@@ -23,11 +27,16 @@ begin
                 state.prefix <= main;
                 state.m <= m1;
                 state.t <= t1;
-            elsif ce = '1' then
+            elsif ce = '1' and not (
+                step_pulse = '0' and (
+                    (run_mode = step_t) or
+                    (run_mode = step_m and ctrl.cycle_end = '1') or
+                    (run_mode = step_i and ctrl.instr_end = '1')))
+            then
                 -- set t state
                 if ctrl.cycle_end = '1' then
                     state.t <= t1;
-                elsif cbi.wt /= '1' then
+                else
                     state.t <= state.t + 1;
                 end if;
 

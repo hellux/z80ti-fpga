@@ -1,6 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use work.z80_comm.all;
+use work.cmp_comm.all;
 use work.ti_comm.all;
 
 entity ti is port(

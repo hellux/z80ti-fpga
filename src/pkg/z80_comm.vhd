@@ -42,18 +42,6 @@ package z80_comm is
         t : integer range 1 to 6;
     end record;
 
-    type ctrlbus_in is record
-        -- cpu control
-        wt, int, reset : std_logic;
-    end record;
-
-    type ctrlbus_out is record
-        -- system control
-        m1, mreq, iorq, rd, wr : std_logic;
-        -- cpu control
-        halt : std_logic;
-    end record;
-
     type dbus_src_t is (none, zero_o,
                         pch_o, pcl_o,
                         ext_o, rf_o, tmp_o, alu_o,
@@ -162,4 +150,6 @@ package z80_comm is
         pc, abus, tmpa : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
     end record;
+
+    type run_mode_t is (normal, step_i, step_m, step_t);
 end z80_comm;
