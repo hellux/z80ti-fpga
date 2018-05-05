@@ -21,16 +21,6 @@ entity lcd_ctrl is port(
 end lcd_ctrl;
 
 architecture arch of lcd_ctrl is
-    component udcntr generic(size : integer); port(
-        clk, rst, ce : in std_logic;
-        cnten : in std_logic;
-        ld : in std_logic;
-        ud : in std_logic; -- 0: down, 1: up
-        wrap : in integer range 0 to size-1;
-        di : in integer range 0 to size-1;
-        do : out integer range 0 to size-1);
-    end component;
-
     component reg generic(init : std_logic_vector; size : integer); port(
         clk, rst, ce : in std_logic;
         rd : in std_logic;
@@ -39,7 +29,8 @@ architecture arch of lcd_ctrl is
     end component;
 
     type lcd_mode_t is record
-        inc : std_logic_vector(1 downto 0); -- 00 x--, 01 x++, 10 y--, 11 y++
+        up: std_logic; -- 0 dec, 1 inc
+        counter : std_logic; -- 0 x, 1 y
         active : std_logic;
         wl : std_logic; -- 0: 6bit, 1: 8bit
     end record;
@@ -50,32 +41,71 @@ architecture arch of lcd_ctrl is
     signal x_ld, y_ld : std_logic; -- load x/y counter
     signal z_ld : std_logic;
 
-    signal x, x_in : integer range 0 to 2**6-1; -- row
-    signal y, y_in, y_wrap : integer range 0 to 2**5-1; -- column page
+    signal x, x_in : unsigned(5 downto 0); -- row
+    signal y, y_in : unsigned(4 downto 0); -- column page
     signal z, z_in : std_logic_vector(5 downto 0);
 
-    constant MODE_INIT : lcd_mode_t := (inc => "11",
-                                        wl => '1',
-                                        active => '0');
+    constant MODE_INIT : lcd_mode_t :=
+        (up => '1', counter => '0', wl => '1', active => '0');
     signal mode : lcd_mode_t := MODE_INIT;
 begin
-    -- x, y, z registers / counters
     ptr_upd <= p11_data_o.rd or p11_data_o.wr;
 
-    x_cnten <= ptr_upd and not mode.inc(1);
+    x_cnten <= ptr_upd and not mode.counter;
     x_ld <= p10_command.wr and bool_sl(p10_command.data(7 downto 6) = "10");
-    x_in <= to_integer(unsigned(p10_command.data(5 downto 0)));
-    x_cntr : udcntr generic map(LCD_ROWS)
-                    port map(clk, rst, ce,
-                             x_cnten, x_ld, mode.inc(0), LCD_ROWS-1, x_in, x);
+    x_in <= unsigned(p10_command.data(5 downto 0));
+    x_cntr : process(clk) begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                x <= (others => '0');
+            elsif ce = '1' then
+                if x_ld = '1' then
+                    x <= x_in;
+                elsif x_cnten = '1' then
+                    if mode.up = '1' then
+                        x <= x + 1;
+                    else
+                        x <= x - 1;
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process;
 
-    y_cnten <= ptr_upd and mode.inc(1);
+    y_cnten <= ptr_upd and mode.counter;
     y_ld <= p10_command.wr and bool_sl(p10_command.data(7 downto 5) = "001");
-    y_in <= to_integer(unsigned(p10_command.data(4 downto 0)));
-    y_wrap <= LCD_COLS/6-1 when mode.wl = '1' else LCD_COLS/8-1;
-    y_cntr : udcntr generic map(LCD_COLS/6)
-                    port map(clk, rst, ce,
-                             y_cnten, y_ld, mode.inc(0), y_wrap, y_in, y);
+    y_in <= unsigned(p10_command.data(4 downto 0));
+    y_cntr : process(clk) begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                y <= (others => '0');
+            elsif ce = '1' then
+                if y_ld = '1' then
+                    y <= y_in;
+                elsif y_cnten = '1' then
+                    if mode.up = '1' then
+                        if (mode.wl = '1' and y >= LCD_COLS/8-1) or
+                           (mode.wl = '0' and y >= LCD_COLS/6-1)
+                        then
+                            y <= (others => '0');
+                        else
+                            y <= y + 1;
+                        end if;
+                    else
+                        if y = 0 then
+                            if mode.wl = '1' then
+                                y <= to_unsigned(LCD_COLS/8-1, 5);
+                            else
+                                y <= to_unsigned(LCD_COLS/6-1, 5);
+                            end if;
+                        else
+                            y <= y - 1;
+                        end if;
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process;
 
     z_ld <= p10_command.wr and bool_sl(p10_command.data(7 downto 6) = "01");
     z_in <= p10_command.data(5 downto 0);
@@ -95,7 +125,8 @@ begin
                     when x"02"|x"03" =>
                         mode.active <= p10_command.data(1);
                     when x"04"|x"05"|x"06"|x"07" =>
-                        mode.inc <= p10_command.data(1 downto 0);
+                        mode.up <= p10_command.data(0);
+                        mode.counter <= p10_command.data(1);
                     when others => null; end case;
                 end if;
             end if;
@@ -104,16 +135,16 @@ begin
 
     -- gmem <-> lcd_ctrl
     lcd_gmem_data <= p11_data_o.data;
-    gmem_x <= std_logic_vector(unsigned(z) + to_unsigned(x, gmem_x'length));
-    gmem_y <= std_logic_vector(to_unsigned(y, gmem_y'length));
+    gmem_x <= std_logic_vector(unsigned(z) + x);
+    gmem_y <= std_logic_vector(y);
     gmem_rd <= '1' when p11_data_o.wr = '1' else '0';
     gmem_wl <= mode.wl;
 
     -- lcd_ctrl -> z80
     p11_data_i <= (data => gmem_lcd_data);
     p10_status.data <=
-        (PI10_AUTO_INC_DEC   => mode.inc(0),
-         PI10_AUTO_Y_X       => mode.inc(1),
+        (PI10_AUTO_INC_DEC   => mode.up,
+         PI10_AUTO_Y_X       => mode.counter,
          PI10_RESET_STATE    => '0',
          PI10_LCD_ENABLED    => mode.active,
          PI10_WL_8_6         => mode.wl,
