@@ -1,3 +1,5 @@
+src/pkg/z80_comm.vhd
+src/pkg/cmp_comm.vhd
 src/dbg/segment.vhd
 src/prm/registers.vhd
 src/ext/mem_if.vhd
