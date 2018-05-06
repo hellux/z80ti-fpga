@@ -400,7 +400,7 @@ architecture arch of op_decoder is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
-            f := mem_rd_instr(state, f); -- mem_rd next instr simultaneously
+            f := mem_rd_instr(state, f); -- fetch next instr simultaneously
             case state.t is
             when t2 =>
                 f.cw.alu_op := op;      -- tell alu operation
@@ -1879,7 +1879,11 @@ architecture arch of op_decoder is
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
             when t2 =>
-                f.cw.rf_addr := reg;
+                if reg = regAF then -- special, does not match pattern
+                    f.cw.rf_addr := regA;
+                else
+                    f.cw.rf_addr := reg;
+                end if;
                 f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t3 =>
@@ -1892,7 +1896,11 @@ architecture arch of op_decoder is
                 f.cw.rf_addr := regSP;
                 f.cw.abus_src := rf_o;
             when t2 =>
-                f.cw.rf_addr := reg+1;
+                if reg = regAF then
+                    f.cw.rf_addr := regF;
+                else
+                    f.cw.rf_addr := reg+1;
+                end if;
                 f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t3 =>
@@ -1922,7 +1930,11 @@ architecture arch of op_decoder is
                 f.cw.addr_op := inc;
                 f.cw.rf_rda := '1';
             when t3 =>
-                f.cw.rf_addr := reg+1;
+                if reg = regAF then
+                    f.cw.rf_addr := regF;
+                else
+                    f.cw.rf_addr := reg+1;
+                end if;
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
@@ -1935,7 +1947,11 @@ architecture arch of op_decoder is
                 f.cw.addr_op := inc;
                 f.cw.rf_rda := '1';
             when t3 =>
-                f.cw.rf_addr := reg;
+                if reg = regAF then
+                    f.cw.rf_addr := regA;
+                else
+                    f.cw.rf_addr := reg;
+                end if;
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
