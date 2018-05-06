@@ -62,8 +62,8 @@ begin
     end process;
 
     process(x_vga, y_vga)
-        variable xv : integer range 0 to LCD_COLS-1;
-        variable yv : integer range 0 to LCD_ROWS-1;
+        variable xv : integer range 0 to 128;
+        variable yv : integer range 0 to 64;
     begin
         xv := to_integer(unsigned(x_vga));
         yv := to_integer(unsigned(y_vga));
