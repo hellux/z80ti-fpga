@@ -129,7 +129,8 @@ architecture arch of comp is
     end component;
 
     -- clocks
-    signal clk_var, clk_1000hz, clk_100khz : std_logic;
+    signal clk_1000hz, clk_100khz : std_logic;
+    signal clk_var, clk_var_ce : std_logic;
     signal clk_z80, clk_ti, clk_vga : std_logic;
 
     -- control bus
@@ -165,10 +166,20 @@ architecture arch of comp is
     signal mem_data : std_logic_vector(7 downto 0);
     signal mem_rd, mem_wr : std_logic;
 begin
+    -- generate clocks
+    gen_1000hz : clkgen generic map(DIV_1000HZ)
+                        port map(clk, clk_1000hz);
+    gen_100khz : clkgen generic map(DIV_100KHZ)
+                        port map(clk, clk_100khz);
+    with sw(7 downto 6) select
+        clk_var <= clk_1000hz when "01",
+                   clk_100khz when "10",
+                   '0'        when "11",
+                   clk        when others;
     -- cpu step
     step_op : process(clk) begin
         if rising_edge(clk) then
-            if clk_z80 = '1' then
+            if clk_var = '1' then
                 sp_s <= step;
                 sp_q <= sp_s;
             end if;
@@ -184,17 +195,7 @@ begin
         (bool_sl(run_mode = step_t) or
         (bool_sl(run_mode = step_m) and dbg.z80.ct.cycle_end) or
         (bool_sl(run_mode = step_i) and dbg.z80.ct.instr_end));
-
-    -- generate clocks
-    gen_1000hz : clkgen generic map(DIV_1000HZ)
-                        port map(clk, clk_1000hz);
-    gen_100khz : clkgen generic map(DIV_100KHZ)
-                        port map(clk, clk_100khz);
-    with sw(7 downto 6) select
-        clk_var <= clk_1000hz and not cpu_stop when "01",
-                   clk_100khz and not cpu_stop when "10",
-                   '0'                         when "11",
-                   clk        and not cpu_stop when others;
+    clk_var_ce <= clk_var and not cpu_stop;
 
     gen_ti : clkgen_meta generic map(DIV_TI)
                          port map(clk, clk_var, clk_ti);
