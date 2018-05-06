@@ -13,7 +13,7 @@ end m45;
 architecture arch of m45 is
     constant PC_START : integer := 16#7c000#;
     constant ROM_SIZE : integer := 256;
-    constant STACK_TOP : integer := 16#83fff#;
+    constant STACK_TOP : integer := 16#7ffff#;
     constant STACK_SIZE : integer := 128;
 
     type mem_jp_t is array(PC_START/2 to PC_START/2+1)
@@ -51,7 +51,7 @@ architecture arch of m45 is
     end function;
 
     signal mem_rom : mem_rom_t := file_to_mem("a.bin");
-    signal mem_jp : mem_jp_t := (x"c300", x"0000");
+    signal mem_jp : mem_jp_t := (x"00c3", x"0000");
     signal mem_stack : mem_stack_t := (others => x"0000");
 
     signal word_out : std_logic_vector(15 downto 0);
@@ -63,14 +63,6 @@ begin
         if rising_edge(clk) then
             if mce_c = '0' then
                 if mwe_c = '0' then
-                    if mem_stack'left <= a and a <= mem_stack'right then
-                        if mlb_c = '0' then
-                            mem_stack(a)(7 downto 0) <= mdata(7 downto 0);
-                        end if;
-                        if mub_c = '0' then
-                            mem_stack(a)(15 downto 0) <= mdata(15 downto 0);
-                        end if;
-                    end if;
                     if mem_rom'left <= a and a <= mem_rom'right then
                         if mlb_c = '0' then
                             mem_rom(a)(7 downto 0) <= mdata(7 downto 0);
@@ -78,17 +70,27 @@ begin
                         if mub_c = '0' then
                             mem_rom(a)(15 downto 0) <= mdata(15 downto 0);
                         end if;
+                    elsif mem_stack'left <= a and a <= mem_stack'right then
+                        if mlb_c = '0' then
+                            mem_stack(a)(7 downto 0) <= mdata(7 downto 0);
+                        end if;
+                        if mub_c = '0' then
+                            mem_stack(a)(15 downto 0) <= mdata(15 downto 0);
+                        end if;
+                    else
+                        report "writing outside mem: " & integer'image(a);
                     end if;
                 end if;
-            end if;
-            if mem_stack'left <= a and a <= mem_stack'right then
-                word_out <= mem_stack(a);
-            elsif mem_rom'left <= a and a <= mem_rom'right then
-                word_out <= mem_rom(a);
-            elsif mem_jp'left <= a and a <= mem_jp'right then
-                word_out <= mem_jp(a);
-            else
-                word_out <= x"abcd";
+                if mem_rom'left <= a and a <= mem_rom'right then
+                    word_out <= mem_rom(a);
+                elsif mem_stack'left <= a and a <= mem_stack'right then
+                    word_out <= mem_stack(a);
+                elsif mem_jp'left <= a and a <= mem_jp'right then
+                    word_out <= mem_jp(a);
+                else
+                    report "reading outside mapped memory: " & integer'image(a);
+                    word_out <= x"abcd";
+                end if;
             end if;
         end if;
     end process;
