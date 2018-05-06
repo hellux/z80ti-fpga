@@ -68,14 +68,14 @@ begin
                             mem_rom(a)(7 downto 0) <= mdata(7 downto 0);
                         end if;
                         if mub_c = '0' then
-                            mem_rom(a)(15 downto 0) <= mdata(15 downto 0);
+                            mem_rom(a)(15 downto 8) <= mdata(15 downto 8);
                         end if;
                     elsif mem_stack'left <= a and a <= mem_stack'right then
                         if mlb_c = '0' then
                             mem_stack(a)(7 downto 0) <= mdata(7 downto 0);
                         end if;
                         if mub_c = '0' then
-                            mem_stack(a)(15 downto 0) <= mdata(15 downto 0);
+                            mem_stack(a)(15 downto 8) <= mdata(15 downto 8);
                         end if;
                     else
                         report "writing outside mem: " & integer'image(a);
