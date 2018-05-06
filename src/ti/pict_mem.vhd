@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 use work.ti_comm.all;
 
 entity pict_mem is port (
-    clk, ce : in std_logic;
+    clk : in std_logic;
     -- lcd -> gmem
     rd, wl : in std_logic;
     page_in : in std_logic_vector(7 downto 0);
@@ -22,7 +22,7 @@ architecture arch of pict_mem is
     component bram generic(dwidth : integer;
                            size : integer;
                            awidth : integer); port(
-        clk, ce : in std_logic;
+        clk : in std_logic;
         wea, web : in std_logic;
         addra, addrb : in std_logic_vector(awidth-1 downto 0);
         data_ina, data_inb : in std_logic_vector(dwidth-1 downto 0);
@@ -42,7 +42,7 @@ architecture arch of pict_mem is
     signal state : gmem_state_t;
 begin
     gmem : bram generic map(1, LCD_COLS*LCD_ROWS, 13)
-        port map(clk, ce,
+        port map(clk, 
                  gmem_we_lcd, '0',
                  gmem_a_lcd, gmem_a_vga,
                  gmem_di_lcd, "0", 
@@ -76,33 +76,31 @@ begin
 
     lcd : process(clk) begin
         if rising_edge(clk) then
-            if ce = '1' then
-                if bit_sel = 7 then
-                    bit_sel <= 0;
-                else
-                    bit_sel <= bit_sel + 1;
-                end if;
-
-                case state is
-                when load =>
-                    if (wl = '1' and bit_sel = 7) or
-                       (wl = '0' and bit_sel = 5)
-                    then
-                        bit_sel <= 0;
-                        state <= idle;
-                    end if;
-                when idle =>
-                    do_lcd(bit_sel) <= gmem_do_lcd(0);
-
-                    if rd = '1' then
-                        state <= load;
-                        page_buf <= page_in;
-                        x_buf <= x_lcd;
-                        y_buf <= y_lcd;
-                        bit_sel <= 0;
-                    end if;
-                end case;
+            if bit_sel = 7 then
+                bit_sel <= 0;
+            else
+                bit_sel <= bit_sel + 1;
             end if;
+
+            case state is
+            when load =>
+                if (wl = '1' and bit_sel = 7) or
+                   (wl = '0' and bit_sel = 5)
+                then
+                    bit_sel <= 0;
+                    state <= idle;
+                end if;
+            when idle =>
+                do_lcd(bit_sel) <= gmem_do_lcd(0);
+
+                if rd = '1' then
+                    state <= load;
+                    page_buf <= page_in;
+                    x_buf <= x_lcd;
+                    y_buf <= y_lcd;
+                    bit_sel <= 0;
+                end if;
+            end case;
         end if;
     end process;
 end arch;

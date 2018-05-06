@@ -28,6 +28,8 @@ architecture arch of monitor is
     signal dots_cond : std_logic_vector(3 downto 0);
     signal dots_prefix : std_logic_vector(3 downto 0);
     signal dots_mode : std_logic_vector(1 downto 0);
+    signal dots_ctrl : std_logic_vector(1 downto 0);
+    signal dots_keys, dots_keys0 : std_logic_vector(3 downto 0);
 
     signal seg_value : std_logic_vector(15 downto 0);
     signal seg_dots : std_logic_vector(3 downto 0);
@@ -57,14 +59,19 @@ begin
                      "01" when wz,
                      "10" when halt,
                      "11" when int;
+    dots_ctrl <= dbg.z80.ct.cycle_end & dbg.z80.ct.instr_end;
+    dots_keys0 <= dbg.keys_down(0)(3 downto 0);
+    dots_keys <= dbg.on_key_down & dbg.keys_down(1)(4 downto 2);
 
     with sel select seg_dots <=
-        dots_mem & "0"          when "1100"|"1101"|"1110",
+        dots_cond               when "0000",
+        dots_cbo                when "0001",
+        dots_mode & dots_ctrl   when "0010",
+        dots_int                when "0011",
         dots_prefix             when "1001",
-        dots_cbo                when "0000",
-        dots_cond               when "0010",
-        dots_mode & "00"        when "0100",
-        dots_int                when "0101",
+        dots_keys0              when "1011",
+        dots_mem & "0"          when "1100"|"1101"|"1110",
+        dots_keys               when "1111",
         "0000"                  when others;
 
     with sel select seg_value <=

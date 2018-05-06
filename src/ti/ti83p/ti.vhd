@@ -82,7 +82,7 @@ architecture arch of ti is
     end component;
 
     component pict_mem port(
-        clk, ce : in std_logic;
+        clk : in std_logic;
         rd, wl : in std_logic;
         page_in : in std_logic_vector(7 downto 0);
         x_lcd : in std_logic_vector(5 downto 0); -- row
@@ -145,7 +145,7 @@ begin
         gmem_rd, gmem_wl,
         ports_out.p10_lcd_status, ports_out.p11_lcd_data,
         ports_in.p10_lcd_status, ports_in.p11_lcd_data);
-    gmem : pict_mem port map(clk, ce,
+    gmem : pict_mem port map(clk,
                              gmem_rd, gmem_wl,
                              lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,
                              data_vga, gmem_lcd_data);

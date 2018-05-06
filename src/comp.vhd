@@ -31,6 +31,17 @@ entity comp is port(
 end comp;
 
 architecture arch of comp is
+    component clkgen generic(div : natural); port(
+        clk : in std_logic;
+        clk_out : out std_logic);
+    end component;
+
+    component clkgen_meta generic(div : natural); port(
+        clk : in std_logic;
+        clk_in : in std_logic;
+        clk_out : out std_logic);
+    end component;
+
     component z80 port(
         clk, ce : in std_logic;
         cbi : in ctrlbus_in;
@@ -63,7 +74,6 @@ architecture arch of comp is
         addr_phy : in std_logic_vector(19 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
-    -- external
         maddr : out std_logic_vector(25 downto 0);
         mdata : inout std_logic_vector(15 downto 0);
         mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
@@ -101,11 +111,6 @@ architecture arch of comp is
         data_out : out std_logic_vector(7 downto 0));
     end component;
 
-    component clkgen generic(div : natural); port(
-        clk : in std_logic;
-        clk_out : out std_logic);
-    end component;
-
     component monitor port(
         clk : in std_logic;
         sel : in std_logic_vector(3 downto 0);
@@ -124,8 +129,8 @@ architecture arch of comp is
     end component;
 
     -- clocks
-    signal clk_cpu, clk_ti, clk_vga : std_logic;
-    signal clk_6mhz, clk_1000hz, clk_10hz : std_logic;
+    signal clk_var, clk_1000hz, clk_100khz : std_logic;
+    signal clk_z80, clk_ti, clk_vga : std_logic;
 
     -- control bus
     signal cbo : ctrlbus_out;
@@ -160,23 +165,10 @@ architecture arch of comp is
     signal mem_data : std_logic_vector(7 downto 0);
     signal mem_rd, mem_wr : std_logic;
 begin
-    -- generate clocks
-    gen_6mhz   : clkgen generic map(DIV_6MHZ)   port map(clk, clk_6mhz);
-    gen_ti     : clkgen generic map(DIV_TI)     port map(clk, clk_ti);
-    gen_vga    : clkgen generic map(DIV_VGA)    port map(clk, clk_vga);
-    gen_1000hz : clkgen generic map(DIV_1000HZ) port map(clk, clk_1000hz);
-    gen_10hz   : clkgen generic map(DIV_10HZ)   port map(clk, clk_10hz);
-
-    with sw(7 downto 6) select
-        clk_cpu <= clk_1000hz when "01",
-                   clk_10hz   when "10",
-                   '0'        when "11",
-                   clk_6mhz   when others;
-
     -- cpu step
     step_op : process(clk) begin
         if rising_edge(clk) then
-            if clk_cpu = '1' then
+            if clk_z80 = '1' then
                 sp_s <= step;
                 sp_q <= sp_s;
             end if;
@@ -192,7 +184,23 @@ begin
         (bool_sl(run_mode = step_t) or
         (bool_sl(run_mode = step_m) and dbg.z80.ct.cycle_end) or
         (bool_sl(run_mode = step_i) and dbg.z80.ct.instr_end));
-    cpu_ce <= clk_cpu and not cpu_stop;
+
+    -- generate clocks
+    gen_1000hz : clkgen generic map(DIV_1000HZ)
+                        port map(clk, clk_1000hz);
+    gen_100khz : clkgen generic map(DIV_100KHZ)
+                        port map(clk, clk_100khz);
+    with sw(7 downto 6) select
+        clk_var <= clk_1000hz and not cpu_stop when "01",
+                   clk_100khz and not cpu_stop when "10",
+                   '0'                         when "11",
+                   clk        and not cpu_stop when others;
+
+    gen_ti : clkgen_meta generic map(DIV_TI)
+                         port map(clk, clk_var, clk_ti);
+    gen_z80 : clkgen_meta generic map(DIV_Z80)
+                          port map(clk, clk_var, clk_z80);
+    gen_vga : clkgen generic map(DIV_VGA) port map(clk, clk_vga);
 
     -- buses
     cbi.int <= int;
@@ -200,7 +208,7 @@ begin
     -- OR data bus instead of tristate
     data <= data_z80 or data_mem or data_ti;
 
-    cpu : z80 port map(clk, cpu_ce, cbi, cbo, addr, data, data_z80,
+    cpu : z80 port map(clk, clk_z80, cbi, cbo, addr, data, data_z80,
                        dbg.z80);
     ti_comp : ti port map(clk, rst, clk_ti,
                           int, cbo, addr, data, data_ti,
