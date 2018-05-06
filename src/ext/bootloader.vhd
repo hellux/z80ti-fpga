@@ -24,7 +24,7 @@ architecture arch of bootloader is
         do : out std_logic_vector(size-1 downto 0));
     end component;
 
-    constant ROM_SIZE : integer := 5;
+    constant ROM_SIZE : integer := 2**19;
     constant UART_RATE : integer := 115200;
     constant UART_DIV : integer := FREQ/UART_RATE;
 
@@ -104,7 +104,7 @@ begin
             byte_done <= '0';
             if rst = '1' then
                 uart_state <= idle;
-            elsif next_bit = '1' and load_state = load then
+            elsif next_bit = '1' then
                 case uart_state is
                 when idle =>
                     if rx1 = '0' then
