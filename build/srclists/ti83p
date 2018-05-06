@@ -24,6 +24,7 @@ tests/ext/m45w8mw16.vhd
 src/ext/kbd_enc.vhd
 src/ext/vga_motor.vhd
 src/ext/mem_if.vhd
+src/ext/bootloader.vhd
 src/dbg/monitor.vhd
 src/dbg/segment.vhd
 src/comp.vhd

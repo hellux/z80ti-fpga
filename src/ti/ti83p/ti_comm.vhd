@@ -1,10 +1,9 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.cmp_comm.all;
 
 package ti_comm is
-    constant DIV_TI : integer := 2; -- divide 100 MHz
-
     constant LCD_COLS : integer := 120;
     constant LCD_ROWS : integer := 64;
 
@@ -72,6 +71,6 @@ end ti_comm;
 package body ti_comm is
     -- CLK FREQ / TI_DIV / freq = divider for to get frequency freq
     impure function fdiv(freq : natural) return std_logic_vector is begin
-        return std_logic_vector(to_unsigned(100*10**6/DIV_TI/freq, 20));
+        return std_logic_vector(to_unsigned(FREQ/DIV_TI/freq, 20));
     end fdiv;
 end ti_comm;

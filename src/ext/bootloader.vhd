@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.cmp_comm.all;
 
 entity bootloader is port(
     clk, rst : in std_logic;
@@ -25,7 +26,7 @@ architecture arch of bootloader is
 
     constant ROM_SIZE : integer := 2**19;
     constant UART_RATE : integer := 115200;
-    constant UART_DIV : integer := 100*10**6/UART_RATE;
+    constant UART_DIV : integer := FREQ/UART_RATE;
 
     type bl_uart_state_t is (idle, read, succ);
     type bl_load_state_t is (idle, init, load);

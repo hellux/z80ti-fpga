@@ -7,23 +7,19 @@ end comp_tb;
 architecture arch of comp_tb is
     component comp port(
         clk : in std_logic;
-    -- buttons
-        btns : in std_logic_vector(4 downto 0);
+        step, rst, boot_ld, boot_done : std_logic;
         sw : in std_logic_vector(7 downto 0);
-    -- keyboard
         ps2_kbd_clk : in std_logic;
         ps2_kbd_data : in std_logic;
-    -- vga monitor
         vga_red : out std_logic_vector(2 downto 0);
         vga_green : out std_logic_vector(2 downto 0);
         vga_blue : out std_logic_vector(2 downto 1);
         hsync, vsync : out std_logic;
-    -- memory
         maddr : out std_logic_vector(25 downto 0);
         mdata : inout std_logic_vector(15 downto 0);
         mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
         mlb_c, mub_c : out std_logic;
-    -- 7 segment, led
+        rx : in std_logic;
         seg, led : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
@@ -36,9 +32,9 @@ architecture arch of comp_tb is
         mlb_c, mub_c : in std_logic);
     end component;
 
-    signal clk, rst : std_logic;
+    signal clk : std_logic;
 
-    signal btns : std_logic_vector(4 downto 0) := (others => '0');
+    signal step, rst, boot_ld, boot_done : std_logic;
 
     signal ps2_kbd_data, ps2_kbd_clk : std_logic;
 
@@ -52,15 +48,18 @@ architecture arch of comp_tb is
     signal mclk, madv_c, mcre, mce_c, moe_c, mwe_c : std_logic;
     signal mlb_c, mub_c : std_logic;
 
+    signal rx : std_logic;
+
     signal seg, led : std_logic_vector(7 downto 0);
     signal an : std_logic_vector(3 downto 0);
     signal sw : std_logic_vector(7 downto 0) := x"00";
 begin
-    c : comp port map(clk, btns, sw,
+    c : comp port map(clk, step, rst, boot_ld, boot_done, sw,
                       ps2_kbd_clk, ps2_kbd_data,
                       vga_red, vga_green, vga_blue, hsync, vsync,
                       maddr, mdata, mclk, madv_c, mcre, mce_c,
                       moe_c, mwe_c, mlb_c, mub_c,
+                      rx,
                       seg, led, an);
     m : m45 port map(clk,
                      maddr, mdata, mclk, madv_c, mcre, mce_c,
@@ -73,20 +72,20 @@ begin
     end process;
 
     process begin
-        sw(5 downto 4) <= "01"; -- step instr
+        sw(5 downto 4) <= "00";
 
         -- reset
-        btns(1) <= '0';
+        rst <= '0';
         wait for 10 ns;
-        btns(1) <= '1';
+        rst <= '1';
         wait for 25 ns;
-        btns(1) <= '0';
+        rst <= '0';
 
         -- step
         wait for 10 us;
-        btns(0) <= '1'; 
+        step <= '1'; 
         wait for 2500 ns;
-        btns(0) <= '0';
+        step <= '0';
 
         -- wait
         wait for 1000 ms;

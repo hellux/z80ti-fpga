@@ -123,12 +123,6 @@ architecture arch of comp is
         rx : in std_logic);
     end component;
 
-    -- clk divisors
-    constant DIV_6MHZ : integer := 17;
-    constant DIV_VGA : integer := 4;
-    constant DIV_10HZ : integer := 10*10**6;
-    constant DIV_100HZ : integer := 10**6;
-    
     -- clocks
     signal clk_cpu, clk_ti, clk_vga : std_logic;
     signal clk_6mhz, clk_100hz, clk_10hz : std_logic;
@@ -166,7 +160,6 @@ architecture arch of comp is
     signal mem_data : std_logic_vector(7 downto 0);
     signal mem_rd, mem_wr : std_logic;
 begin
-
     -- generate clocks
     gen_6mhz  : clkgen generic map(DIV_6MHZ)  port map(clk, clk_6mhz);
     gen_ti    : clkgen generic map(DIV_TI)    port map(clk, clk_ti);
