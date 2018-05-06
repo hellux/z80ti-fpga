@@ -7,8 +7,8 @@ package cmp_comm is
     constant DIV_TI : integer := FREQ/(50*10**6);
     constant DIV_6MHZ : integer := 17; -- FREQ/6MHz = 16.7
     constant DIV_VGA : integer := FREQ/(25*10**6);
+    constant DIV_1000HZ : integer := FREQ/1000;
     constant DIV_10HZ : integer := FREQ/10;
-    constant DIV_100HZ : integer := FREQ/100;
 
     type ctrlbus_in is record
         -- cpu control

@@ -27,7 +27,7 @@ architecture arch of ti is
     component asic port(
         clk, rst, ce : in std_logic;
         in_op, out_op : in std_logic;
-        addr : in std_logic_vector(7 downto 0);
+        addr : in std_logic_vector(4 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
         ports_in : in ports_in_t;
@@ -117,7 +117,7 @@ begin
 
     asic_c : asic port map(clk, rst, ce,
                            in_op, out_op,
-                           addr_log(7 downto 0), data_in, data_out,
+                           addr_log(4 downto 0), data_in, data_out,
                            ports_in, ports_out);
 
     stat : status port map(ports_out.p05_protect, ports_in.p02_status);

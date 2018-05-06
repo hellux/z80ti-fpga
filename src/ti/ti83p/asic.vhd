@@ -8,7 +8,7 @@ entity asic is port(
 -- ctrl
     in_op, out_op : in std_logic;
 -- buses
-    addr : in std_logic_vector(7 downto 0);
+    addr : in std_logic_vector(4 downto 0);
     data_in : in std_logic_vector(7 downto 0);   -- from dbus
     data_out : out std_logic_vector(7 downto 0); -- to dbus
 -- asic <-> controllers
@@ -106,7 +106,7 @@ begin
         end if;
     end process;
 
-    a <= to_integer(unsigned(addr(4 downto 0)));
+    a <= to_integer(unsigned(addr));
     -- port(a) -> data bus
     data_out <= parr_in(a).data when in_op = '1' else x"00";
     -- rd/wr

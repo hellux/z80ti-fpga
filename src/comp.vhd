@@ -125,7 +125,7 @@ architecture arch of comp is
 
     -- clocks
     signal clk_cpu, clk_ti, clk_vga : std_logic;
-    signal clk_6mhz, clk_100hz, clk_10hz : std_logic;
+    signal clk_6mhz, clk_1000hz, clk_10hz : std_logic;
 
     -- control bus
     signal cbo : ctrlbus_out;
@@ -161,14 +161,14 @@ architecture arch of comp is
     signal mem_rd, mem_wr : std_logic;
 begin
     -- generate clocks
-    gen_6mhz  : clkgen generic map(DIV_6MHZ)  port map(clk, clk_6mhz);
-    gen_ti    : clkgen generic map(DIV_TI)    port map(clk, clk_ti);
-    gen_vga   : clkgen generic map(DIV_VGA)   port map(clk, clk_vga);
-    gen_100hz : clkgen generic map(DIV_100HZ) port map(clk, clk_100hz);
-    gen_10hz  : clkgen generic map(DIV_10HZ)  port map(clk, clk_10hz);
+    gen_6mhz   : clkgen generic map(DIV_6MHZ)   port map(clk, clk_6mhz);
+    gen_ti     : clkgen generic map(DIV_TI)     port map(clk, clk_ti);
+    gen_vga    : clkgen generic map(DIV_VGA)    port map(clk, clk_vga);
+    gen_1000hz : clkgen generic map(DIV_1000HZ) port map(clk, clk_1000hz);
+    gen_10hz   : clkgen generic map(DIV_10HZ)   port map(clk, clk_10hz);
 
     with sw(7 downto 6) select
-        clk_cpu <= clk_100hz  when "01",
+        clk_cpu <= clk_1000hz when "01",
                    clk_10hz   when "10",
                    '0'        when "11",
                    clk_6mhz   when others;
