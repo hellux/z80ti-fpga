@@ -88,7 +88,7 @@ fi
 
 if [ "$clean" = true ]; then
     rm -f $entity 
+    ghdl --clean --workdir=build
 fi
 
-rm -f *.o *.cf
-ghdl --clean --workdir=build
+rm -f build/*.o build/*.cf
