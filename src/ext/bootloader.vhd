@@ -24,7 +24,7 @@ architecture arch of bootloader is
         do : out std_logic_vector(size-1 downto 0));
     end component;
 
-    constant ROM_SIZE : integer := 2**19;
+    constant ROM_SIZE : integer := 5;
     constant UART_RATE : integer := 115200;
     constant UART_DIV : integer := FREQ/UART_RATE;
 
@@ -41,8 +41,7 @@ architecture arch of bootloader is
     signal next_bit : std_logic;
     signal byte_done : std_logic;
 
-    signal sreg : std_logic_vector(9 downto 0);
-    signal sreg_ce : std_logic;
+    signal sreg : std_logic_vector(9 downto 0) := (others => '0');
 
     signal data_init, data_load : std_logic_vector(7 downto 0);
     signal addr : unsigned(19 downto 0);
@@ -68,18 +67,14 @@ begin
                 end if;
                 if addr >= x"7c003" and ld = '0' then
                     load_state <= load;
-                    addr <= (others => '0');
+                    addr <= (others => '1');
                 end if;
             when load =>
-                if done = '1' then
+                if addr = ROM_SIZE or done = '1' then
                     load_state <= idle;
                 end if;
                 if byte_done = '1' then
-                    if addr = ROM_SIZE then
-                        load_state <= idle;
-                    else
-                        addr <= addr + 1;
-                    end if;
+                    addr <= addr + 1;
                 end if;
             end case;
         end if;
@@ -139,12 +134,11 @@ begin
         end if;
     end process;
 
-    sreg_ce <= '1' when uart_state = read and next_bit = '1' else '0';
     sreg_proc : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
                 sreg <= (others => '0');
-            elsif sreg_ce = '1' then
+            elsif next_bit = '1' then
                 sreg(9) <= rx2;
                 sreg(8 downto 0) <= sreg(9 downto 1);
             end if;

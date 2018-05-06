@@ -36,9 +36,17 @@ architecture arch of boot_ftb is
     signal seg : std_logic_vector(7 downto 0);
     signal an : std_logic_vector(3 downto 0);
     signal rx : std_logic;
-begin
-    rx <= '1';
 
+    type bytes_arr_t is array(0 to 5) of std_logic_vector(7 downto 0);
+    signal bytes : bytes_arr_t := (x"ff",
+                                   x"00",
+                                   x"c2",
+                                   x"c3",
+                                   x"c4",
+                                   x"c5");
+
+    constant UART_DIV : time := 8680 ns;
+begin
     fb : boot_fb port map(clk,
                           maddr, mdata, mclk, madv_c, mcre, mce_c,
                           moe_c, mwe_c, mlb_c, mub_c,
@@ -55,10 +63,24 @@ begin
     end process;
 
     process begin
-        wait for 200 ns;
+        rx <= '1';
+        wait for 284 ns;
         btns(3) <= '1';
-        wait for 2000 ns;
+        wait for 2023 ns;
         btns(3) <= '0';
-        wait for 2000 ms;
+        wait for 3040 ns;
+
+        wait for 142304 ns;
+        for byte in bytes'range loop
+            rx <= '0';
+            wait for UART_DIV;
+            for b in 0 to 7 loop
+                rx <= bytes(byte)(b);
+                wait for UART_DIV;
+            end loop;
+            rx <= '1';
+            wait for UART_DIV;
+        end loop;
+        wait for 10000 ms;
     end process;
 end arch;
