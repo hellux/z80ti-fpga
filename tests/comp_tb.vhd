@@ -72,6 +72,7 @@ begin
     end process;
 
     process begin
+        sw(7 downto 6) <= "10";
         sw(5 downto 4) <= "00";
 
         -- reset

@@ -82,27 +82,29 @@ begin
     -- one pulse delay rd/wr signals
     process(clk) begin
         if rising_edge(clk) then
-            case ctrl_state is
-            when idle =>
-                ports_rd <= '0';
-                ports_wr <= '0';
+            if ce = '1' then
+                case ctrl_state is
+                when idle =>
+                    ports_rd <= '0';
+                    ports_wr <= '0';
 
-                if in_op = '1' then
-                    ctrl_state <= hold_in;
-                elsif out_op = '1' then
-                    ctrl_state <= hold_out;
-                end if;
-            when hold_in =>
-                if in_op = '0' then
-                    ports_rd <= '1';
-                    ctrl_state <= idle;
-                end if;
-            when hold_out =>
-                if out_op = '0' then
-                    ports_wr <= '1';
-                    ctrl_state <= idle;
-                end if;
-            end case;
+                    if in_op = '1' then
+                        ctrl_state <= hold_in;
+                    elsif out_op = '1' then
+                        ctrl_state <= hold_out;
+                    end if;
+                when hold_in =>
+                    if in_op = '0' then
+                        ports_rd <= '1';
+                        ctrl_state <= idle;
+                    end if;
+                when hold_out =>
+                    if out_op = '0' then
+                        ports_wr <= '1';
+                        ctrl_state <= idle;
+                    end if;
+                end case;
+            end if;
         end if;
     end process;
 
