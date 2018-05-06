@@ -72,11 +72,12 @@ begin
     end process;
 
     process begin
-        sw(7 downto 6) <= "10";
-        sw(5 downto 4) <= "00";
+        sw(7 downto 6) <= "00";
+        sw(5 downto 4) <= "01";
+        step <= '0';
+        rst <= '0';
 
         -- reset
-        rst <= '0';
         wait for 10 ns;
         rst <= '1';
         wait for 25 ns;

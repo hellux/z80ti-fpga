@@ -130,8 +130,12 @@ architecture arch of comp is
 
     -- clocks
     signal clk_1000hz, clk_100khz : std_logic;
-    signal clk_var, clk_var_ce : std_logic;
+    signal clk_ce : std_logic;
+    signal clk_var : std_logic;
     signal clk_z80, clk_ti, clk_vga : std_logic;
+    signal clk_z80_ce, clk_ti_ce : std_logic;
+    signal clk_z80_main, clk_z80_var: std_logic;
+    signal clk_ti_main, clk_ti_var : std_logic;
 
     -- control bus
     signal cbo : ctrlbus_out;
@@ -166,42 +170,51 @@ architecture arch of comp is
     signal mem_data : std_logic_vector(7 downto 0);
     signal mem_rd, mem_wr : std_logic;
 begin
+    with sw(7 downto 6) select
+        clk_var <= clk_1000hz when "01",
+                   clk_100khz when "10",
+                   '0'        when others;
+    with sw(5 downto 4) select
+        run_mode <= step_i when "01",
+                    step_m when "10",
+                    step_t when "11",
+                    normal when others;
+
     -- generate clocks
     gen_1000hz : clkgen generic map(DIV_1000HZ)
                         port map(clk, clk_1000hz);
     gen_100khz : clkgen generic map(DIV_100KHZ)
                         port map(clk, clk_100khz);
-    with sw(7 downto 6) select
-        clk_var <= clk_1000hz when "01",
-                   clk_100khz when "10",
-                   '0'        when "11",
-                   clk        when others;
     -- cpu step
     step_op : process(clk) begin
         if rising_edge(clk) then
-            if clk_var = '1' then
+            if clk_z80 = '1' then
                 sp_s <= step;
                 sp_q <= sp_s;
             end if;
         end if;
     end process;
     sp_op <= sp_s and not sp_q;
-    with sw(5 downto 4) select
-        run_mode <= step_i when "01",
-                    step_m when "10",
-                    step_t when "11",
-                    normal when others;
     cpu_stop <= not sp_op and 
         (bool_sl(run_mode = step_t) or
         (bool_sl(run_mode = step_m) and dbg.z80.ct.cycle_end) or
         (bool_sl(run_mode = step_i) and dbg.z80.ct.instr_end));
-    clk_var_ce <= clk_var and not cpu_stop;
 
-    gen_ti : clkgen_meta generic map(DIV_TI)
-                         port map(clk, clk_var, clk_ti);
-    gen_z80 : clkgen_meta generic map(DIV_Z80)
-                          port map(clk, clk_var, clk_z80);
+    gen_z80_main : clkgen generic map(DIV_Z80)
+                               port map(clk, clk_z80_main);
+    gen_z80_var  : clkgen_meta generic map(DIV_Z80)
+                              port map(clk, clk_var, clk_z80_var);
+    gen_ti_main : clkgen generic map(DIV_TI)
+                         port map(clk, clk_ti_main);
+    gen_ti_var : clkgen_meta generic map(DIV_TI)
+                             port map(clk, clk_var, clk_ti_var);
     gen_vga : clkgen generic map(DIV_VGA) port map(clk, clk_vga);
+
+    clk_z80 <= clk_z80_main when sw(7 downto 6) = "00" else clk_z80_var;
+    clk_ti <= clk_ti_main when sw(7 downto 6) = "00" else clk_ti_var;
+
+    clk_z80_ce <= clk_z80 and not cpu_stop;
+    clk_ti_ce <= clk_ti and not cpu_stop;
 
     -- buses
     cbi.int <= int;
@@ -209,9 +222,9 @@ begin
     -- OR data bus instead of tristate
     data <= data_z80 or data_mem or data_ti;
 
-    cpu : z80 port map(clk, clk_z80, cbi, cbo, addr, data, data_z80,
+    cpu : z80 port map(clk, clk_z80_ce, cbi, cbo, addr, data, data_z80,
                        dbg.z80);
-    ti_comp : ti port map(clk, rst, clk_ti,
+    ti_comp : ti port map(clk, rst, clk_ti_ce,
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
                           x_vga, y_vga, data_vga,

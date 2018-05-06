@@ -8,9 +8,9 @@ Options:
     -M ENTITY               analyze, make executable for ENTITY
     -S ENTITY               analyze, make, simulate ENTITY and generate wave
     -C                      clean up build files and executable
+    -f [SRC FILES]          paths to src files
     -u SRC_LIST             unit, name of file with list of src files in
-                            build/srclists, all .vhd files in below tree will
-                            be used if -f not specified
+                            build/srclists directory
     -z Z80 ASM FILE         compile and run z80 asm file
     -a                      abort simulation on assertion error
     -t TIME                 simulation time
@@ -40,7 +40,7 @@ args="--ieee-asserts=disable"
 wave="wave.ghw"
 args_ghdl="--workdir=build --ieee=synopsys"
 
-while getopts hAM:S:Cf:z:u:at:w: OPT; do
+while getopts hAM:S:Cf:u:z:at:w: OPT; do
     case $OPT in
         h) quit=true ;;
         A) analyze=true ;;
@@ -48,13 +48,13 @@ while getopts hAM:S:Cf:z:u:at:w: OPT; do
         S) analyze=true; make=true; sim=true entity=$OPTARG ;;
         C) clean=true ;;
         f) src=$OPTARG ;;
-        z) asm=true; asm_src=$OPTARG ;;
         u) 
             src=$(cat build/srclists/$OPTARG);
             if [ -z "$src" ]; then
                 echo "unit '$OPTARG' not found in build/srclists/"
                 exit 1
             fi ;;
+        z) asm=true; asm_src=$OPTARG ;;
         a) args="$args --assert-level=error" ;;
         t) args="$args --stop-time=$OPTARG" ;;
         w) wave=$OPTARG ;;

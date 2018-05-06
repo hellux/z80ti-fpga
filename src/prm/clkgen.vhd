@@ -9,7 +9,6 @@ end clkgen;
 architecture arch of clkgen is
     signal clk_div : natural range 0 to div-1;
 begin
-
     process(clk) begin
         if rising_edge(clk) then
             if clk_div = div-1 then
