@@ -75,6 +75,8 @@ begin
             rx <= '0';
             wait for UART_DIV;
             for b in 0 to 7 loop
+                rx <= 'Z';
+                wait for 10 ns;
                 rx <= bytes(byte)(b);
                 wait for UART_DIV;
             end loop;

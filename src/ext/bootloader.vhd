@@ -28,8 +28,8 @@ architecture arch of bootloader is
     constant UART_RATE : integer := 115200;
     constant UART_DIV : integer := FREQ/UART_RATE;
 
-    type bl_uart_state_t is (idle, read, succ);
     type bl_load_state_t is (idle, init, load);
+    type bl_uart_state_t is (idle, potential, read, succ);
 
     signal rx1, rx2 : std_logic;
 
@@ -87,52 +87,61 @@ begin
                      x"00" when x"7c002",
                      x"00" when others;
 
-    bit_cntr : process(clk) begin
+    uart_ctrl : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' or bit_count = UART_DIV then
                 bit_count <= (others => '0');
             else
                 bit_count <= bit_count + 1;
             end if;
-        end if;
-    end process;
 
-    next_bit <= '1' when bit_count = 0 else '0';
-
-    uart_ctrl : process(clk) begin
-        if rising_edge(clk) then
             byte_done <= '0';
             if rst = '1' then
                 uart_state <= idle;
-            elsif next_bit = '1' then
+            else
                 case uart_state is
                 when idle =>
                     if rx1 = '0' then
-                        uart_state <= read;
+                        uart_state <= potential;
                         bit_index <= (others => '0');
+                        bit_count <= (others => '0');
                     end if;
-                when read =>
-                    if bit_index = 8 then
-                        if rx1 = '1' then
-                            uart_state <= succ;
-                            byte_done <= '1';
-                        else 
+                when potential =>
+                    if bit_count >= UART_DIV/2 then
+                        if rx1 = '0' then
+                            uart_state <= read;
+                        else
                             uart_state <= idle;
                         end if;
-                    else
-                        bit_index <= bit_index + 1;
+                    end if;
+                when read =>
+                    if next_bit = '1' then
+                        if bit_index = 8 then
+                            if rx1 = '1' then
+                                uart_state <= succ;
+                                byte_done <= '1';
+                            else 
+                                uart_state <= idle;
+                            end if;
+                        else
+                            bit_index <= bit_index + 1;
+                        end if;
                     end if;
                 when succ => 
-                    if rx1 = '1' then
-                        uart_state <= idle;
-                    else 
-                        uart_state <= read;
-                        bit_index <= (others => '0');
+                    if next_bit = '1' then
+                        if rx1 = '1' then
+                            uart_state <= idle;
+                        else 
+                            uart_state <= read;
+                            bit_index <= (others => '0');
+                        end if;
                     end if;
                 end case;
             end if;
         end if;
     end process;
+
+    next_bit <= '1' when bit_count = UART_DIV/2 else '0';
 
     sreg_proc : process(clk) begin
         if rising_edge(clk) then
