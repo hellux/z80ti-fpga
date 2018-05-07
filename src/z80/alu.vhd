@@ -133,7 +133,7 @@ begin
     with op select flags_out(S_f) <= 
         flags_in(S_f) when scf_i|ccf_i|cpl_i|res_i|set_i|
                            ldi_i|ldir_i|ldd_i|lddr_i|
-                           add16_i1|add16_i2,
+                           add16_i1|add16_i2|unknown,
         result_buf(7) when cpi_i|cpir_i|cpd_i|cpdr_i,
         result_buf(7) when others;
 
@@ -141,7 +141,7 @@ begin
         not result_buf(bit_select)        when bit_i,
         flags_in(Z_f)                     when scf_i|ccf_i|cpl_i|res_i|set_i|
                                                ldi_i|ldir_i|ldd_i|lddr_i|
-                                               add16_i1|add16_i2,
+                                               add16_i1|add16_i2|unknown,
         bool_sl(unsigned(result_buf) = 0) when cpi_i|cpir_i|cpd_i|cpdr_i,
         bool_sl(unsigned(result_buf) = 0) when others;
 
@@ -158,9 +158,9 @@ begin
                              rrc_i|rr_i|sra_i|srl_i|
                              in_i|rld_i2|rrd_i2|ld_i|
                              ldi_i|ldir_i|ldd_i|lddr_i,
-        '1'             when and_i|bit_i|cpl_i,
+        '1'             when and_i|bit_i|cpl_i|unknown,
         flags_in(H_f)   when res_i|set_i,
-        '-'             when others;
+        '1'             when others;
 
     flags_out(f3_f) <= result_buf(3);
 
@@ -171,14 +171,15 @@ begin
                              rlc_i|rl_i|sla_i|sll_i|
                              rrc_i|rr_i|sra_i|srl_i|
                              daa_i|in_i|rld_i2|rrd_i2,
-        flags_in(PV_f)  when add16_i1|add16_i2,
+        flags_in(PV_f)  when add16_i1|add16_i2|unknown,
         flags_in(PV_f)  when others;
 
     with op select flags_out(N_f) <=
         '1'             when sub_i|sbc_i|cp_i|neg_i|cpl_i|
                              cpi_i|cpir_i|cpd_i|cpdr_i,
         flags_in(N_f)   when daa_i|res_i|set_i,
-        '0'             when ldi_i|ldir_i|ldd_i|lddr_i|add16_i1|add16_i2,
+        '0'             when ldi_i|ldir_i|ldd_i|lddr_i|add16_i1|add16_i2|
+                             unknown,
         '0'             when others;
 
     with op select flags_out(C_f) <=
@@ -190,6 +191,6 @@ begin
         '1'                 when scf_i,
         not flags_in(C_f)   when ccf_i,
         flags_in(C_f)       when ldi_i|ldir_i|ldd_i|
-                                 cpi_i|cpir_i|cpd_i|cpdr_i,
+                                 cpi_i|cpir_i|cpd_i|cpdr_i|unknown,
         flags_in(C_f)       when others;
 end arch;
