@@ -73,7 +73,7 @@ begin
 
     process begin
         sw(7 downto 6) <= "00";
-        sw(5 downto 4) <= "01";
+        sw(5 downto 4) <= "00";
         step <= '0';
         rst <= '0';
 
