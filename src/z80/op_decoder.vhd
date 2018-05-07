@@ -861,6 +861,7 @@ architecture arch of op_decoder is
                     -- dec BC
                     f.cw.addr_op := dec;
                     f.cw.pv_src := anz_f; --addr not zero flag
+                    f.cw.f_rd := '1';
                 when ini_i|outi_i|ind_i|outd_i|inir_i|otir_i|indr_i|otdr_i =>
                     --ld b => tmp
                     f.cw.addr_op := none;
