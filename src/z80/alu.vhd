@@ -73,7 +73,7 @@ begin
         signed('0' & (not mask and op2))    when res_i,
         signed('0' & (mask or op2))         when set_i,
          op2_ext                            when bit_i,
-        -op2_ext                            when sub_i|cp_i|neg_i,
+        -op2_ext                            when sub_i|cp_i|neg_i|cpi_i,
         -op2_ext - with_carry               when sbc_i,
          op2_ext + with_carry               when adc_i|add16_i2,
         '0' & op2_ext(6 downto 0) & edge    when rlc_i|rl_i|sla_i|sll_i,
@@ -99,11 +99,12 @@ begin
                                                       sub_i|sbc_i|
                                                       inc_i|dec_i|
                                                       neg_i|cp_i|daa_i|
-                                                      add16_i1|add16_i2,
+                                                      add16_i1|add16_i2|
+                                                      cpi_i,
         std_logic_vector(op2sn(7 downto 0))      when others;
     with op select result <=
         not(op2)   when cpl_i,
-        op1        when cp_i,
+        op1        when cp_i|cpi_i,
         result_buf when others;
 
     -- flags
@@ -120,7 +121,7 @@ begin
         (op1_ext(7) xnor op2_ext(7)) and (op1_ext(7) xor result_sum(7))
             when add_i|adc_i|inc_i|dec_i,
         (op1_ext(7) xor op2_ext(7)) and (op1_ext(7) xor result_sum(7))
-            when sub_i|sbc_i|cp_i,
+            when sub_i|sbc_i|cp_i|cpi_i|cpd_i,
         '-' when others;
     overflow_neg <= '1' when op2 = x"80" else '0';
     half_add <= result_buf(4) xor op1_ext(4) xor op2sn(4);
