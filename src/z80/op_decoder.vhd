@@ -546,10 +546,10 @@ architecture arch of op_decoder is
     end alu_af;
     
     function alu_rp_rp(state : state_t; f_in : id_frame_t;
-                     op1 : instr_t;
-                     op2 : instr_t;
-                     reg1 : integer range 0 to 15;
-                     reg2 : integer range 0 to 15)
+                       op1 : instr_t;
+                       op2 : instr_t;
+                       reg1 : integer range 0 to 15;
+                       reg2 : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -594,7 +594,6 @@ architecture arch of op_decoder is
                 f.cw.f_rd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
-                
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -2471,8 +2470,8 @@ begin
                 when 1 =>
                     case s.q is
                     when 0 => f := ld_rp_nn(state, f, rp(s.p));
-                    when 1 => f :=
-                        alu_rp_rp(state, f, add_i, adc_i, regHL, rp(s.p));
+                    when 1 => f := alu_rp_rp(state, f, add16_i1, add16_i2,
+                                             regHL, rp(s.p));
                     end case;
                 when 2 =>
                     case s.q is
@@ -2612,8 +2611,8 @@ begin
                     when 1 => f := ld_r_a(state, f);
                     when 2 => f := ld_a_i_r(state, f, i_o);
                     when 3 => f := ld_a_i_r(state, f, r_o);
-                    when 4 => f := rld_rrd(state, f, rrd1_i, rrd2_i);
-                    when 5 => f := rld_rrd(state, f, rld1_i, rld2_i);
+                    when 4 => f := rld_rrd(state, f, rrd_i1, rrd_i2);
+                    when 5 => f := rld_rrd(state, f, rld_i1, rld_i2);
                     when 6|7 => f := nop(state, f);
                     end case;
                 end case;
@@ -2662,8 +2661,8 @@ begin
                         case s.p is
                         when 2 => f := ld_rp_nn(state, f, rxy(xy));
                         when others => null; end case;
-                    when 1 => f :=
-                        alu_rp_rp(state, f, add_i, adc_i, rxy(xy), rp(s.p));
+                    when 1 => f := alu_rp_rp(state, f, add16_i1, add16_i2,
+                                             rxy(xy), rp(s.p));
                     end case;
                 when 2 =>
                     case s.q is

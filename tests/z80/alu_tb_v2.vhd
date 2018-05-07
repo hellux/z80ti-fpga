@@ -340,25 +340,25 @@ begin
        
         report "rld1";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"F8", x"61", rld1_i, 0, "00000000", "--------", x"18");
+             x"F8", x"61", rld_i1, 0, "00000000", "--------", x"18");
             
         report "rld2";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"DF", x"CB", rld2_i, 0, "00010000", "10-0-0--", x"DC");
+             x"DF", x"CB", rld_i2, 0, "00010000", "10-0-0--", x"DC");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"5F", x"6B", rld2_i, 0, "00010010", "00-0-100", x"56");
+             x"5F", x"6B", rld_i2, 0, "00010010", "00-0-100", x"56");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"06", x"0A", rld2_i, 0, "11010011", "01-0-101", x"00");
+             x"06", x"0A", rld_i2, 0, "11010011", "01-0-101", x"00");
 
         report "rrd1";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"84", x"20", rrd1_i, 0, "00000000", "--------", x"42");
+             x"84", x"20", rrd_i1, 0, "00000000", "--------", x"42");
 
         report "rrd2";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"84", x"20", rrd2_i, 0, "11111111", "10-0-0--", x"80");
+             x"84", x"20", rrd_i2, 0, "11111111", "10-0-0--", x"80");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"00", x"00", rrd2_i, 0, "11010011", "01-0-101", x"00");
+             x"00", x"00", rrd_i2, 0, "11010011", "01-0-101", x"00");
 
 
         assert false report "TB COMPLETE" severity failure;
