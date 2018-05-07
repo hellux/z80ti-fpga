@@ -801,7 +801,7 @@ architecture arch of op_decoder is
                     f.cw.rf_addr := regDE;
                     f.cw.abus_src := rf_o;
                 when cpi_i|cpd_i|cpir_i|cpdr_i =>
-                    f.cw.alu_op := cp_i;
+                    f.cw.alu_op := cpi_i;
                     f.cw.dbus_src := alu_o;
                     f.cw.f_rd := '1';
                 when ini_i|ind_i|inir_i|indr_i =>
@@ -900,11 +900,11 @@ architecture arch of op_decoder is
         when m5 =>
             case state.t is
             when t1 =>
-                --f.cw.pc_rd = '1';
+                f.cw.pc_rd := '1';
                 f.cw.abus_src := pc_o;
                 f.cw.addr_op := dec;
             when t2 =>
-                --f.cw.pc_rd = '1';
+                f.cw.pc_rd := '1';
                 f.cw.abus_src := pc_o;
                 f.cw.addr_op := dec;
             when t3 =>
