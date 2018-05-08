@@ -2387,7 +2387,7 @@ architecture arch of op_decoder is
                                    and_i, xor_i, or_i, cp_i);
     constant rot : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
                                    sla_i, sra_i, sll_i, srl_i);
-    constant afi : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
+    constant afi : alu_table_t := (rlca_i, rrca_i, rla_i, rra_i,
                                    daa_i, cpl_i, scf_i, ccf_i);
     constant im : im_table_t := (0, 1, 1, 2, 0, 1, 1, 2);
     constant rxy : xy_table_t := (regIX, regIY);
