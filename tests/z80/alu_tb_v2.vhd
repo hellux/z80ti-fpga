@@ -360,7 +360,45 @@ begin
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"00", rrd_i2, 0, "11010011", "01-0-101", x"00");
 
-
+        report "rlca";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"01", rlca_i, 0, "11111111", "11-0-100", x"02");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"80", x"80", rlca_i, 0, "00000000", "00-0-000", x"01");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"00", rlca_i, 0, "00000000", "00-0-000", x"00");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"ff", rlca_i, 0, "00000000", "00-0-001", x"ff");
+    
+    
+        report "rla";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"01", rla_i, 0, "11111111", "11-0-100", x"02");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"01", rla_i, 0, "00000001", "00-0-000", x"03");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"80", x"80", rla_i, 0, "00000000", "00-0-001", x"00");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"ff", rla_i, 0, "00000000", "00-0-001", x"ff");
+        
+        report "rl";
+    --             op1    op2    op  set    c_in  c_o  p  res
+        test_value(op1, op2, op, op_set, carry, flags, res,
+                   x"00", x"01", x"12", cb, '0', '0', '0', x"02");
+        test_value(op1, op2, op, op_set, carry, flags, res,
+                   x"00", x"01", x"12", cb, '1', '0', '1', x"03");
+        test_value(op1, op2, op, op_set, carry, flags, res,
+                   x"80", x"80", x"17", cb, '0', '1', '1', x"00");
+        test_value(op1, op2, op, op_set, carry, flags, res,
+                   x"00", x"00", x"11", cb, '1', '0', '0', x"01");
+        test_value(op1, op2, op, op_set, carry, flags, res,
+                   x"00", x"ff", x"13", cb, '0', '1', '0', x"fe");
+        test_value(op1, op2, op, op_set, carry, flags, res,
+                   x"00", x"ff", x"13", cb, '1', '1', '1', x"ff");
+        test_value(op1, op2, op, op_set, carry, flags, res,
+                   x"00", x"0f", x"10", cb, '0', '0', '1', x"1e");
+        test_value(op1, op2, op, op_set, carry, flags, res,
+                   x"00", x"0f", x"10", cb, '1', '0', '0', x"1f");
         assert false report "TB COMPLETE" severity failure;
 
      end process;
