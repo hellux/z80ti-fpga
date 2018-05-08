@@ -58,7 +58,7 @@ begin
 
     with op select edge <=
         '0'             when sla_i|sll_i|srl_i,
-        flags_in(C_f)   when rl_i|rr_i,
+        flags_in(C_f)   when rl_i|rr_i|rla_i,
         op2(0)          when rrc_i,
         op2(7)          when rlc_i|sra_i,
         '-'             when others;
@@ -76,7 +76,7 @@ begin
         -op2_ext                            when sub_i|cp_i|neg_i|cpi_i,
         -op2_ext - with_carry               when sbc_i,
          op2_ext + with_carry               when adc_i|add16_i2,
-        '0' & op2_ext(6 downto 0) & edge    when rlc_i|rl_i|sla_i|sll_i,
+        '0' & op2_ext(6 downto 0) & edge    when rlc_i|rl_i|sla_i|sll_i|rla_i,
         '0' & edge & op2_ext(7 downto 1)    when rrc_i|rr_i|sra_i|srl_i,
         op2_ext                             when others;
 
@@ -134,7 +134,8 @@ begin
     with op select flags_out(S_f) <= 
         flags_in(S_f) when scf_i|ccf_i|cpl_i|res_i|set_i|
                            ldi_i|ldir_i|ldd_i|lddr_i|
-                           add16_i1|add16_i2|unknown,
+                           add16_i1|add16_i2|unknown|
+                           rlca_i|rrca_i|rla_i|rra_i,
         result_buf(7) when cpi_i|cpir_i|cpd_i|cpdr_i,
         result_buf(7) when others;
 
@@ -142,7 +143,8 @@ begin
         not result_buf(bit_select)        when bit_i,
         flags_in(Z_f)                     when scf_i|ccf_i|cpl_i|res_i|set_i|
                                                ldi_i|ldir_i|ldd_i|lddr_i|
-                                               add16_i1|add16_i2|unknown,
+                                               add16_i1|add16_i2|unknown|
+                                               rlca_i|rrca_i|rla_i|rra_i,
         bool_sl(unsigned(result_buf) = 0) when cpi_i|cpir_i|cpd_i|cpdr_i,
         bool_sl(unsigned(result_buf) = 0) when others;
 
@@ -157,6 +159,7 @@ begin
         '0'             when scf_i|xor_i|or_i|
                              rlc_i|rl_i|sla_i|sll_i|
                              rrc_i|rr_i|sra_i|srl_i|
+                             rlca_i|rrca_i|rla_i|rra_i|
                              in_i|rld_i2|rrd_i2|ld_i|
                              ldi_i|ldir_i|ldd_i|lddr_i,
         '1'             when and_i|bit_i|cpl_i|unknown,
@@ -172,14 +175,16 @@ begin
                              rlc_i|rl_i|sla_i|sll_i|
                              rrc_i|rr_i|sra_i|srl_i|
                              daa_i|in_i|rld_i2|rrd_i2,
-        flags_in(PV_f)  when add16_i1|add16_i2|unknown,
+        flags_in(PV_f)  when add16_i1|add16_i2|unknown|
+                             rlca_i|rrca_i|rla_i|rra_i,
         flags_in(PV_f)  when others;
 
     with op select flags_out(N_f) <=
         '1'             when sub_i|sbc_i|cp_i|neg_i|cpl_i|
-                             cpi_i|cpir_i|cpd_i|cpdr_i,
+                             cpi_i|cpir_i|cpd_i|cpdr_i|dec_i,
         flags_in(N_f)   when daa_i|res_i|set_i,
         '0'             when ldi_i|ldir_i|ldd_i|lddr_i|add16_i1|add16_i2|
+                             rlca_i|rrca_i|rla_i|rra_i|
                              unknown,
         '0'             when others;
 
@@ -187,8 +192,8 @@ begin
         '0'                 when and_i|or_i|xor_i,
         result_sum(8)       when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|daa_i|
                                  add16_i1|add16_i2,
-        op2(7)              when rlc_i|rl_i|sla_i|sll_i,
-        op2(0)              when rrc_i|rr_i|sra_i|srl_i,
+        op2(7)              when rlc_i|rl_i|sla_i|sll_i|rlca_i|rla_i,
+        op2(0)              when rrc_i|rr_i|sra_i|srl_i|rrca_i|rra_i,
         '1'                 when scf_i,
         not flags_in(C_f)   when ccf_i,
         flags_in(C_f)       when ldi_i|ldir_i|ldd_i|

@@ -191,13 +191,13 @@ begin
 
         report "dec";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"ff", x"01", dec_i, 0, "00000000", "01-1-000", x"00");
+             x"ff", x"01", dec_i, 0, "00000000", "01-1-010", x"00");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"ff", x"00", dec_i, 0, "00000000", "10-0-000", x"ff");
+             x"ff", x"00", dec_i, 0, "00000000", "10-0-010", x"ff");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"ff", x"00", dec_i, 0, "11111111", "10-0-001", x"ff");
+             x"ff", x"00", dec_i, 0, "11111111", "10-0-011", x"ff");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"82", x"82", dec_i, 0, "11111111", "10-1-001", x"81");
+             x"82", x"82", dec_i, 0, "11111111", "10-1-011", x"81");
 
         report "neg";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,

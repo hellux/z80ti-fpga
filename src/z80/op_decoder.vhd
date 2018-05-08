@@ -856,7 +856,12 @@ architecture arch of op_decoder is
                 f.cw.rf_addr := regBC;
                 f.cw.abus_src := rf_o;
                 case op is
-                when ldi_i|cpi_i|ldd_i|cpd_i|ldir_i|cpir_i|lddr_i|cpdr_i =>
+                when cpi_i|cpd_i|cpir_i|cpdr_i =>
+                    -- dec BC
+                    f.cw.addr_op := dec;
+                    f.cw.pv_src := anz_f; --addr not zero flag
+                    f.cw.fi_rd := '1';
+                when ldi_i|ldd_i|ldir_i|lddr_i =>
                     -- dec BC
                     f.cw.addr_op := dec;
                     f.cw.pv_src := anz_f; --addr not zero flag
@@ -889,8 +894,6 @@ architecture arch of op_decoder is
                         f.ct.instr_end := '1';
                     end if;
                 when inir_i|indr_i|otir_i|otdr_i =>
-                    --f.cw.alu_op := op;
-                    --f.cw.f_rd := '1';
                     if state.cc(Z_c) then
                         f.ct.instr_end := '1';
                     end if;
@@ -2387,7 +2390,7 @@ architecture arch of op_decoder is
                                    and_i, xor_i, or_i, cp_i);
     constant rot : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
                                    sla_i, sra_i, sll_i, srl_i);
-    constant afi : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
+    constant afi : alu_table_t := (rlca_i, rrca_i, rla_i, rra_i,
                                    daa_i, cpl_i, scf_i, ccf_i);
     constant im : im_table_t := (0, 1, 1, 2, 0, 1, 1, 2);
     constant rxy : xy_table_t := (regIX, regIY);
