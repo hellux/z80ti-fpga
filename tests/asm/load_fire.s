@@ -1,6 +1,6 @@
 plotSScreen: equ $9340
 
-load buffer:
+load_buffer:
 ld a, 0x80 ; row select, 0x80 = 0
 ld hl, plotSScreen
 ld bc, $0008 ; page size

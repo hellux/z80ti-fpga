@@ -9,6 +9,7 @@ package z80_comm is
                      bit_i, res_i, set_i,
                      rlc_i, rl_i, sla_i, sll_i,
                      rrc_i, rr_i, sra_i, srl_i,
+                     rlca_i, rrca_i, rla_i, rra_i,
                      daa_i, cpl_i, scf_i, ccf_i,
                      in_i, ld_i,
                      rld_i1, rld_i2, rrd_i1, rrd_i2,

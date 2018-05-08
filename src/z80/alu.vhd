@@ -58,9 +58,9 @@ begin
 
     with op select edge <=
         '0'             when sla_i|sll_i|srl_i,
-        flags_in(C_f)   when rl_i|rr_i|rla_i,
-        op2(0)          when rrc_i,
-        op2(7)          when rlc_i|sra_i,
+        flags_in(C_f)   when rl_i|rla_i|rr_i|rra_i,
+        op2(0)          when rrc_i|rrca_i,
+        op2(7)          when rlc_i|rlca_i|sra_i,
         '-'             when others;
     with op select op1_ext <=
         to_signed(1, 9)     when inc_i,
@@ -76,8 +76,10 @@ begin
         -op2_ext                            when sub_i|cp_i|neg_i|cpi_i,
         -op2_ext - with_carry               when sbc_i,
          op2_ext + with_carry               when adc_i|add16_i2,
-        '0' & op2_ext(6 downto 0) & edge    when rlc_i|rl_i|sla_i|sll_i|rla_i,
-        '0' & edge & op2_ext(7 downto 1)    when rrc_i|rr_i|sra_i|srl_i,
+        '0' & op2_ext(6 downto 0) & edge    when rlc_i|rl_i|sla_i|sll_i|
+                                                 rlca_i|rla_i,
+        '0' & edge & op2_ext(7 downto 1)    when rrc_i|rr_i|sra_i|srl_i|
+                                                 rrca_i|rra_i,
         op2_ext                             when others;
 
     -- calculation
