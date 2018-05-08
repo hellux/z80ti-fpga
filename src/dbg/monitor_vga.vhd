@@ -32,10 +32,6 @@ architecture arch of monitor_vga is
     signal page_in_arr : page_in_arr_t;
     signal pages : page_arr_t := (others => (others => 0));
 
-    -- page write
-    signal wr_page : integer range 0 to PAGE_COUNT-1;
-    signal wr_page_char : unsigned(1 downto 0);
-
     -- data output
     signal col : unsigned(5 downto 0);
     signal row : unsigned(2 downto 0);
@@ -60,7 +56,7 @@ begin
         ("ALU ", dbg.z80.act & dbg.z80.tmp),
         others => ("    ", x"0000"));
 
-    process(dbg)
+    process(page_in_arr)
         variable dig : std_logic_vector(3 downto 0);
     begin
         -- constant titles
@@ -69,12 +65,12 @@ begin
                 pages(i)(j-1) <= chi(page_in_arr(i).title(j));
 
                 case j is
-                when 1 => dig := page_in_arr(wr_page).data(15 downto 12);
-                when 2 => dig := page_in_arr(wr_page).data(11 downto 8);
-                when 3 => dig := page_in_arr(wr_page).data(7 downto 4);
-                when 4 => dig := page_in_arr(wr_page).data(3 downto 0);
+                when 1 => dig := page_in_arr(i).data(15 downto 12);
+                when 2 => dig := page_in_arr(i).data(11 downto 8);
+                when 3 => dig := page_in_arr(i).data(7 downto 4);
+                when 4 => dig := page_in_arr(i).data(3 downto 0);
                 end case;
-                pages(wr_page)(3+j) <= to_integer(unsigned(dig));
+                pages(i)(3+j) <= to_integer(unsigned(dig));
             end loop;
         end loop;
     end process;
