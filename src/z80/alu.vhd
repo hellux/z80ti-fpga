@@ -177,7 +177,7 @@ begin
 
     with op select flags_out(N_f) <=
         '1'             when sub_i|sbc_i|cp_i|neg_i|cpl_i|
-                             cpi_i|cpir_i|cpd_i|cpdr_i,
+                             cpi_i|cpir_i|cpd_i|cpdr_i|dec_i,
         flags_in(N_f)   when daa_i|res_i|set_i,
         '0'             when ldi_i|ldir_i|ldd_i|lddr_i|add16_i1|add16_i2|
                              unknown,
