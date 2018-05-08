@@ -86,8 +86,8 @@ architecture arch of comp is
          gmem_x : out std_logic_vector(6 downto 0);
          gmem_y : out std_logic_vector(5 downto 0);
          mon_data : in std_logic;
-         mon_x : out std_logic_vector(9 downto 0);
-         mon_y : out std_logic_vector(6 downto 0);
+         mon_x : out std_logic_vector(8 downto 0);
+         mon_y : out std_logic_vector(5 downto 0);
          vgaRed	: out std_logic_vector(2 downto 0);
          vgaGreen : out std_logic_vector(2 downto 0);
          vgaBlue : out std_logic_vector(2 downto 1);
@@ -116,8 +116,8 @@ architecture arch of comp is
     component monitor_vga port(
         clk : in std_logic;
         dbg : in dbg_cmp_t;
-        x : in std_logic_vector(9 downto 0);
-        y : in std_logic_vector(6 downto 0);
+        x_vga : in std_logic_vector(8 downto 0);
+        y_vga : in std_logic_vector(5 downto 0);
         data_vga : out std_logic);
     end component;
 
@@ -177,8 +177,8 @@ architecture arch of comp is
 
     -- mon <-> vga
     signal mon_vga_data : std_logic;
-    signal vga_mon_x : std_logic_vector(9 downto 0);
-    signal vga_mon_y : std_logic_vector(6 downto 0);
+    signal vga_mon_x : std_logic_vector(8 downto 0);
+    signal vga_mon_y : std_logic_vector(5 downto 0);
 
     -- ti/bootloader <-> mem controller
     signal mem_wr_bl, mem_wr_ti : std_logic;
