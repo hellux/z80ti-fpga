@@ -303,6 +303,10 @@ begin
              x"00", x"80", rlc_i, 0, "11111111", "00-0-001", x"01");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"80", rlc_i, 0, "00000000", "00-0-001", x"01");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"12", x"94", rlc_i, 0, "11111111", "00-0-001", x"29");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"12", x"14", rlc_i, 0, "11111111", "00-0-100", x"28");
 
         report "rlca";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
@@ -429,6 +433,8 @@ begin
         report "ccf";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"00", ccf_i, 0, "00000000", "00-0-001", x"00");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"00", ccf_i, 0, "11111111", "11-1-100", x"00");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"00", ccf_i, 0, "00000001", "00-1-000", x"00");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,

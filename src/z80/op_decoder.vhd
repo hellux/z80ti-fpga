@@ -3,6 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
 use work.cmp_comm.all;
+use work.util.all;
 
 entity op_decoder is port(
     state : in state_t;
@@ -164,14 +165,26 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         f := mem_rd_pc(state, f);
-        case state.t is
-        when t3 =>
-            f.cw.tmp_rd := '1';
-            f.ct.prefix_next := prefix;
-            f.ct.cycle_end := '1';
-            f.ct.instr_end := '1'; -- return to m1 / update prefix
-        when t4 =>
-            f.ct.cycle_end := '1';
+
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            case state.t is
+            when t3 =>
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 =>
+            f := mem_rd_instr(state, f);
+            case state.t is
+            when t3 =>
+                f.ct.prefix_next := prefix;
+                f.ct.instr_end := '1';
+            when others => null; end case;
         when others => null; end case;
         return f;
     end mem_rd_xy_d;
@@ -2190,10 +2203,12 @@ architecture arch of op_decoder is
         return f;
     end djnz_d;
 
-    function unimp(state : state_t; f_in : id_frame_t)
+    function unimp(state : state_t; f_in : id_frame_t;
+                   instr : std_logic_vector(7 downto 0); op : string)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        report "UNIMPLEMENTED INSTRUCTION";
+        report "UNIMPLEMENTED INSTRUCTION: " & op
+                & " (" & vec_str(instr) & ")";
         case state.t is
         when t4 => 
             f.ct.mode_next := halt;
@@ -2394,8 +2409,7 @@ architecture arch of op_decoder is
                                    daa_i, cpl_i, scf_i, ccf_i);
     constant im : im_table_t := (0, 1, 1, 2, 0, 1, 1, 2);
     constant rxy : xy_table_t := (regIX, regIY);
-    constant pxy : prefix_table_t := (ddcb_d, fdcb_d);
-    constant pxy_d : prefix_table_t := (ddcb, fdcb);
+    constant pxy : prefix_table_t := (ddcb, fdcb);
 
     --     | p | |q|
     -- |1 0|0 0| |0|1 1 1|
@@ -2417,7 +2431,9 @@ begin
         s.z := to_integer(unsigned(instr(2 downto 0)));
         s.p := to_integer(unsigned(instr(5 downto 4)));
         if instr(3) = '1' then s.q := 1; else s.q := 0; end if;
-        if state.prefix = fd or state.prefix = fdcb_d then
+        if state.prefix = fd or
+           state.prefix = fdcb
+        then
             xy := 1;
         else
             xy := 0;
@@ -2447,7 +2463,7 @@ begin
 
         if state.mode = int then
             case state.im is
-            when 0 => f := unimp(state, f);
+            when 0 => f := unimp(state, f, instr, "im0");
             when 1 => f := im1(state, f);
             when 2 => f := im2(state, f);
             end case;
@@ -2633,25 +2649,26 @@ begin
             when 2 => f := bit_r(state, f, res_i, s.y, s.z);
             when 3 => f := bit_r(state, f, set_i, s.y, s.z);
             end case;
-        when ddcb_d|fdcb_d => -- fetch fdcb/ddcb instr after d
-            f := mem_rd_multi(state, f, pxy(xy));
         when ddcb|fdcb =>
             case s.x is
             when 0 =>
                 case s.z is
                 when 6 => f := bit_xy_d(state, f, rot(s.y), 0, rxy(xy));
-                when others => f := unimp(state, f); -- TODO LD r[z], rot[y] (IX/Y+d)
+                when others =>
+                    f := unimp(state, f, instr, "ld r[z], rot[y] (IX/Y+d)");
                 end case;
             when 1 => f := bit_xy_d(state, f, bit_i, 0, rxy(xy));
             when 2 =>
                 case s.z is
                 when 6 => f := bit_xy_d(state, f, res_i, s.y, rxy(xy));
-                when others => f := unimp(state, f); -- TODO LD r[z], res y, (IX/Y+d)
+                when others =>
+                    f := unimp(state, f, instr, "ld r[z], res y, (IX/Y+d)");
                 end case;
             when 3 =>
                 case s.z is
                 when 6 => f := bit_xy_d(state, f, set_i, s.y, rxy(xy));
-                when others => f := unimp(state, f); -- TODO LD r[z], set y, (IX/Y+d)
+                when others =>
+                    f := unimp(state, f, instr, "ld r[z], set y, (IX/Y+d)");
                 end case;
             end case;
         when dd|fd =>
@@ -2726,7 +2743,7 @@ begin
                     end case;
                 when 3 =>
                     case s.y is
-                    when 1 => f := mem_rd_xy_d(state, f, pxy_d(xy));
+                    when 1 => f := mem_rd_xy_d(state, f, pxy(xy));
                     when 4 => f := ex_spx_rp(state, f, rxy(xy));
                     when others => f := nop(state, f);
                     end case;

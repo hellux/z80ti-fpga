@@ -138,7 +138,8 @@ begin
                            ldi_i|ldir_i|ldd_i|lddr_i|
                            add16_i1|add16_i2|unknown|
                            rlca_i|rrca_i|rla_i|rra_i,
-        result_buf(7) when cpi_i|cpir_i|cpd_i|cpdr_i,
+        result_buf(7) when cpi_i|cpir_i|cpd_i|cpdr_i|
+                           rlc_i,
         result_buf(7) when others;
 
     with op select flags_out(Z_f) <=
@@ -147,7 +148,8 @@ begin
                                                ldi_i|ldir_i|ldd_i|lddr_i|
                                                add16_i1|add16_i2|unknown|
                                                rlca_i|rrca_i|rla_i|rra_i,
-        bool_sl(unsigned(result_buf) = 0) when cpi_i|cpir_i|cpd_i|cpdr_i,
+        bool_sl(unsigned(result_buf) = 0) when cpi_i|cpir_i|cpd_i|cpdr_i|
+                                               rlc_i,
         bool_sl(unsigned(result_buf) = 0) when others;
 
     flags_out(f5_f) <= result_buf(5);

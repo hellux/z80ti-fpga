@@ -51,9 +51,7 @@ begin
                        "0011" when dd,
                        "0100" when ddcb,
                        "0101" when fd,
-                       "0110" when fdcb,
-                       "0111" when ddcb_d,
-                       "1000" when fdcb_d;
+                       "0110" when fdcb;
     with dbg.z80.state.mode select
         dots_mode <= "00" when exec,
                      "01" when wz,

@@ -91,7 +91,7 @@ architecture arch of z80 is
     -- dbus/abus src
     signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_out, i_out, r_out
         : std_logic_vector(7 downto 0);
-    signal rf_ao, tmpa_out, pc_out, dis_in, dis_out, int_addr, rst_addr
+    signal rf_ao, tmpa_out, pc_out, dis_out, int_addr, rst_addr
         : std_logic_vector(15 downto 0);
 
     signal dbus : std_logic_vector(7 downto 0);
