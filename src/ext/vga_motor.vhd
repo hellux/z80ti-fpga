@@ -39,7 +39,7 @@ architecture Behavioral of vga_motor is
     constant PIXEL_SIZE : integer := 6;
 
     constant MON_START_X : integer := 64;
-    constant MON_START_Y : integer := 397;
+    constant MON_START_Y : integer := 404;
     constant MON_WIDTH : integer := 512;
     constant MON_HEIGHT : integer := 64;
 

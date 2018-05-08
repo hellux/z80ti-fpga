@@ -111,7 +111,12 @@ end chars;
 package body chars is
     function chi(char : character) return integer is begin
         case char is
-            when 'a' => return 10;
+            when 'A' => return 10;
+            when 'B' => return 11;
+            when 'C' => return 12;
+            when 'D' => return 13;
+            when 'E' => return 14;
+            when 'F' => return 15;
         when others => return 0;
         end case;
     end chi;

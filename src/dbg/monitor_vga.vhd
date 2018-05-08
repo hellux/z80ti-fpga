@@ -55,44 +55,28 @@ begin
         (" HL ", dbg.z80.regs.hl),
         (" SP ", dbg.z80.regs.sp),
         (" IX ", dbg.z80.regs.ix),
+        (" IY ", dbg.z80.regs.iy),
+        (" PC ", dbg.z80.pc),
+        ("ALU ", dbg.z80.act & dbg.z80.tmp),
         others => ("    ", x"0000"));
 
-    process(clk)
+    process(dbg)
         variable dig : std_logic_vector(3 downto 0);
-        variable char_index : integer range 4 to 7;
     begin
-        if rising_edge(clk) then
-            wr_page_char <= wr_page_char + 1;
+        -- constant titles
+        for i in pages'range loop
+            for j in page_in_arr(i).title'range loop
+                pages(i)(j-1) <= chi(page_in_arr(i).title(j));
 
-            case wr_page_char is
-            when "00" => dig := page_in_arr(wr_page).data(15 downto 12);
-            when "01" => dig := page_in_arr(wr_page).data(11 downto 8);
-            when "10" => dig := page_in_arr(wr_page).data(7 downto 4);
-            when "11" => dig := page_in_arr(wr_page).data(3 downto 0);
-            when others => dig := "0000";
-            end case;
-            char_index := to_integer(wr_page_char) + 4;
-
-            -- constant titles
-            for i in pages'range loop
-                for j in page_in_arr(i).title'range loop
-                    pages(i)(j-1) <= chi(page_in_arr(i).title(j));
-                end loop;
+                case j is
+                when 1 => dig := page_in_arr(wr_page).data(15 downto 12);
+                when 2 => dig := page_in_arr(wr_page).data(11 downto 8);
+                when 3 => dig := page_in_arr(wr_page).data(7 downto 4);
+                when 4 => dig := page_in_arr(wr_page).data(3 downto 0);
+                end case;
+                pages(wr_page)(3+j) <= to_integer(unsigned(dig));
             end loop;
-            -- variable data
-            pages(wr_page)(char_index) <= to_integer(unsigned(dig));
-
-            if (wr_page_char = 3) then
-                if wr_page = PAGE_SIZE - 1 then
-                    wr_page <= 0;
-                else
-                    wr_page <= wr_page + 1;
-                end if;
-            end if;
-
-            current_page <= pages(page_index);
-            data_vga <= char_arr(current_char)(row_index)(col_index);
-        end if;
+        end loop;
     end process;
 
     col <= unsigned(x_vga(8 downto 3));
@@ -105,4 +89,7 @@ begin
 
     col_index <= to_integer(unsigned(x_vga(2 downto 0)));
     row_index <= to_integer(unsigned(y_vga(2 downto 0)));
+
+    current_page <= pages(page_index);
+    data_vga <= char_arr(current_char)(row_index)(col_index);
 end arch;
