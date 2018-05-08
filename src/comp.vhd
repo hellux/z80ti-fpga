@@ -81,11 +81,13 @@ architecture arch of comp is
     end component;
 
     component vga_motor port(
-         clk, ce : in std_logic;
-         data : in std_logic;
-         rst : in std_logic;
-         x : out std_logic_vector(6 downto 0);
-         y : out std_logic_vector(5 downto 0);
+         clk, rst, ce : in std_logic;
+         gmem_data : in std_logic;
+         gmem_x : out std_logic_vector(6 downto 0);
+         gmem_y : out std_logic_vector(5 downto 0);
+         mon_data : in std_logic;
+         mon_x : out std_logic_vector(9 downto 0);
+         mon_y : out std_logic_vector(6 downto 0);
          vgaRed	: out std_logic_vector(2 downto 0);
          vgaGreen : out std_logic_vector(2 downto 0);
          vgaBlue : out std_logic_vector(2 downto 1);
@@ -109,6 +111,14 @@ architecture arch of comp is
         addr : in std_logic_vector(15 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0));
+    end component;
+
+    component monitor_vga port(
+        clk : in std_logic;
+        dbg : in dbg_cmp_t;
+        x : in std_logic_vector(9 downto 0);
+        y : in std_logic_vector(6 downto 0);
+        data_vga : out std_logic);
     end component;
 
     component monitor port(
@@ -161,9 +171,14 @@ architecture arch of comp is
     signal on_key_down : std_logic := '0';
 
     -- ti <-> vga
-    signal data_vga : std_logic;
-    signal x_vga : std_logic_vector(6 downto 0);
-    signal y_vga : std_logic_vector(5 downto 0);
+    signal gmem_vga_data : std_logic;
+    signal vga_gmem_x : std_logic_vector(6 downto 0);
+    signal vga_gmem_y : std_logic_vector(5 downto 0);
+
+    -- mon <-> vga
+    signal mon_vga_data : std_logic;
+    signal vga_mon_x : std_logic_vector(9 downto 0);
+    signal vga_mon_y : std_logic_vector(6 downto 0);
 
     -- ti/bootloader <-> mem controller
     signal mem_wr_bl, mem_wr_ti : std_logic;
@@ -227,7 +242,7 @@ begin
     ti_comp : ti port map(clk, rst, clk_ti_ce,
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
-                          x_vga, y_vga, data_vga,
+                          vga_gmem_x, vga_gmem_y, gmem_vga_data,
                           mem_rd, mem_wr_ti, addr_ti);
 
     -- mem signals (bootloader priority)
@@ -236,7 +251,9 @@ begin
     mem_data <= data_bl when mem_wr_bl = '1' else data;
 
     -- external controllers
-    vga : vga_motor port map(clk, clk_vga, data_vga, rst, x_vga, y_vga,
+    vga : vga_motor port map(clk, rst, clk_vga,
+                             gmem_vga_data, vga_gmem_x, vga_gmem_y,
+                             mon_vga_data, vga_mon_x, vga_mon_y,
                              vga_red, vga_green, vga_blue, hsync, vsync);
     mif : mem_if port map(clk, rst,
                           mem_rd, mem_wr, addr_phy, mem_data, data_mem,
@@ -261,5 +278,7 @@ begin
     dbg.cbi <= cbi;
     dbg.cbo <= cbo;
 
+    mon_vga : monitor_vga port map(clk, dbg, vga_mon_x, vga_mon_y,
+                                   mon_vga_data);
     mon : monitor port map(clk, sw(3 downto 0), dbg, seg, led, an);
 end arch;

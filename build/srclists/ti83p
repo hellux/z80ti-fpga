@@ -1,6 +1,7 @@
 src/pkg/util.vhd
 src/pkg/z80_comm.vhd
 src/pkg/cmp_comm.vhd
+src/pkg/chars.vhd
 src/ti/ti83p/ti_comm.vhd
 src/prm/clkgen.vhd
 src/prm/counters.vhd
@@ -26,6 +27,7 @@ src/ext/vga_motor.vhd
 src/ext/mem_if.vhd
 src/ext/bootloader.vhd
 src/dbg/monitor.vhd
+src/dbg/monitor_vga.vhd
 src/dbg/segment.vhd
 src/comp.vhd
 tests/comp_tb.vhd

@@ -4,11 +4,13 @@ use ieee.numeric_std.all;
 use work.util.all;
 
 entity vga_motor is port ( 
-     clk, ce : in std_logic;
-	 data : in std_logic;
-	 rst : in std_logic;
-     x : out std_logic_vector(6 downto 0);
-     y : out std_logic_vector(5 downto 0);
+     clk, rst, ce : in std_logic;
+	 gmem_data : in std_logic;
+     gmem_x : out std_logic_vector(6 downto 0);
+     gmem_y : out std_logic_vector(5 downto 0);
+     mon_data : in std_logic;
+     mon_x : out std_logic_vector(9 downto 0);
+     mon_y : out std_logic_vector(6 downto 0);
 	 vgaRed	: out std_logic_vector(2 downto 0);
 	 vgaGreen : out std_logic_vector(2 downto 0);
 	 vgaBlue : out std_logic_vector(2 downto 1);
@@ -29,14 +31,20 @@ architecture Behavioral of vga_motor is
     constant VGA_VIS_Y : integer := 480;
     constant VGA_X : integer := 800;
     constant VGA_y : integer := 521;
+
+    constant X_OFS : integer := 30;
+    constant Y_OFS : integer := 6;
     constant LCD_VIS_X : integer := 96;
     constant LCD_VIS_Y : integer := 64;
     constant PIXEL_SIZE : integer := 6;
-    constant X_OFS : integer := 30;
-    constant Y_OFS : integer := 48;
 
-    signal colour : std_logic_vector(7 downto 0);	
+    constant MON_START_X : integer := 2;
+    constant MON_START_Y : integer := 391;
+    constant MON_WIDTH : integer := 636;
+    constant MON_HEIGHT : integer := 88;
+
     signal blank : std_logic;
+    signal gmem_col, mon_col, color : std_logic_vector(7 downto 0);	
 
     signal x_ld, xp_ld, xl_ld : std_logic;
     signal x_vga : unsigned(9 downto 0);
@@ -82,21 +90,29 @@ begin
     Vsync <= '0' when y_vga > 490 and y_vga <= 492 else
              '1';
     blank <= '1' when x_vga >= VGA_VIS_X or y_vga >= VGA_VIS_Y else '0';
-    colour <= x"00" when blank = '1' else
-              x"00" when x_vga < X_OFS or
-                         x_vga >= X_OFS + LCD_VIS_X*PIXEL_SIZE or
-                         y_vga < Y_OFS or
-                         y_vga >= Y_OFS + LCD_VIS_Y*PIXEL_SIZE else
-              x"ff" when data = '1' else
-              -- 010 010 00_
-              x"48" when data = '0' else
-              (others => '-');
-  
-    x <= std_logic_vector(x_lcd);
-    y <= std_logic_vector(y_lcd);
 
-    vgaRed 	    <= colour(7 downto 5);
-    vgaGreen    <= colour(4 downto 2);
-    vgaBlue 	<= colour(1 downto 0);
+    gmem_col <= x"ff" when gmem_data = '1' else x"48";
+    mon_col <= x"00" when mon_data = '1' else x"ff";
+
+    color <= x"00"     when blank = '1' else
+              gmem_col when x_vga >= X_OFS and
+                            x_vga <  X_OFS + LCD_VIS_X*PIXEL_SIZE and
+                            y_vga >= Y_OFS and
+                            y_vga <  Y_OFS + LCD_VIS_Y*PIXEL_SIZE else
+              mon_col  when x_vga >= MON_START_X and
+                            x_vga <  MON_START_X + MON_WIDTH and
+                            y_vga >= MON_START_Y and
+                            y_vga <  MON_START_Y + MON_HEIGHT else
+              x"4a";
+  
+    mon_x <= std_logic_vector(x_vga-MON_START_X);
+    mon_y <= std_logic_vector(resize(y_vga-MON_START_Y, 7));
+
+    gmem_x <= std_logic_vector(x_lcd);
+    gmem_y <= std_logic_vector(y_lcd);
+
+    vgaRed 	    <= color(7 downto 5);
+    vgaGreen    <= color(4 downto 2);
+    vgaBlue 	<= color(1 downto 0);
 end Behavioral;
 
