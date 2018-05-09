@@ -298,9 +298,9 @@ package chars is
                                 "00100000",
                                 "01000000",
                                 "01111100");
-    constant charUNDEF : char_t := ("00111000",
+    constant charUNDEF : char_t := ("00000000",
+                                    "00111000",
                                     "01000100",
-                                    "00000100",
                                     "00000100",
                                     "00001000",
                                     "00010000",
@@ -332,9 +332,7 @@ package chars is
                                        charO, charP, charQ, charR,
                                        charS, charT, charU, charV,
                                        charW, charX, charY, charZ,
-                                       charUNDEF, charSPACE,
-                                       charCOLON);
-
+                                       charCOLON, charSPACE, charUNDEF
     function chi(char : character) return integer;
 end chars;
 

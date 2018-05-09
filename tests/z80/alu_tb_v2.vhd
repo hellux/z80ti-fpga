@@ -50,10 +50,8 @@ architecture arch of alu_tb_v2 is
                (flags_out(7) = '-' or (flags_out_s(7) = flags_out(7)))
             report lf & 
             "index      76543210" & lf &
-            "op1        " & vec_str(op1) & " " & 
-                integer'image(to_integer(unsigned(op1))) & lf &
-            "op2        " & vec_str(op2) & " " & 
-                integer'image(to_integer(unsigned(op2))) & lf & lf &
+            "op1        " & vec_str(op1) & " " & hex_str(op1) & lf &
+            "op2        " & vec_str(op2) & " " & hex_str(op2) & lf & lf &
             "res_actu:  " & vec_str(result_s) & " " &
                 integer'image(to_integer(unsigned(result_s))) & lf &
             "res_want:  " & vec_str(result) & " " &
