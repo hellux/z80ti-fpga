@@ -68,10 +68,12 @@ if [ "$quit" = true ]; then
 fi
 
 if [ "$asm" = true ]; then
-    z80asm $asm_src --list
+    z80asm $asm_src -o a.z --list
     if [ $? != '0' ]; then
         exit 1
     fi
+    head -c 77 </dev/zero | cat - a.z > a.bin
+    rm a.z
 fi
 
 if [ "$analyze" = true ]; then
