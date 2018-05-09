@@ -72,7 +72,8 @@ if [ "$asm" = true ]; then
     if [ $? != '0' ]; then
         exit 1
     fi
-    head -c 77 </dev/zero | cat - a.z > a.bin
+    # 76 = 4c = size of ti asm/basic header
+    head -c 76 </dev/zero | cat - a.z > a.bin
     rm a.z
 fi
 
