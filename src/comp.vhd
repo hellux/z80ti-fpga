@@ -8,7 +8,7 @@ use work.util.all;
 entity comp is port(
     clk : in std_logic;
 -- dbg input
-    step, rst, boot_ld, boot_done : std_logic;
+    btns : in std_logic_vector(4 downto 0);
     sw : in std_logic_vector(7 downto 0);
 -- keyboard
     ps2_kbd_clk : in std_logic;
@@ -26,7 +26,7 @@ entity comp is port(
 -- uart
     rx : in std_logic;
 -- 7 segment, led
-    seg, led : out std_logic_vector(7 downto 0);
+    seg : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
 end comp;
 
@@ -132,11 +132,12 @@ architecture arch of comp is
         data_vga : out std_logic);
     end component;
 
-    component monitor port(
+    component board port(
         clk : in std_logic;
-        sel : in std_logic_vector(3 downto 0);
-        dbg : in dbg_cmp_t;
-        seg, led : out std_logic_vector(7 downto 0);
+        btns : in std_logic_vector(4 downto 0);
+        rst, step, boot_ld, boot_done : out std_logic;
+        break_addr : out std_logic_vector(15 downto 0);
+        seg : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
 
@@ -173,9 +174,14 @@ architecture arch of comp is
     -- debug
     type run_mode_t is (normal, step_i, step_m, step_t);
     signal run_mode : run_mode_t;
+    signal break : std_logic;
     signal cpu_stop, cpu_ce : std_logic;
     signal sp_s, sp_q, sp_op : std_logic;
     signal dbg : dbg_cmp_t;
+
+    -- board -> ctrl
+    signal step, rst, boot_ld, boot_done : std_logic;
+    signal break_addr : std_logic_vector(15 downto 0);
 
     -- ti <-> kbd
     signal keys_down : keys_down_t;
@@ -210,13 +216,14 @@ begin
                     step_m when "10",
                     step_t when "11",
                     normal when others;
+    break <= sw(0);
 
     -- generate clocks
     gen_1000hz : clkgen generic map(DIV_1000HZ)
                         port map(clk, clk_1000hz);
     gen_100khz : clkgen generic map(DIV_100KHZ)
                         port map(clk, clk_100khz);
-    -- cpu step
+    -- cpu step / break
     step_op : process(clk) begin
         if rising_edge(clk) then
             if clk_z80 = '1' then
@@ -229,7 +236,8 @@ begin
     cpu_stop <= not sp_op and 
         (bool_sl(run_mode = step_t) or
         (bool_sl(run_mode = step_m) and dbg.z80.ct.cycle_end) or
-        (bool_sl(run_mode = step_i) and dbg.z80.ct.instr_end));
+        (bool_sl(run_mode = step_i) and dbg.z80.ct.instr_end) or
+        (bool_sl(addr = break_addr) and break and mem_rd and cbo.m1));
 
     gen_z80_main : clkgen generic map(DIV_Z80)
                                port map(clk, clk_z80_main);
@@ -301,5 +309,7 @@ begin
                                    mon_crom_char, mon_crom_col, mon_crom_row,
                                    crom_mon_pixel,
                                    mon_vga_data);
-    mon : monitor port map(clk, sw(3 downto 0), dbg, seg, led, an);
+    brd : board port map(clk, btns, rst, step, boot_ld, boot_done,
+                         break_addr,
+                         seg, an);
 end arch;

@@ -53,11 +53,12 @@ architecture arch of ti is
     end component;
 
     component mem_ctrl port(
-        signal cbo : in ctrlbus_out;
-        signal p04_mmap_int, p06_mempage_a, p07_mempage_b : in port_out_t;
-        signal addr_log : in std_logic_vector(15 downto 0);
-        signal addr_phy : out std_logic_vector(19 downto 0);
-        signal rd, wr : out std_logic);
+        cbo : in ctrlbus_out;
+        p04_mmap_int, p06_mempage_a, p07_mempage_b : in port_out_t;
+        addr_log : in std_logic_vector(15 downto 0);
+        addr_phy : out std_logic_vector(19 downto 0);
+        rd, wr : out std_logic;
+        dbg : out dbg_memctrl_t);
     end component;
 
     component hw_timers port(
@@ -137,7 +138,8 @@ begin
                               ports_out.p06_mempage_a,
                               ports_out.p07_mempage_b,
                               addr_log,
-                              addr_phy, rd, wr);
+                              addr_phy, rd, wr,
+                              dbg.memctrl);
 
     hwtim : hw_timers port map(clk, rst, ce, ports_out.p03_intmask,
                                ports_out.p04_mmap_int, hwt_fin);

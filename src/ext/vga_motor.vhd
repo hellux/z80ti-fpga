@@ -94,16 +94,16 @@ begin
     gmem_col <= x"ff" when gmem_data = '1' else x"48";
     mon_col <= x"ff" when mon_data = '1' else x"00";
 
-    color <= x"00"     when blank = '1' else
-              gmem_col when x_vga >= X_OFS and
-                            x_vga <  X_OFS + LCD_VIS_X*PIXEL_SIZE and
-                            y_vga >= Y_OFS and
-                            y_vga <  Y_OFS + LCD_VIS_Y*PIXEL_SIZE else
-              mon_col  when x_vga >= MON_START_X and
-                            x_vga <  MON_START_X + MON_WIDTH and
-                            y_vga >= MON_START_Y and
-                            y_vga <  MON_START_Y + MON_HEIGHT else
-              x"00";
+    color <= x"00"    when blank = '1' else
+             gmem_col when x_vga >= X_OFS and
+                           x_vga <  X_OFS + LCD_VIS_X*PIXEL_SIZE and
+                           y_vga >= Y_OFS and
+                           y_vga <  Y_OFS + LCD_VIS_Y*PIXEL_SIZE else
+             mon_col  when x_vga >= MON_START_X and
+                           x_vga <  MON_START_X + MON_WIDTH and
+                           y_vga >= MON_START_Y and
+                           y_vga <  MON_START_Y + MON_HEIGHT else
+             x"00";
   
     mon_x <= std_logic_vector(resize(x_vga-MON_START_X, 9));
     mon_y <= std_logic_vector(resize(y_vga-MON_START_Y, 6));

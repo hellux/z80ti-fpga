@@ -45,11 +45,13 @@ use work.ti_comm.all;
 --   |______________| 0xffff |______________|
 
 entity mem_ctrl is port(
-    signal cbo : in ctrlbus_out;
-    signal p04_mmap_int, p06_mempage_a, p07_mempage_b : in port_out_t;
-    signal addr_log : in std_logic_vector(15 downto 0);
-    signal addr_phy : out std_logic_vector(19 downto 0);
-    signal rd, wr : out std_logic);
+    cbo : in ctrlbus_out;
+    p04_mmap_int, p06_mempage_a, p07_mempage_b : in port_out_t;
+    addr_log : in std_logic_vector(15 downto 0);
+    addr_phy : out std_logic_vector(19 downto 0);
+    rd, wr : out std_logic;
+    -- debug
+    dbg : out dbg_memctrl_t);
 end mem_ctrl;
 
 architecture arch of mem_ctrl is
@@ -101,4 +103,12 @@ begin
     -- determine ctrl signals
     rd <= cbo.mreq and cbo.rd; -- TODO check pc no exec mask
     wr <= cbo.mreq and cbo.wr; -- TODO check flash protection
+
+    -- debug
+    dbg.sec_ram_rom <= page1(5);
+    dbg.sec_page <= page1(4 downto 0) when page1(5) = '1' else x"0" & page1(0);
+    dbg.thi_ram_rom <= page2(5);
+    dbg.thi_page <= page2(4 downto 0) when page1(5) = '1' else x"0" & page2(0);
+    dbg.fou_ram_rom <= page3(5);
+    dbg.fou_page <= page3(4 downto 0) when page1(5) = '1' else x"0" & page3(0);
 end arch;

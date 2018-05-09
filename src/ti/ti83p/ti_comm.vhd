@@ -68,6 +68,15 @@ package ti_comm is
     constant PI10_WL_8_6            : natural := 6;
     constant PI10_LCD_BUSY          : natural := 7;
 
+    type dbg_memctrl_t is record 
+        sec_ram_rom : std_logic;
+        sec_page : std_logic_vector(4 downto 0);
+        thi_ram_rom : std_logic;
+        thi_page : std_logic_vector(4 downto 0);
+        fou_ram_rom : std_logic;
+        fou_page : std_logic_vector(4 downto 0);
+    end record;
+
     type dbg_asic_t is record 
         paddr : std_logic_vector(4 downto 0);
         rd_wr : std_logic; -- 0 rd, 1 wr
@@ -84,6 +93,7 @@ package ti_comm is
 
     type dbg_ti_t is record
         asic : dbg_asic_t;
+        memctrl : dbg_memctrl_t;
     end record;
 end ti_comm;
 

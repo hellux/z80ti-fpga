@@ -23,7 +23,7 @@ architecture arch of monitor_vga is
     constant ROWS : integer := 8;
     constant PAGE_COUNT : integer := PAGES_PER_ROW*ROWS;
 
-    type pages_str_t is array(0 to PAGE_COUNT-1) of string(1 to PAGE_SIZE);
+    type pages_t is array(0 to PAGE_COUNT-1) of string(1 to PAGE_SIZE);
 
     signal col : unsigned(5 downto 0);
     signal row : unsigned(2 downto 0);
@@ -39,7 +39,7 @@ begin
         variable val_cb : string(1 to 8);
         variable val_asic : string(1 to 8);
         variable val_int : string(1 to 8);
-        variable pages_str : pages_str_t;
+        variable pages : pages_t;
         variable char_ch : character;
         variable char_int, char_int_o : integer;
     begin
@@ -74,11 +74,11 @@ begin
         if dbg.z80.regs.af(1) = '1' then val_flags(7) := 'N'; end if;
         if dbg.z80.regs.af(0) = '1' then val_flags(8) := 'C'; end if;
 
-        val_cond := " NZNCPOP";
-        if dbg.z80.state.cc(1) then val_cond(1 to 2) := " Z"; end if;
-        if dbg.z80.state.cc(3) then val_cond(3 to 4) := " C"; end if;
-        if dbg.z80.state.cc(5) then val_cond(5 to 6) := "PE"; end if;
-        if dbg.z80.state.cc(7) then val_cond(7 to 8) := " M"; end if;
+        val_cond := " Z CPE M";
+        if dbg.z80.state.cc(0) then val_cond(1) := 'N'; end if;
+        if dbg.z80.state.cc(2) then val_cond(3) := 'N'; end if;
+        if dbg.z80.state.cc(4) then val_cond(6) := 'O'; end if;
+        if dbg.z80.state.cc(6) then val_cond(8) := 'P'; end if;
 
         val_asic := " RD     ";
         if dbg.ti.asic.rd_wr = '1' then val_asic(2 to 3) := "WR"; end if;
@@ -103,46 +103,62 @@ begin
         end case;
         if dbg.z80.state.iff = '1' then val_int(6 to 7) := "EI"; end if;
 
-        pages_str := (others => (others => ' '));
+        pages := (others => (others => ' '));
 
     -- states / int
-        pages_str(0) := "PC: " & hex_str(dbg.z80.pc);
-        pages_str(1) := val_mode & ' ' & val_cycle;
-        pages_str(2) := val_prefix & "  " & hex_str(dbg.z80.ir);
-        pages_str(3) := val_flags;
-        pages_str(4) := val_cond;
-        pages_str(5) := val_int;
-        pages_str(6) := val_cb;
-        pages_str(7) := val_asic;
+        pages(0) := "PC: " & hex_str(dbg.z80.pc);
+        pages(1) := val_mode & ' ' & val_cycle;
+        pages(2) := val_prefix & "  " & hex_str(dbg.z80.ir);
+        pages(3) := val_flags;
+        pages(4) := val_cond;
+        pages(5) := val_int;
+        pages(6) := val_cb;
+        pages(7) := val_asic;
 
     -- regfile
-        pages_str(8)  := " AF:" & hex_str(dbg.z80.regs.af);
-        pages_str(9)  := " BC:" & hex_str(dbg.z80.regs.bc);
-        pages_str(10) := " DE:" & hex_str(dbg.z80.regs.de);
-        pages_str(11) := " HL:" & hex_str(dbg.z80.regs.hl);
-        pages_str(12) := " SP:" & hex_str(dbg.z80.regs.sp);
-        pages_str(13) := " IX:" & hex_str(dbg.z80.regs.ix);
-        pages_str(14) := " IY:" & hex_str(dbg.z80.regs.iy);
-        pages_str(15) := " WZ:" & hex_str(dbg.z80.regs.wz);
+        pages(8)  := " AF:" & hex_str(dbg.z80.regs.af);
+        pages(9)  := " BC:" & hex_str(dbg.z80.regs.bc);
+        pages(10) := " DE:" & hex_str(dbg.z80.regs.de);
+        pages(11) := " HL:" & hex_str(dbg.z80.regs.hl);
+        pages(12) := " SP:" & hex_str(dbg.z80.regs.sp);
+        pages(13) := " IX:" & hex_str(dbg.z80.regs.ix);
+        pages(14) := " IY:" & hex_str(dbg.z80.regs.iy);
+        pages(15) := " WZ:" & hex_str(dbg.z80.regs.wz);
 
     -- EXT
-        pages_str(16) := " AX:" & hex_str(dbg.addr_log);
-        pages_str(17) := " A:"  & hex_str(dbg.addr_phy);
-        pages_str(18) := " AB:" & hex_str(dbg.z80.abus);
-        pages_str(19) := " DT:" & hex_str(dbg.z80.dbus & dbg.data);
-        pages_str(20) := " AT:" & hex_str(dbg.z80.act & dbg.z80.tmp);
+        pages(16) := " AX:" & hex_str(dbg.addr_log);
+        pages(17) := " A:"  & hex_str(dbg.addr_phy);
+        pages(18) := " AB:" & hex_str(dbg.z80.abus);
+        pages(19) := " DT:" & hex_str(dbg.z80.dbus & dbg.data);
+        pages(20) := " AT:" & hex_str(dbg.z80.act & dbg.z80.tmp);
 
     -- ports
-        pages_str(24) := " P01:" & hex_str(dbg.ti.asic.p01_kbd) & ' ';
-        pages_str(25) := " P02:" & hex_str(dbg.ti.asic.p02_status) & ' ';
-        pages_str(26) := " P03:" & hex_str(dbg.ti.asic.p03_intmask) & ' ';
-        pages_str(27) := " P04:" & hex_str(dbg.ti.asic.p04_mmap_int) & ' ';
-        pages_str(28) := " P06:" & hex_str(dbg.ti.asic.p06_mempage_a) & ' ';
-        pages_str(29) := " P07:" & hex_str(dbg.ti.asic.p07_mempage_b) & ' ';
-        pages_str(30) := " P10:" & hex_str(dbg.ti.asic.p10_lcd_status) & ' ';
-        pages_str(31) := " P11:" & hex_str(dbg.ti.asic.p11_lcd_data) & ' ';
+        pages(24) := " P01:" & hex_str(dbg.ti.asic.p01_kbd) & ' ';
+        pages(25) := " P02:" & hex_str(dbg.ti.asic.p02_status) & ' ';
+        pages(26) := " P03:" & hex_str(dbg.ti.asic.p03_intmask) & ' ';
+        pages(27) := " P04:" & hex_str(dbg.ti.asic.p04_mmap_int) & ' ';
+        pages(28) := " P06:" & hex_str(dbg.ti.asic.p06_mempage_a) & ' ';
+        pages(29) := " P07:" & hex_str(dbg.ti.asic.p07_mempage_b) & ' ';
+        pages(30) := " P10:" & hex_str(dbg.ti.asic.p10_lcd_status) & ' ';
+        pages(31) := " P11:" & hex_str(dbg.ti.asic.p11_lcd_data) & ' ';
+    
+    -- mem map
+        pages(32) := "  ROM00 ";
+        pages(33) := " -------";
+        pages(34) := "  ROM ? ";
+        pages(35) := " -------";
+        pages(36) := "  ROM ? ";
+        pages(37) := " -------";
+        pages(38) := "  ROM ? ";
+        pages(39) := "        ";
+        if dbg.ti.memctrl.sec_ram_rom = '1' then pages(34)(4) := 'A'; end if;
+        pages(34)(6 to 7) := hex_str(dbg.ti.memctrl.sec_page);
+        if dbg.ti.memctrl.thi_ram_rom = '1' then pages(36)(4) := 'A'; end if;
+        pages(36)(6 to 7) := hex_str(dbg.ti.memctrl.thi_page);
+        if dbg.ti.memctrl.fou_ram_rom = '1' then pages(38)(4) := 'A'; end if;
+        pages(38)(6 to 7) := hex_str(dbg.ti.memctrl.fou_page);
 
-        char_ch := pages_str(page_index)(page_col+1);
+        char_ch := pages(page_index)(page_col+1);
         char_int := character'pos(char_ch);
 
         if '0' <= char_ch and char_ch <= '9' then
