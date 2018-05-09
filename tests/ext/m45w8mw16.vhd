@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.util.all;
 
 entity m45 is port(
     clk : in std_logic;
@@ -12,13 +13,18 @@ end m45;
 
 architecture arch of m45 is
     constant PC_START : integer := 16#7c000#;
+    constant RAM_START : integer := 16#00000#;
+    constant RAM_SIZE : integer := 256;
+    constant ROM_START : integer := 16#7dd49#;
     constant ROM_SIZE : integer := 256;
     constant STACK_TOP : integer := 16#7ffff#;
     constant STACK_SIZE : integer := 128;
 
     type mem_jp_t is array(PC_START/2 to PC_START/2+1)
         of std_logic_vector(15 downto 0);
-    type mem_rom_t is array(16#7dd49# to 16#7dd49#+ROM_SIZE/2)
+    type mem_ram_t is array(RAM_START/2 to RAM_START/2+RAM_SIZE/2)
+        of std_logic_vector(15 downto 0);
+    type mem_rom_t is array(ROM_START/2 to ROM_START/2+ROM_SIZE/2)
         of std_logic_vector(15 downto 0);
     type mem_stack_t is array(STACK_TOP/2-STACK_SIZE/2 to STACK_TOP/2)
         of std_logic_vector(15 downto 0);
@@ -50,6 +56,7 @@ architecture arch of m45 is
         return mem;
     end function;
 
+    signal mem_ram : mem_ram_t := (others => x"0000");
     signal mem_rom : mem_rom_t := file_to_mem("a.bin");
     signal mem_jp : mem_jp_t := (x"95c3", x"009d");
     signal mem_stack : mem_stack_t := (others => x"0000");
@@ -63,7 +70,14 @@ begin
         if rising_edge(clk) then
             if mce_c = '0' then
                 if mwe_c = '0' then
-                    if mem_rom'left <= a and a <= mem_rom'right then
+                    if mem_ram'left <= a and a <= mem_ram'right then
+                        if mlb_c = '0' then
+                            mem_ram(a)(7 downto 0) <= mdata(7 downto 0);
+                        end if;
+                        if mub_c = '0' then
+                            mem_ram(a)(15 downto 8) <= mdata(15 downto 8);
+                        end if;
+                    elsif mem_rom'left <= a and a <= mem_rom'right then
                         if mlb_c = '0' then
                             mem_rom(a)(7 downto 0) <= mdata(7 downto 0);
                         end if;
@@ -78,17 +92,19 @@ begin
                             mem_stack(a)(15 downto 8) <= mdata(15 downto 8);
                         end if;
                     else
-                        report "writing outside mem: " & integer'image(a);
+                        report "writing outside mem: " & hex_str(maddr);
                     end if;
                 end if;
-                if mem_rom'left <= a and a <= mem_rom'right then
+                if mem_ram'left <= a and a <= mem_ram'right then
+                    word_out <= mem_ram(a);
+                elsif mem_rom'left <= a and a <= mem_rom'right then
                     word_out <= mem_rom(a);
                 elsif mem_stack'left <= a and a <= mem_stack'right then
                     word_out <= mem_stack(a);
                 elsif mem_jp'left <= a and a <= mem_jp'right then
                     word_out <= mem_jp(a);
                 else
-                    report "reading outside mapped memory: " & integer'image(a);
+                    report "reading outside mapped memory: " & hex_str(maddr);
                     word_out <= x"abcd";
                 end if;
             end if;

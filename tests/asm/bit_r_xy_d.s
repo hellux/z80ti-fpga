@@ -1,3 +1,4 @@
+org 0x9d49
 ; rlc iy
 ld a, 10010100b
 ld iy, 0x70

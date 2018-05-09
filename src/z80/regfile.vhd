@@ -93,6 +93,7 @@ architecture arch of regfile is
         elsif rda = '1' then
             new_ram(baddr(reg_addr, s)) := addr(15 downto 8);
             new_ram(baddr(reg_addr+1, s)) := addr(7 downto 0);
+            -- breaks when reg is AF (should not be used anyway)
         end if;
         if rdf = '1' then
             new_ram(baddr(regF, s)) := f;
@@ -101,7 +102,7 @@ architecture arch of regfile is
     end next_ram;
 
     signal ram, ram_next : rf_ram_t := (others => x"ff");
-    signal s : rf_swap_state_t;
+    signal s : rf_swap_state_t := (others => '0');
 begin
     swap_proc : process(clk) begin
         if rising_edge(clk) then
