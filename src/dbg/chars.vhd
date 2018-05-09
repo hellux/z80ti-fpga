@@ -14,7 +14,7 @@ architecture arch of char_rom is
     constant CHAR_COLS : integer := 8;
     constant CHAR_COUNT : integer := 38;
     type char_arr_t is array(0 to CHAR_COUNT*CHAR_ROWS-1) of
-                        std_logic_vector(CHAR_COLS-1 downto 0);
+                        std_logic_vector(0 to CHAR_COLS-1);
 
     signal char_arr : char_arr_t := (
         "00000000",
@@ -324,11 +324,15 @@ architecture arch of char_rom is
 begin
     process(clk)
         variable r, c : integer range 0 to 7;
+        variable ch : integer;
     begin
         if rising_edge(clk) then
             r := to_integer(unsigned(row));
             c := to_integer(unsigned(col));
-            pixel <= char_arr(r*CHAR_COLS)(c);
+            ch := to_integer(unsigned(char));
+            if ch >= CHAR_COUNT then ch := CHAR_COUNT-1; end if;
+
+            pixel <= char_arr(ch*CHAR_ROWS+r)(c);
         end if;
     end process;
 end arch;
