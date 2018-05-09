@@ -18,7 +18,7 @@ architecture arch of m45 is
 
     type mem_jp_t is array(PC_START/2 to PC_START/2+1)
         of std_logic_vector(15 downto 0);
-    type mem_rom_t is array(0 to ROM_SIZE/2)
+    type mem_rom_t is array(16#7dd49# to 16#7dd49#+ROM_SIZE/2)
         of std_logic_vector(15 downto 0);
     type mem_stack_t is array(STACK_TOP/2-STACK_SIZE/2 to STACK_TOP/2)
         of std_logic_vector(15 downto 0);
@@ -51,7 +51,7 @@ architecture arch of m45 is
     end function;
 
     signal mem_rom : mem_rom_t := file_to_mem("a.bin");
-    signal mem_jp : mem_jp_t := (x"00c3", x"0000");
+    signal mem_jp : mem_jp_t := (x"95c3", x"009d");
     signal mem_stack : mem_stack_t := (others => x"0000");
 
     signal word_out : std_logic_vector(15 downto 0);
