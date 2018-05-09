@@ -23,7 +23,7 @@ architecture arch of monitor_vga is
 
     type page_in_arr_t is array(0 to PAGE_COUNT-1) of string(1 to PAGE_SIZE);
 
-    type page_t is array(1 to PAGE_SIZE) of integer;
+    type page_t is array(0 to PAGE_SIZE-1) of integer;
     type page_arr_t is array(0 to PAGE_COUNT-1) of page_t;
 
     signal page_in_arr : page_in_arr_t;
@@ -41,8 +41,8 @@ architecture arch of monitor_vga is
 
     signal col_index, row_index : integer range 0 to 7;
     signal val_prefix : string(1 to 4);
-    signal val_mode : string(1 to 4);
-    signal val_cycle : string(1 to 8);
+    signal val_mode : string(1 to 3);
+    signal val_cycle : string(1 to 4);
     signal val_flags : string(1 to 8);
     signal val_cond : string(1 to 8);
     signal val_cb : string(1 to 8);
@@ -59,12 +59,11 @@ begin
                       "FDCB" when fdcb;
 
     with dbg.z80.state.mode select
-        val_mode <= "EXEC" when exec,
-                    " WZ " when wz,
-                    "HALT" when halt,
-                    " INT" when int;
-
-    val_cycle <= " C: " &
+        val_mode <= "EXE" when exec,
+                    " WZ" when wz,
+                    "HLT" when halt,
+                    "INT" when int;
+    val_cycle <= 
         "M" & hex_str(std_logic_vector(to_unsigned(dbg.z80.state.m, 3))) &
         "T" & hex_str(std_logic_vector(to_unsigned(dbg.z80.state.t, 3)));
 
@@ -107,15 +106,17 @@ begin
     val_int(8) <= ' ';
 
     page_in_arr <= (
-        val_cycle,
+    -- state / inter
+        "PC: " & hex_str(dbg.z80.pc),
+        val_mode & ' ' & val_cycle,
+        val_prefix & "  " & hex_str(dbg.z80.ir),
         val_flags,
         val_cond,
         val_int,
-        " AX:" & hex_str(dbg.addr_log),
-        " A:"  & hex_str(dbg.addr_phy),
         val_cb,
         val_asic,
 
+    -- regfile
         " AF:" & hex_str(dbg.z80.regs.af),
         " BC:" & hex_str(dbg.z80.regs.bc),
         " DE:" & hex_str(dbg.z80.regs.de),
@@ -125,30 +126,35 @@ begin
         " IY:" & hex_str(dbg.z80.regs.iy),
         " WZ:" & hex_str(dbg.z80.regs.wz),
 
-        " PC:" & hex_str(dbg.z80.pc),
-        " PX:" & val_prefix,
-        " IREG:" & hex_str(dbg.z80.ir),
-        " MD:" & val_mode,
+    -- EXT
+        " AX:" & hex_str(dbg.addr_log),
+        " A:"  & hex_str(dbg.addr_phy),
         " AB:" & hex_str(dbg.z80.abus),
         " DT:" & hex_str(dbg.z80.dbus & dbg.data),
         " AT:" & hex_str(dbg.z80.act & dbg.z80.tmp),
+        (others => ' '),
+        (others => ' '),
+        (others => ' '),
 
-        " 01:" & hex_str(dbg.ti.asic.p01_kbd),
-        " 02:" & hex_str(dbg.ti.asic.p02_status),
-        " 03:" & hex_str(dbg.ti.asic.p03_intmask),
-        " 04:" & hex_str(dbg.ti.asic.p04_mmap_int),
-        " 06:" & hex_str(dbg.ti.asic.p06_mempage_a),
-        " 07:" & hex_str(dbg.ti.asic.p07_mempage_b),
-        " 10:" & hex_str(dbg.ti.asic.p10_lcd_status),
-        " 11:" & hex_str(dbg.ti.asic.p11_lcd_data),
-        others => (others => ' '));
+    -- ports
+        " P01:" & hex_str(dbg.ti.asic.p01_kbd) & ' ',
+        " P02:" & hex_str(dbg.ti.asic.p02_status) & ' ',
+        " P03:" & hex_str(dbg.ti.asic.p03_intmask) & ' ',
+        " P04:" & hex_str(dbg.ti.asic.p04_mmap_int) & ' ',
+        " P06:" & hex_str(dbg.ti.asic.p06_mempage_a) & ' ',
+        " P07:" & hex_str(dbg.ti.asic.p07_mempage_b) & ' ',
+        " P10:" & hex_str(dbg.ti.asic.p10_lcd_status) & ' ',
+        " P11:" & hex_str(dbg.ti.asic.p11_lcd_data) & ' ',
+
+        others => (others => ' ')
+    );
 
     process(page_in_arr)
         variable dig : std_logic_vector(3 downto 0);
     begin
         for p in pages'range loop
             for c in page_in_arr(p)'range loop
-                pages(p)(c) <= chi(page_in_arr(p)(c));
+                pages(p)(c-1) <= chi(page_in_arr(p)(c));
             end loop;
         end loop;
     end process;
