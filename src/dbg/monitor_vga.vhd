@@ -24,7 +24,7 @@ architecture arch of monitor_vga is
     type page_in_arr_t is array(0 to PAGE_COUNT-1) of string(1 to PAGE_SIZE);
 
     type page_t is array(0 to PAGE_SIZE-1) of integer;
-    type page_arr_t is array(0 to PAGE_COUNT-1) of page_t;
+    type page_arr_t is array(0 to PAGE_COUNT-1) of string(1 to 8);
 
     signal page_in_arr : page_in_arr_t;
     signal pages : page_arr_t := (others => (others => 0));
@@ -34,7 +34,7 @@ architecture arch of monitor_vga is
     signal row : unsigned(2 downto 0);
 
     signal page_index : integer range 0 to PAGE_COUNT-1;
-    signal current_page : page_t := (others => 0);
+    signal current_page : string(1 to 8);
 
     signal page_col : integer range 0 to 7;
     signal current_char : integer range 0 to CHAR_COUNT-1;
@@ -148,16 +148,6 @@ begin
 
         others => (others => ' ')
     );
-
-    process(page_in_arr)
-        variable dig : std_logic_vector(3 downto 0);
-    begin
-        for p in pages'range loop
-            for c in page_in_arr(p)'range loop
-                pages(p)(c-1) <= chi(page_in_arr(p)(c));
-            end loop;
-        end loop;
-    end process;
 
     col <= unsigned(x_vga(8 downto 3));
     row <= unsigned(y_vga(5 downto 3));

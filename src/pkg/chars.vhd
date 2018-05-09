@@ -2,7 +2,11 @@ library ieee;
 use ieee.std_logic_1164.all;
 use work.z80_comm.all;
 
-package chars is
+entity chars is
+
+end chars;
+
+architecture arch of chars is
     constant CHAR_ROWS : integer := 8;
     constant CHAR_COLS : integer := 8;
     constant CHAR_COUNT : integer := 39;
@@ -323,61 +327,51 @@ package chars is
                                     "00000000",
                                     "00000000");
 
-    constant char_arr : char_arr_t := (char0, char1, char2, char3,
-                                       char4, char5, char6, char7,
-                                       char8, char9, charA, charB,
-                                       charC, charD, charE, charF,
-                                       charG, charH, charI, charJ,
-                                       charK, charL, charM, charN,
-                                       charO, charP, charQ, charR,
-                                       charS, charT, charU, charV,
-                                       charW, charX, charY, charZ,
-                                       charCOLON, charSPACE, charUNDEF);
-    function chi(char : character) return integer;
+    function ch(char : character) return integer;
 end chars;
 
 package body chars is
-    function chi(char : character) return integer is begin
+    function ch(char : character) return char_t is begin
         case char is
-            when '0' => return 0;
-            when '1' => return 1;
-            when '2' => return 2;
-            when '3' => return 3;
-            when '4' => return 4;
-            when '5' => return 5;
-            when '6' => return 6;
-            when '7' => return 7;
-            when '8' => return 8;
-            when '9' => return 9;
-            when 'A' => return 10;
-            when 'B' => return 11;
-            when 'C' => return 12;
-            when 'D' => return 13;
-            when 'E' => return 14;
-            when 'F' => return 15;
-            when 'G' => return 16;
-            when 'H' => return 17;
-            when 'I' => return 18;
-            when 'J' => return 19;
-            when 'K' => return 20;
-            when 'L' => return 21;
-            when 'M' => return 22;
-            when 'N' => return 23;
-            when 'O' => return 24;
-            when 'P' => return 25;
-            when 'Q' => return 26;
-            when 'R' => return 27;
-            when 'S' => return 28;
-            when 'T' => return 29;
-            when 'U' => return 30;
-            when 'V' => return 31;
-            when 'W' => return 32;
-            when 'X' => return 33;
-            when 'Y' => return 34;
-            when 'Z' => return 35;
-            when ':' => return CHAR_COUNT-3;
-            when ' ' => return CHAR_COUNT-2;
-            when others => return CHAR_COUNT-1;
+            when '0' => return char0;
+            when '1' => return char1;
+            when '2' => return char2;
+            when '3' => return char3;
+            when '4' => return char4;
+            when '5' => return char5;
+            when '6' => return char6;
+            when '7' => return char7;
+            when '8' => return char8;
+            when '9' => return char9;
+            when 'A' => return charA;
+            when 'B' => return charB;
+            when 'C' => return charC;
+            when 'D' => return charD;
+            when 'E' => return charE;
+            when 'F' => return charF;
+            when 'G' => return charG;
+            when 'H' => return charH;
+            when 'I' => return charI;
+            when 'J' => return charJ;
+            when 'K' => return charK;
+            when 'L' => return charL;
+            when 'M' => return charM;
+            when 'N' => return charN;
+            when 'O' => return charO;
+            when 'P' => return charP;
+            when 'Q' => return charQ;
+            when 'R' => return charR;
+            when 'S' => return charS;
+            when 'T' => return charT;
+            when 'U' => return charU;
+            when 'V' => return charV;
+            when 'W' => return charW;
+            when 'X' => return charX;
+            when 'Y' => return charY;
+            when 'Z' => return charZ;
+            when ':' => return charCOLON;
+            when ' ' => return charSPACE;
+            when others => return charUNDEF;
         end case;
-    end chi;
-end chars;
+    end ch;
+end arch;
