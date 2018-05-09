@@ -114,11 +114,21 @@ architecture arch of comp is
         data_out : out std_logic_vector(7 downto 0));
     end component;
 
+    component char_rom port(
+        clk : in std_logic;
+        char : in std_logic_vector(5 downto 0);
+        col, row : in std_logic_vector(2 downto 0);
+        pixel : out std_logic);
+    end component;
+
     component monitor_vga port(
         clk : in std_logic;
         dbg : in dbg_cmp_t;
         x_vga : in std_logic_vector(8 downto 0);
         y_vga : in std_logic_vector(5 downto 0);
+        char : out std_logic_vector(5 downto 0);
+        col_index, row_index : out std_logic_vector(2 downto 0);
+        char_pixel : in std_logic;
         data_vga : out std_logic);
     end component;
 
@@ -180,6 +190,11 @@ architecture arch of comp is
     signal mon_vga_data : std_logic;
     signal vga_mon_x : std_logic_vector(8 downto 0);
     signal vga_mon_y : std_logic_vector(5 downto 0);
+
+    -- mon <-> char rom
+    signal mon_crom_row, mon_crom_col : std_logic_vector(2 downto 0);
+    signal mon_crom_char : std_logic_vector(5 downto 0);
+    signal crom_mon_pixel : std_logic;
 
     -- ti/bootloader <-> mem controller
     signal mem_wr_bl, mem_wr_ti : std_logic;
@@ -280,7 +295,11 @@ begin
     dbg.cbi <= cbi;
     dbg.cbo <= cbo;
 
+    crom : char_rom port map(clk, mon_crom_char, mon_crom_col, mon_crom_row,
+                             crom_mon_pixel);
     mon_vga : monitor_vga port map(clk, dbg, vga_mon_x, vga_mon_y,
+                                   mon_crom_char, mon_crom_col, mon_crom_row,
+                                   crom_mon_pixel,
                                    mon_vga_data);
     mon : monitor port map(clk, sw(3 downto 0), dbg, seg, led, an);
 end arch;
