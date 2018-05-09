@@ -101,12 +101,11 @@ begin
                      std_logic_vector(bp_addr(3));
     break_addr <= bp_addr_merge;
 
-    with dig_sel select
-        seg_dots <= "1000" when "00",
-                    "0100" when "01",
-                    "0010" when "10",
-                    "0001" when "11",
-                    "----" when others;
+    seg_dots <= "0000" when state /= edit else
+                "1000" when dig_sel = "00" else
+                "0100" when dig_sel = "01" else
+                "0010" when dig_sel = "10" else
+                "0001" when dig_sel = "11" else "----";
 
     smt : segment port map(clk, bp_addr_merge, seg_dots, seg, an);
 end arch;

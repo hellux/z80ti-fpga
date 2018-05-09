@@ -121,6 +121,7 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         f := mem_rd(state, f);
+        f.cb.m1 := '1'; -- notify external of pc/instr rd
         case state.t is
         when t1 =>
             if state.mode = wz then
@@ -165,7 +166,7 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         f := mem_rd_pc(state, f);
-
+        f.cb.m1 := '1';
         case state.m is
         when m1 =>
             case state.t is
