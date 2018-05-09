@@ -1,9 +1,10 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.cmp_comm.all;
 
 package ti_comm is
+    constant FREQ : integer := 100*10**6;
+    constant DIV_TI : integer := FREQ/(50*10**6);
     constant LCD_COLS : integer := 120;
     constant LCD_ROWS : integer := 64;
 
@@ -66,6 +67,24 @@ package ti_comm is
     constant PI10_LCD_ENABLED       : natural := 5;
     constant PI10_WL_8_6            : natural := 6;
     constant PI10_LCD_BUSY          : natural := 7;
+
+    type dbg_asic_t is record 
+        paddr : std_logic_vector(4 downto 0);
+        rd_wr : std_logic; -- 0 rd, 1 wr
+        ce : std_logic;
+        p01_kbd : std_logic_vector(7 downto 0);
+        p02_status : std_logic_vector(7 downto 0);
+        p03_intmask : std_logic_vector(7 downto 0);
+        p04_mmap_int : std_logic_vector(7 downto 0);
+        p06_mempage_a : std_logic_vector(7 downto 0);
+        p07_mempage_b : std_logic_vector(7 downto 0);
+        p10_lcd_status : std_logic_vector(7 downto 0);
+        p11_lcd_data : std_logic_vector(7 downto 0);
+    end record;
+
+    type dbg_ti_t is record
+        asic : dbg_asic_t;
+    end record;
 end ti_comm;
 
 package body ti_comm is

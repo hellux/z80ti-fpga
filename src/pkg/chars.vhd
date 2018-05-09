@@ -332,7 +332,7 @@ package chars is
                                        charO, charP, charQ, charR,
                                        charS, charT, charU, charV,
                                        charW, charX, charY, charZ,
-                                       charCOLON, charSPACE, charUNDEF
+                                       charCOLON, charSPACE, charUNDEF);
     function chi(char : character) return integer;
 end chars;
 

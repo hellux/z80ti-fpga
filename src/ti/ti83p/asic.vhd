@@ -13,7 +13,9 @@ entity asic is port(
     data_out : out std_logic_vector(7 downto 0); -- to dbus
 -- asic <-> controllers
     ports_in : in ports_in_t;                    -- (port -> cpu) from ctrl
-    ports_out : out ports_out_t);                -- (cpu -> port) to ctrl 
+    ports_out : out ports_out_t;                 -- (cpu -> port) to ctrl 
+-- dbg
+    dbg : out dbg_asic_t);
 end asic;
 
 architecture arch of asic is
@@ -30,9 +32,8 @@ architecture arch of asic is
         rd, wr, buf : std_logic;
     end record;
 
-    type ctrl_array_t is array(0 to PORT_COUNT-1) of port_ctrl_t;
-    type ports_in_array_t is array(0 to PORT_COUNT-1) of port_in_t;
-    type rw_array_t is array(0 to PORT_COUNT-1) of std_logic;
+    type ctrl_arr_t is array(0 to PORT_COUNT-1) of port_ctrl_t;
+    type ports_in_arr_t is array(0 to PORT_COUNT-1) of port_in_t;
 
     type ctrl_state_t is (idle, hold_in, hold_out);
 
@@ -47,8 +48,8 @@ architecture arch of asic is
     signal a : integer range 0 to PORT_COUNT-1 := 0;
 
     -- array of input/output to external ports
-    signal carr : ctrl_array_t;
-    signal parr_in : ports_in_array_t;
+    signal carr : ctrl_arr_t;
+    signal parr_in : ports_in_arr_t;
 
     -- pulse rd / wr signal
     signal ctrl_state : ctrl_state_t;
@@ -89,8 +90,12 @@ begin
                     ports_wr <= '0';
 
                     if in_op = '1' then
+                        dbg.paddr <= addr;
+                        dbg.rd_wr <= '0';
                         ctrl_state <= hold_in;
                     elsif out_op = '1' then
+                        dbg.paddr <= addr;
+                        dbg.rd_wr <= '1';
                         ctrl_state <= hold_out;
                     end if;
                 when hold_in =>
@@ -211,4 +216,13 @@ begin
         16#1b# => ports_in.p11_lcd_data,
         others => (data => x"00"));
 
+    dbg.ce <= in_op or out_op;
+    dbg.p01_kbd         <= parr_in(16#01#).data;
+    dbg.p02_status      <= parr_in(16#02#).data;
+    dbg.p03_intmask     <= parr_in(16#03#).data;
+    dbg.p04_mmap_int    <= parr_in(16#04#).data;
+    dbg.p06_mempage_a   <= parr_in(16#06#).data;
+    dbg.p07_mempage_b   <= parr_in(16#07#).data;
+    dbg.p10_lcd_status  <= parr_in(16#10#).data;
+    dbg.p11_lcd_data    <= parr_in(16#11#).data;
 end arch;

@@ -20,7 +20,9 @@ entity ti is port(
     data_vga : out std_logic;
 -- mem ext
     rd, wr : out std_logic;
-    addr_phy : out std_logic_vector(19 downto 0));
+    addr_phy : out std_logic_vector(19 downto 0);
+-- debug
+    dbg : out dbg_ti_t);
 end ti;
 
 architecture arch of ti is
@@ -31,7 +33,8 @@ architecture arch of ti is
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
         ports_in : in ports_in_t;
-        ports_out : out ports_out_t);
+        ports_out : out ports_out_t;
+        dbg : out dbg_asic_t);
     end component;
 
     component status port(
@@ -118,7 +121,8 @@ begin
     asic_c : asic port map(clk, rst, ce,
                            in_op, out_op,
                            addr_log(4 downto 0), data_in, data_out,
-                           ports_in, ports_out);
+                           ports_in, ports_out,
+                           dbg.asic);
 
     stat : status port map(ports_out.p05_protect, ports_in.p02_status);
 

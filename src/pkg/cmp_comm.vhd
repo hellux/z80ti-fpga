@@ -1,11 +1,11 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use work.z80_comm.all;
+use work.ti_comm.all;
 
 package cmp_comm is
     constant FREQ : integer := 100*10**6;
 
-    constant DIV_TI : integer := FREQ/(50*10**6);
     constant DIV_Z80 : integer := 17; -- FREQ/6MHz = 16.7
     constant DIV_VGA : integer := FREQ/(25*10**6);
 
@@ -28,6 +28,7 @@ package cmp_comm is
 
     type dbg_cmp_t is record
         z80 : dbg_z80_t;
+        ti : dbg_ti_t;
         scancode : std_logic_vector(7 downto 0);
         keycode : std_logic_vector(7 downto 0);
         keys_down : keys_down_t;

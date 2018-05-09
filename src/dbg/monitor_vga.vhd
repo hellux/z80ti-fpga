@@ -3,6 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
 use work.cmp_comm.all;
+use work.util.all;
 use work.chars.all;
 
 entity monitor_vga is port(
@@ -20,9 +21,9 @@ architecture arch of monitor_vga is
     constant ROWS : integer := 8;
     constant PAGE_COUNT : integer := PAGES_PER_ROW*ROWS;
 
-    type page_in_arr_t is array(0 to PAGE_COUNT-1) of string(1 to 7);
+    type page_in_arr_t is array(0 to PAGE_COUNT-1) of string(1 to PAGE_SIZE);
 
-    type page_t is array(0 to 7) of integer;
+    type page_t is array(1 to PAGE_SIZE) of integer;
     type page_arr_t is array(0 to PAGE_COUNT-1) of page_t;
 
     signal page_in_arr : page_in_arr_t;
@@ -39,43 +40,108 @@ architecture arch of monitor_vga is
     signal current_char : integer range 0 to CHAR_COUNT-1;
 
     signal col_index, row_index : integer range 0 to 7;
-    signal val_prefix : std_logic_vector(15 downto 0);
+    signal val_prefix : string(1 to 4);
+    signal val_mode : string(1 to 4);
+    signal val_cycle : string(1 to 8);
+    signal val_flags : string(1 to 8);
+    signal val_cond : string(1 to 8);
+    signal val_cb : string(1 to 8);
+    signal val_asic : string(1 to 8);
+    signal val_int : string(1 to 8);
 begin
     with dbg.z80.state.prefix select
-        val_prefix <= x"0000" when main,
-                      x"00ed" when ed,
-                      x"00cb" when cb,
-                      x"00dd" when dd,
-                      x"ddcb" when ddcb,
-                      x"00fd" when fd,
-                      x"fdcb" when fdcbL
+        val_prefix <= "MAIN" when main,
+                      "  ED" when ed,
+                      "  CB" when cb,
+                      "  DD" when dd,
+                      "DDCB" when ddcb,
+                      "  CD" when fd,
+                      "FDCB" when fdcb;
+
+    with dbg.z80.state.mode select
+        val_mode <= "EXEC" when exec,
+                    " WZ " when wz,
+                    "HALT" when halt,
+                    " INT" when int;
+
+    val_cycle <= " C: " &
+        "M" & hex_str(std_logic_vector(to_unsigned(dbg.z80.state.m, 3))) &
+        "T" & hex_str(std_logic_vector(to_unsigned(dbg.z80.state.t, 3)));
+
+    val_flags(1) <= 'S' when dbg.z80.regs.af(7) = '1' else ' ';
+    val_flags(2) <= 'Z' when dbg.z80.regs.af(6) = '1' else ' ';
+    val_flags(3) <= 'X' when dbg.z80.regs.af(5) = '1' else ' ';
+    val_flags(4) <= 'H' when dbg.z80.regs.af(4) = '1' else ' ';
+    val_flags(5) <= 'Y' when dbg.z80.regs.af(3) = '1' else ' ';
+    val_flags(6) <= 'P' when dbg.z80.regs.af(2) = '1' else ' ';
+    val_flags(7) <= 'N' when dbg.z80.regs.af(1) = '1' else ' ';
+    val_flags(8) <= 'C' when dbg.z80.regs.af(0) = '1' else ' ';
+
+    val_cond(1 to 2) <= " Z" when dbg.z80.state.cc(1) else "NZ";
+    val_cond(3 to 4) <= " C" when dbg.z80.state.cc(3) else "NC";
+    val_cond(5 to 6) <= "PE" when dbg.z80.state.cc(5) else "PO";
+    val_cond(7 to 8) <= " M" when dbg.z80.state.cc(7) else " P";
+
+    val_asic(1) <= ' ';
+    val_asic(2 to 3) <= "WR" when dbg.ti.asic.rd_wr = '1' else "RD";
+    val_asic(4) <= ' ';
+    val_asic(5) <= 'E' when dbg.ti.asic.ce = '1' else ' ';
+    val_asic(6) <= ' ';
+    val_asic(7 to 8) <= hex_str(dbg.ti.asic.paddr);
+
+    val_cb(1) <= '1' when dbg.cbo.m1    = '1' else ' ';
+    val_cb(2) <= 'M' when dbg.cbo.mreq  = '1' else ' ';
+    val_cb(3) <= 'I' when dbg.cbo.iorq  = '1' else ' ';
+    val_cb(4) <= 'R' when dbg.cbo.rd    = '1' else ' ';
+    val_cb(5) <= 'W' when dbg.cbo.wr    = '1' else ' ';
+    val_cb(6) <= 'H' when dbg.cbo.halt  = '1' else ' ';
+    val_cb(7) <= 'X' when dbg.cbi.int   = '1' else ' ';
+    val_cb(8) <= '0' when dbg.cbi.reset = '1' else ' ';
+
+    val_int(1 to 3) <= " IM";
+    val_int(4) <= '0' when dbg.z80.state.im = 0 else
+                  '1' when dbg.z80.state.im = 1 else
+                  '2';
+    val_int(5) <= ' ';
+    val_int(6 to 7) <= "EI" when dbg.z80.state.iff = '1' else "DI";
+    val_int(8) <= ' ';
 
     page_in_arr <= (
-        (" AF:" & hex_str(dbg.z80.regs.af)),
-        (" BC:" & hex_str(dbg.z80.regs.bc)),
-        (" DE:", dbg.z80.regs.de),
-        (" HL:", dbg.z80.regs.hl),
-        (" SP:", dbg.z80.regs.sp),
-        (" IX:", dbg.z80.regs.ix),
-        (" IY:", dbg.z80.regs.iy),
-        (" WZ:", dbg.z80.regs.wz),
-        (" PC:", dbg.z80.pc),
-        (" PX:", val_prefix),
-        (" ID:", dbg.z80.ir),
-        (" AB:", dbg.z80.act & dbg.z80.tmp),
-        (" DX:", dbg.z80.act & dbg.z80.tmp),
-        (" AX:", dbg.z80.act & dbg.z80.tmp),
-        (" AP:", dbg.z80.act & dbg.z80.tmp),
-        ("  ", dbg.z80.act & dbg.z80.tmp),
-        (" 0D ", dbg.z80.act & dbg.z80.tmp),
-        (" 0E ", dbg.z80.act & dbg.z80.tmp),
-        (" 0F ", dbg.z80.act & dbg.z80.tmp),
-        (" 10 ", dbg.z80.act & dbg.z80.tmp),
-        (" 11 ", dbg.z80.act & dbg.z80.tmp),
-        (" 12 ", dbg.z80.act & dbg.z80.tmp),
-        (" 13 ", dbg.z80.act & dbg.z80.tmp),
-        (" 14 ", dbg.z80.act & dbg.z80.tmp),
-        others => ("    ", x"0000"));
+        val_cycle,
+        val_flags,
+        val_cond,
+        val_int,
+        " AX:" & hex_str(dbg.addr_log),
+        " A:"  & hex_str(dbg.addr_phy),
+        val_cb,
+        val_asic,
+
+        " AF:" & hex_str(dbg.z80.regs.af),
+        " BC:" & hex_str(dbg.z80.regs.bc),
+        " DE:" & hex_str(dbg.z80.regs.de),
+        " HL:" & hex_str(dbg.z80.regs.hl),
+        " SP:" & hex_str(dbg.z80.regs.sp),
+        " IX:" & hex_str(dbg.z80.regs.ix),
+        " IY:" & hex_str(dbg.z80.regs.iy),
+        " WZ:" & hex_str(dbg.z80.regs.wz),
+
+        " PC:" & hex_str(dbg.z80.pc),
+        " PX:" & val_prefix,
+        " IREG:" & hex_str(dbg.z80.ir),
+        " MD:" & val_mode,
+        " AB:" & hex_str(dbg.z80.abus),
+        " DT:" & hex_str(dbg.z80.dbus & dbg.data),
+        " AT:" & hex_str(dbg.z80.act & dbg.z80.tmp),
+
+        " 01:" & hex_str(dbg.ti.asic.p01_kbd),
+        " 02:" & hex_str(dbg.ti.asic.p02_status),
+        " 03:" & hex_str(dbg.ti.asic.p03_intmask),
+        " 04:" & hex_str(dbg.ti.asic.p04_mmap_int),
+        " 06:" & hex_str(dbg.ti.asic.p06_mempage_a),
+        " 07:" & hex_str(dbg.ti.asic.p07_mempage_b),
+        " 10:" & hex_str(dbg.ti.asic.p10_lcd_status),
+        " 11:" & hex_str(dbg.ti.asic.p11_lcd_data),
+        others => (others => ' '));
 
     process(page_in_arr)
         variable dig : std_logic_vector(3 downto 0);

@@ -65,7 +65,8 @@ architecture arch of comp is
         y_vga : in std_logic_vector(5 downto 0);
         data_vga : out std_logic;
         rd, wr : out std_logic;
-        addr_phy : out std_logic_vector(19 downto 0));
+        addr_phy : out std_logic_vector(19 downto 0);
+        dbg : out dbg_ti_t);
     end component;
 
     component mem_if port(
@@ -243,7 +244,8 @@ begin
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
                           vga_gmem_x, vga_gmem_y, gmem_vga_data,
-                          mem_rd, mem_wr_ti, addr_ti);
+                          mem_rd, mem_wr_ti, addr_ti,
+                          dbg.ti);
 
     -- mem signals (bootloader priority)
     mem_wr <= mem_wr_bl or mem_wr_ti;
