@@ -3,8 +3,8 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package ti_comm is
-    constant FREQ : integer := 100*10**6;
-    constant DIV_TI : integer := FREQ/(50*10**6);
+    constant SYS_FREQ : integer := 100*10**6;
+    constant DIV_TI : integer := SYS_FREQ/(50*10**6);
     constant LCD_COLS : integer := 120;
     constant LCD_ROWS : integer := 64;
 
@@ -26,7 +26,6 @@ package ti_comm is
 
     type ports_out_t is record
         p01_kbd : port_out_t;
-        p02_status : port_out_t;
         p03_intmask : port_out_t;
         p04_mmap_int : port_out_t;
         p05_protect : port_out_t;
@@ -42,10 +41,6 @@ package ti_comm is
         (fdiv(560), fdiv(248), fdiv(170), fdiv(118));
     constant HWT2_DIVS : hwt_divs_t :=
         (fdiv(1120), fdiv(497), fdiv(344), fdiv(236));
-
-    constant PO02_ON_KEY_ACK        : natural := 0;
-    constant PO02_HWT2_ACK          : natural := 1;
-    constant PO02_HWT1_ACK          : natural := 2;
 
     constant PI02_BATTERY_GOOD      : natural := 0;
     constant PI02_NOT_73            : natural := 1;
@@ -105,6 +100,6 @@ end ti_comm;
 package body ti_comm is
     -- CLK FREQ / TI_DIV / freq = divider for to get frequency freq
     impure function fdiv(freq : natural) return std_logic_vector is begin
-        return std_logic_vector(to_unsigned(FREQ/DIV_TI/freq, 20));
+        return std_logic_vector(to_unsigned(SYS_FREQ/DIV_TI/freq, 20));
     end fdiv;
 end ti_comm;

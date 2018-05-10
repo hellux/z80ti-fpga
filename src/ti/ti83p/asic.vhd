@@ -150,13 +150,6 @@ begin
                           p01_kbd_ctrl.rd,
                           p01_kbd_ctrl.wr);
 
-    p02_buf : reg generic map(x"00", 8)
-                  port map(clk, rst, ce, p02_status_ctrl.buf,
-                           data_in, p02_status_buf);
-    ports_out.p02_status <= (p02_status_buf, 
-                             p02_status_ctrl.rd,
-                             p02_status_ctrl.wr);
-
     p03_buf : reg generic map(x"0b", 8)
                   port map(clk, rst, ce, p03_intmask_ctrl.buf,
                            data_in, p03_intmask_buf);

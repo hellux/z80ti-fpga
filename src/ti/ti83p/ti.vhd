@@ -44,7 +44,6 @@ architecture arch of ti is
 
     component interrupt port(
         clk, rst, ce : in std_logic;
-        p02_status_o : in port_out_t;
         p03_intmask_o : in port_out_t;
         p04_mmap_int_o : in port_out_t;
         p04_mmap_int_i : out port_in_t;
@@ -128,7 +127,6 @@ begin
     stat : status port map(ports_out.p05_protect, ports_in.p02_status);
 
     inth : interrupt port map(clk, rst, ce,
-                              ports_out.p02_status,
                               ports_out.p03_intmask,
                               ports_out.p04_mmap_int,
                               ports_in.p04_mmap_int,
