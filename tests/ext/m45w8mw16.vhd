@@ -12,20 +12,28 @@ entity m45 is port(
 end m45;
 
 architecture arch of m45 is
-    constant PC_START : integer := 16#7c000#;
-
-    constant RAM_SIZE : integer := 256;
+    constant INIT_SIZE : integer := 15;
     constant ROM_SIZE : integer := 256;
-    constant STACK_SIZE : integer := 128;
+    constant STACK_SIZE : integer := 256;
 
     constant RAM_L : integer := 16#00000#;
-    constant RAM_R : integer := RAM_L + RAM_SIZE-1;
-    constant JP_L : integer := PC_START;
-    constant JP_R : integer := PC_START+2;
+    constant RAM_R : integer := 16#00027#;
+
+    constant BCALL0_L : integer := 16#00028#;
+    constant BCALL0_R : integer := 16#0002a#;
+    constant BCALL1_L : integer := 16#02a37#;
+    constant BCALL1_R : integer := 16#02ab2#;
+    constant BCALL2_L : integer := 16#0249f#;
+    constant BCALL2_R : integer := 16#024b4#;
+
+    constant INIT_L : integer := 16#7c000#;
+    constant INIT_R : integer := INIT_L+INIT_SIZE-1;
+
     constant ROM_L : integer := 16#7dd49#;
     constant ROM_R : integer := ROM_L+ROM_SIZE-1;
+
     constant STACK_R : integer := 16#7ffff#;
-    constant STACK_L : integer := STACK_R-STACK_SIZE-1;
+    constant STACK_L : integer := STACK_R-STACK_SIZE+1;
 
     type mem_t is array(integer range <>) of std_logic_vector(7 downto 0);
 
@@ -52,10 +60,6 @@ architecture arch of m45 is
     procedure read(signal mem : inout mem_t;
                    signal a : in integer;
                    signal data : out std_logic_vector(15 downto 0)) is begin
-        report "hej";
-        report integer'image(mem'left);
-        report integer'image(a+1);
-        report integer'image(mem'right);
         if mem'left <= a+1 and a+1 <= mem'right then
             data(15 downto 8) <= mem(a+1);
         end if;
@@ -80,10 +84,22 @@ architecture arch of m45 is
         end if;
     end procedure;
 
+    -- modifiable
     signal mem_ram : mem_t(RAM_L to RAM_R) := (others => x"00");
     signal mem_rom : mem_t(ROM_L to ROM_R) := file_to_mem("a.bin", ROM_SIZE);
-    signal mem_jp : mem_t(JP_L to JP_R) := (x"c3", x"95", x"9d");
     signal mem_stack : mem_t(STACK_L to STACK_R) := (others => x"00");
+
+    -- jump to user ram from pc init
+    signal mem_init : mem_t(INIT_L to INIT_R)
+        := file_to_mem("tests/binary/init.z", INIT_SIZE);
+    -- jump to bcall routine
+    signal mem_bc0 : mem_t(BCALL0_L to BCALL0_R) := (x"c3", x"37", x"2a");
+    -- bcall routine 1
+    signal mem_bc1 : mem_t(BCALL1_L to BCALL1_R)
+        := file_to_mem("bc1.bin", BCALL1_R-BCALL1_L+1);
+    -- bcall routine 2
+    signal mem_bc2 : mem_t(BCALL2_L to BCALL2_R)
+        := file_to_mem("bc2.bin", BCALL2_R-BCALL2_L+1);
 
     signal word_out : std_logic_vector(15 downto 0);
     signal a_ub, a_lb : integer;
@@ -100,10 +116,13 @@ begin
                     write(mem_stack, mub_c, mlb_c, a_lb, mdata);
                 end if;
                 word_out <= x"7676";
-                read(mem_jp, a_lb, word_out);
+                read(mem_init, a_lb, word_out);
                 read(mem_rom, a_lb, word_out);
                 read(mem_ram, a_lb, word_out);
                 read(mem_stack, a_lb, word_out);
+                read(mem_bc0, a_lb, word_out);
+                read(mem_bc1, a_lb, word_out);
+                read(mem_bc2, a_lb, word_out);
             end if;
         end if;
     end process;

@@ -81,16 +81,12 @@ begin
     end process;
 
     process begin
-        sw(7 downto 6) <= "11";
+        sw(7 downto 6) <= "00";
         sw(5 downto 4) <= "00";
-        sw(0) <= '1'; -- break on addr
+        sw(0) <= '0'; -- do not break on addr
         btns <= (others => '0');
 
         press(btns(1)); -- reset
-        sw(7 downto 6) <= "00";
-        
-        wait for 21324 ns;
-        press(btns(0)); -- step after break
 
         -- wait
         wait for 1000 ms;

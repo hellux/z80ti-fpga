@@ -1,7 +1,7 @@
 rom=$1
 
 bc1_l=$(printf "%d" 0x2a37)
-bc1_r=$(printf "%d" 0x2a8a)
+bc1_r=$(printf "%d" 0x2ab2)
 bc1_s=$(expr $bc1_r - $bc1_l + 1)
 
 bc2_l=$(printf "%d" 0x249f)
