@@ -59,6 +59,9 @@ architecture arch of asic is
     signal p01_kbd_ctrl : port_ctrl_t;
     signal p01_kbd_buf : std_logic_vector(7 downto 0);
 
+    signal p02_status_ctrl : port_ctrl_t;
+    signal p02_status_buf : std_logic_vector(7 downto 0);
+
     signal p03_intmask_ctrl : port_ctrl_t;
     signal p03_intmask_buf : std_logic_vector(7 downto 0);
 
@@ -144,49 +147,64 @@ begin
                   port map(clk, rst, ce, p01_kbd_ctrl.buf,
                            data_in, p01_kbd_buf);
     ports_out.p01_kbd <= (p01_kbd_buf, 
-                          p01_kbd_ctrl.rd, p01_kbd_ctrl.wr);
+                          p01_kbd_ctrl.rd,
+                          p01_kbd_ctrl.wr);
+
+    p02_buf : reg generic map(x"00", 8)
+                  port map(clk, rst, ce, p02_status_ctrl.buf,
+                           data_in, p02_status_buf);
+    ports_out.p02_status <= (p02_status_buf, 
+                             p02_status_ctrl.rd,
+                             p02_status_ctrl.wr);
 
     p03_buf : reg generic map(x"0b", 8)
                   port map(clk, rst, ce, p03_intmask_ctrl.buf,
                            data_in, p03_intmask_buf);
     ports_out.p03_intmask <= (p03_intmask_buf,
-                              p03_intmask_ctrl.rd, p03_intmask_ctrl.wr);
+                              p03_intmask_ctrl.rd,
+                              p03_intmask_ctrl.wr);
 
     p04_buf : reg generic map(x"77", 8)
                   port map(clk, rst, ce, p04_mmap_int_ctrl.buf,
                            data_in, p04_mmap_int_buf);
     ports_out.p04_mmap_int <= (p04_mmap_int_buf,
-                               p04_mmap_int_ctrl.rd, p04_mmap_int_ctrl.wr);
+                               p04_mmap_int_ctrl.rd,
+                               p04_mmap_int_ctrl.wr);
 
     p05_buf : reg generic map(x"00", 8)
                   port map(clk, rst, ce, p05_protect_ctrl.buf,
                            data_in, p05_protect_buf);
     ports_out.p05_protect <= (p05_protect_buf,
-                              p05_protect_ctrl.rd, p05_protect_ctrl.wr);
+                              p05_protect_ctrl.rd,
+                              p05_protect_ctrl.wr);
 
     p06_buf : reg generic map(x"1f", 8)
                   port map(clk, rst, ce, p06_mempage_a_ctrl.buf,
                            data_in, p06_mempage_a_buf);
     ports_out.p06_mempage_a <= (p06_mempage_a_buf,
-                                p06_mempage_a_ctrl.rd, p06_mempage_a_ctrl.wr);
+                                p06_mempage_a_ctrl.rd,
+                                p06_mempage_a_ctrl.wr);
 
     p07_buf : reg generic map(x"1f", 8)
                   port map(clk, rst, ce, p07_mempage_b_ctrl.buf,
                            data_in, p07_mempage_b_buf);
     ports_out.p07_mempage_b <= (p07_mempage_b_buf,
-                                p07_mempage_b_ctrl.rd, p07_mempage_b_ctrl.wr);
+                                p07_mempage_b_ctrl.rd,
+                                p07_mempage_b_ctrl.wr);
 
     p10_buf : reg generic map(x"00", 8)
                   port map(clk, rst, ce, p10_lcd_status_ctrl.buf,
                            data_in, p10_lcd_status_buf);
     ports_out.p10_lcd_status <= (p10_lcd_status_buf,
-                                 p10_lcd_status_ctrl.rd, p10_lcd_status_ctrl.wr);
+                                 p10_lcd_status_ctrl.rd,
+                                 p10_lcd_status_ctrl.wr);
 
     p11_buf : reg generic map(x"00", 8)
                   port map(clk, rst, ce, p11_lcd_data_ctrl.buf,
                            data_in, p11_lcd_data_buf);
     ports_out.p11_lcd_data <= (p11_lcd_data_buf,
-                               p11_lcd_data_ctrl.rd, p11_lcd_data_ctrl.wr);
+                               p11_lcd_data_ctrl.rd,
+                               p11_lcd_data_ctrl.wr);
 
     -- ports -> data bus
     parr_in <= (

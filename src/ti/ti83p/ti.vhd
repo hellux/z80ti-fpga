@@ -44,11 +44,12 @@ architecture arch of ti is
 
     component interrupt port(
         clk, rst, ce : in std_logic;
-        p03_intmask_o, p04_mmap_int_o : in port_out_t;
+        p02_status_o : in port_out_t;
+        p03_intmask_o : in port_out_t;
+        p04_mmap_int_o : in port_out_t;
         p04_mmap_int_i : out port_in_t;
         hwt_fin : in std_logic_vector(1 to 2);
         on_key_down : in std_logic;
-        int_ack : in std_logic;
         int : out std_logic);
     end component;
 
@@ -98,7 +99,7 @@ architecture arch of ti is
     end component;
 
     -- ctrl
-    signal int_ack, in_op, out_op : std_logic;
+    signal in_op, out_op : std_logic;
 
     -- lcd ctrl <-> pict mem
     signal x_lcd : std_logic_vector(5 downto 0);
@@ -115,7 +116,6 @@ architecture arch of ti is
     signal int_on_key : std_logic;
 begin
     -- interpret control bus
-    int_ack <= cbo.iorq and cbo.m1;
     in_op   <= cbo.iorq and not cbo.m1 and cbo.rd;
     out_op  <= cbo.iorq and not cbo.m1 and cbo.wr;
 
@@ -128,10 +128,12 @@ begin
     stat : status port map(ports_out.p05_protect, ports_in.p02_status);
 
     inth : interrupt port map(clk, rst, ce,
-                              ports_out.p03_intmask, ports_out.p04_mmap_int,
+                              ports_out.p02_status,
+                              ports_out.p03_intmask,
+                              ports_out.p04_mmap_int,
                               ports_in.p04_mmap_int,
                               hwt_fin, on_key_down,
-                              int_ack, int);
+                              int);
 
     mctrl : mem_ctrl port map(cbo,
                               ports_out.p04_mmap_int,
