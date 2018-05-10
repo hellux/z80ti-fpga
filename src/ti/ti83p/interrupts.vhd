@@ -44,7 +44,8 @@ begin
                 int_dev <= none;
             elsif ce = '1' then
                 if int_dev = none then
-                    if on_key_down = '1' and int_on_key = '1' then
+                    -- NOTE on_key_down active low
+                    if on_key_down = '0' and int_on_key = '1' then
                         int_dev <= on_key;
                     elsif hwt_int(1) = '1' and hwt_fin(1) = '1' then
                         int_dev <= hwt1;
