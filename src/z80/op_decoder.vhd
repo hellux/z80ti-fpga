@@ -203,6 +203,19 @@ architecture arch of op_decoder is
         return f;
     end nop;
 
+    function noni(state : state_t; f_in : id_frame_t;
+                  instr : std_logic_vector(7 downto 0))
+    return id_frame_t is variable f : id_frame_t; begin
+        report "NONI: " & " (" & vec_str(instr) & ")";
+        f := f_in;
+        case state.t is
+        when t4 =>
+            f.ct.cycle_end := '1';
+            f.ct.instr_end := '1';
+        when others => null; end case;
+        return f;
+    end noni;
+
     function jp_nn(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -1010,7 +1023,7 @@ architecture arch of op_decoder is
     end ld_a_i_r;
 
     function ld_r_r(state : state_t; f_in : id_frame_t;
-                    src, dst : integer range 0 to 7)
+                    dst, src : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -2390,11 +2403,14 @@ architecture arch of op_decoder is
 
     type bli_row_t is array(0 to 3) of instr_t;
     type bli_table_t is array(4 to 7) of bli_row_t;
+    type r_table_t is array(0 to 7) of integer range 0 to 15;
     type rp_table_t is array(0 to 3) of integer range 0 to 15;
     type alu_table_t is array(0 to 7) of instr_t;
     type xy_table_t is array(0 to 1) of integer range 0 to 15;
+    type xyhl_table_t is array(0 to 1) of r_table_t;
     type im_table_t is array(0 to 7) of integer range 0 to 2;
     type prefix_table_t is array(0 to 1) of id_prefix_t;
+
     constant bli4 : bli_row_t := (ldi_i, cpi_i, ini_i, outi_i);
     constant bli5 : bli_row_t := (ldd_i, cpd_i, ind_i, outd_i);
     constant bli6 : bli_row_t := (ldir_i, cpir_i, inir_i, otir_i);
@@ -2410,6 +2426,11 @@ architecture arch of op_decoder is
                                    daa_i, cpl_i, scf_i, ccf_i);
     constant im : im_table_t := (0, 1, 1, 2, 0, 1, 1, 2);
     constant rxy : xy_table_t := (regIX, regIY);
+    constant rxhl : r_table_t := (regB, regC, regD, regE,
+                                  regIXh, regIXl, regF, regA);
+    constant ryhl : r_table_t := (regB, regC, regD, regE,
+                                  regIYh, regIYl, regF, regA);
+    constant rxyhl : xyhl_table_t := (rxhl, ryhl);
     constant pxy : prefix_table_t := (ddcb, fdcb);
 
     --     | p | |q|
@@ -2543,7 +2564,7 @@ begin
                 when others =>
                     case s.y is
                     when 6 => f := ld_rpx_r(state, f, regHL, s.z);
-                    when others => f := ld_r_r(state, f, s.z, s.y);
+                    when others => f := ld_r_r(state, f, s.y, s.z);
                     end case;
                 end case;
             when 2 => 
@@ -2622,8 +2643,8 @@ begin
                 when 4 => f := alu_af(state, f, neg_i);
                 when 5 =>
                     case s.y is
-                    when 1 => f := ret(state, f); -- int ack not needed
-                    when others => f := ret(state, f); -- nmi not implemented
+                    when 1 => f := ret(state, f); -- RETI int ack unused
+                    when others => f := ret(state, f); -- RETN nmi not impl
                     end case;
                 when 6 => f := set_im(state, f, im(s.y));
                 when 7 =>
@@ -2634,15 +2655,15 @@ begin
                     when 3 => f := ld_a_i_r(state, f, r_o);
                     when 4 => f := rld_rrd(state, f, rrd_i1, rrd_i2);
                     when 5 => f := rld_rrd(state, f, rld_i1, rld_i2);
-                    when 6|7 => f := nop(state, f);
+                    when 6|7 => f := noni(state, f, instr);
                     end case;
                 end case;
             when 2 =>
                 case s.y is
                 when 4|5|6|7 => f := bli_op(state, f, bli(s.y)(s.z));
-                when others => f := nop(state, f); -- NONI
+                when others => f := noni(state, f, instr);
                 end case;
-            when 0|3 => f := nop(state, f); end case; -- NONI
+            when 0|3 => f := noni(state, f, instr); end case;
         when cb =>
             case s.x is
             when 0 => f := bit_r(state, f, rot(s.y), 0, s.z);
@@ -2676,13 +2697,14 @@ begin
             case s.x is
             when 0 =>
                 case s.z is
-                when 0 => f := nop(state, f);
+                when 0 => f := noni(state, f, instr);
                 when 1 =>
                     case s.q is
                     when 0 =>
                         case s.p is
                         when 2 => f := ld_rp_nn(state, f, rxy(xy));
-                        when others => null; end case;
+                        when others => f := noni(state, f, instr);
+                        end case;
                     when 1 => f := alu_rp_rp(state, f, add16_i1, add16_i2,
                                              rxy(xy), rp(s.p));
                     end case;
@@ -2691,12 +2713,12 @@ begin
                     when 0 => 
                         case s.p is
                         when 2 => f := ld_nnx_rp(state, f, rxy(xy));
-                        when others => f := nop(state, f);
+                        when others => f := noni(state, f, instr);
                         end case;
                     when 1 =>
                         case s.p is
                         when 2 => f := ld_rp_nnx(state, f, rxy(xy));
-                        when others => f := nop(state, f);
+                        when others => f := noni(state, f, instr);
                         end case;
                     end case;
                 when 3 =>
@@ -2704,28 +2726,48 @@ begin
                     when 0 => f := inc_dec_rp(state, f, inc, rxy(xy));
                     when 1 => f := inc_dec_rp(state, f, dec, rxy(xy));
                     end case;
-                when 4 => f := inc_dec_xy_d(state, f, inc_i, rxy(xy));
-                when 5 => f := inc_dec_xy_d(state, f, dec_i, rxy(xy));
-                when 6 => f := ld_xy_d_n(state, f, rxy(xy));
-                when 7 => f := nop(state, f);
+                when 4 =>
+                    case s.y is
+                    when 4 => f := alu_r(state, f, inc_i, rxy(xy));
+                    when 5 => f := alu_r(state, f, inc_i, rxy(xy)+1);
+                    when 6 => f := inc_dec_xy_d(state, f, inc_i, rxy(xy));
+                    when others => f := noni(state, f, instr);
+                    end case;
+                when 5 => 
+                    case s.y is
+                    when 4 => f := alu_r(state, f, dec_i, rxy(xy));
+                    when 5 => f := alu_r(state, f, dec_i, rxy(xy)+1);
+                    when 6 => f := inc_dec_xy_d(state, f, dec_i, rxy(xy));
+                    when others => f := noni(state, f, instr);
+                    end case;
+                when 6 =>
+                    case s.y is
+                    when 4 => f := ld_r_n(state, f, rxy(xy));
+                    when 5 => f := ld_r_n(state, f, rxy(xy)+1);
+                    when 6 => f := ld_xy_d_n(state, f, rxy(xy));
+                    when others => f := noni(state, f, instr);
+                    end case;
+                when 7 => f := noni(state, f, instr);
                 end case;
             when 1 =>
                 case s.z is
                 when 6 =>
                     case s.y is
-                    when 6 => f := nop(state, f); -- NONI
+                    when 6 => f := noni(state, f, instr);
                     when others => f := ld_r_xy_d(state, f, s.y, rxy(xy));
                     end case;
                 when others => 
                     case s.y is
                     when 6 => f := ld_xy_d_r(state, f, rxy(xy), s.z);
-                    when others => f := nop(state, f); -- NONI
+                    when others => f := ld_r_r(state, f, rxyhl(xy)(s.y),
+                                               rxyhl(xy)(s.z));
                     end case;
                 end case;
             when 2 => 
                 case s.z is
                 when 6 => f := alu_a_xy_d(state, f, alu(s.y), rxy(xy));
-                when others => f := nop(state, f);
+                when others => f := alu_a_r(state, f, alu(s.y),
+                                            rxyhl(xy)(s.z));
                 end case;
             when 3 =>
                 case s.z is
@@ -2734,30 +2776,31 @@ begin
                     when 0 =>
                         case s.p is
                         when 2 => f := pop_rp(state, f, rxy(xy));
-                        when others => null; end case;
+                        when others => f := noni(state, f, instr);
+                        end case;
                     when 1 =>
                         case s.p is
                         when 2 => f := jp_rp(state, f, rxy(xy));
                         when 3 => f := ld_sp_rp(state, f, rxy(xy));
-                        when others => f := nop(state, f);
+                        when others => f := noni(state, f, instr);
                         end case;
                     end case;
                 when 3 =>
                     case s.y is
                     when 1 => f := mem_rd_xy_d(state, f, pxy(xy));
                     when 4 => f := ex_spx_rp(state, f, rxy(xy));
-                    when others => f := nop(state, f);
+                    when others => f := noni(state, f, instr);
                     end case;
                 when 5 =>
                     case s.q is
                     when 0 =>
                         case s.p is
                         when 2 => f := push_rp(state, f, rxy(xy));
-                        when others => f := nop(state, f);
+                        when others => f := noni(state, f, instr);
                         end case;
-                    when others => f := nop(state, f);
+                    when others => f := noni(state, f, instr);
                     end case;
-                when others => f := nop(state, f);
+                when others => f := noni(state, f, instr);
                 end case;
             end case;
         end case;
