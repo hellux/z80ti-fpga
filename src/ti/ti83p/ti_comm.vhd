@@ -43,18 +43,18 @@ package ti_comm is
     constant HWT2_DIVS : hwt_divs_t :=
         (fdiv(1120), fdiv(497), fdiv(344), fdiv(236));
 
-    constant PO02_HWT1_ACK          : natural := 2;
-    constant PO02_HWT2_ACK          : natural := 1;
     constant PO02_ON_KEY_ACK        : natural := 0;
+    constant PO02_HWT2_ACK          : natural := 1;
+    constant PO02_HWT1_ACK          : natural := 2;
 
-    constant PI02_73_83             : natural := 7;
-    constant PI02_LINK_ASSIST       : natural := 6;
-    constant PI02_PROTECT_2         : natural := 5;
-    constant PI02_PROTECT_1         : natural := 4;
-    constant PI02_PROTECT_0         : natural := 3;
-    constant PI02_FLASH_UNLOCKED    : natural := 2;
-    constant PI02_NOT_73            : natural := 1;
     constant PI02_BATTERY_GOOD      : natural := 0;
+    constant PI02_NOT_73            : natural := 1;
+    constant PI02_FLASH_UNLOCKED    : natural := 2;
+    constant PI02_PROTECT_0         : natural := 3;
+    constant PI02_PROTECT_1         : natural := 4;
+    constant PI02_PROTECT_2         : natural := 5;
+    constant PI02_LINK_ASSIST       : natural := 6;
+    constant PI02_73_83             : natural := 7;
 
     constant PO03_ON_KEY_INT        : natural := 0;
     constant PO03_HWT1_INT          : natural := 1;

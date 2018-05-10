@@ -75,8 +75,6 @@ architecture arch of interrupt is
     signal enable : int_t;
     signal ack : int_t;
     signal fire : int_t;
-
-    signal int_dev : int_dev_t; -- interrupt device
 begin
     -- interrupt activate
     activate.on_key <= not on_key_down;
@@ -89,9 +87,9 @@ begin
     enable.hwt2   <= p03_intmask_o.data(PO03_HWT2_INT);
 
     -- interrupt acknowledge
-    ack.on_key <= not p02_status_o.data(PO02_ON_KEY_ACK);
-    ack.hwt1   <= not p02_status_o.data(PO02_HWT1_ACK);
-    ack.hwt2   <= not p02_status_o.data(PO02_HWT2_ACK);
+    ack.on_key <= p02_status_o.wr and not p02_status_o.data(PO02_ON_KEY_ACK);
+    ack.hwt1   <= p02_status_o.wr and not p02_status_o.data(PO02_HWT1_ACK);
+    ack.hwt2   <= p02_status_o.wr and not p02_status_o.data(PO02_HWT2_ACK);
 
     -- controllers
     on_key_c : int_ctrl port map(clk, rst, ce,
