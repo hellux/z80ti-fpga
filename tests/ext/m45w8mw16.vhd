@@ -23,6 +23,12 @@ architecture arch of m45 is
     constant BCALL1_R : integer := 16#02ab2#;
     constant BCALL2_L : integer := 16#0249f#;
     constant BCALL2_R : integer := 16#024b4#;
+    constant BCALL3_L : integer := 16#6c570#;
+    constant BCALL3_R : integer := 16#6c57f#;
+    constant BCALL4_L : integer := 16#05f73#;
+    constant BCALL4_R : integer := 16#05f7d#;
+    constant BCALL5_L : integer := 16#060c2#;
+    constant BCALL5_R : integer := 16#060c4#;
 
     constant INIT_L : integer := 16#7c000#;
     constant INIT_R : integer := INIT_L+INIT_SIZE-1;
@@ -33,7 +39,7 @@ architecture arch of m45 is
     constant RAM_L : integer := 16#80000#;
     constant RAM_R : integer := RAM_L+RAM_SIZE-1;
 
-    constant STACK_R : integer := 16#7ffff#;
+    constant STACK_R : integer := 16#83fff#;
     constant STACK_L : integer := STACK_R-STACK_SIZE+1;
 
     type mem_t is array(integer range <>) of std_logic_vector(7 downto 0);
@@ -101,6 +107,9 @@ architecture arch of m45 is
     -- bcall routine 2
     signal mem_bc2 : mem_t(BCALL2_L to BCALL2_R)
         := file_to_mem("bc2.bin", BCALL2_R-BCALL2_L+1);
+    -- bcall address parse
+    signal mem_bc3 : mem_t(BCALL3_L to BCALL3_R)
+        := file_to_mem("bc3.bin", BCALL3_R-BCALL3_L+1);
 
     signal word_out : std_logic_vector(15 downto 0);
     signal a_ub, a_lb : integer;
@@ -113,6 +122,7 @@ begin
             if mce_c = '0' then
                 if mwe_c = '0' then
                     write(mem_app, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_app, mub_c, mlb_c, a_lb, mdata);
                     write(mem_ram, mub_c, mlb_c, a_lb, mdata);
                     write(mem_stack, mub_c, mlb_c, a_lb, mdata);
                 end if;
@@ -121,9 +131,11 @@ begin
                 read(mem_app, a_lb, word_out);
                 read(mem_ram, a_lb, word_out);
                 read(mem_stack, a_lb, word_out);
+
                 read(mem_bc0, a_lb, word_out);
                 read(mem_bc1, a_lb, word_out);
                 read(mem_bc2, a_lb, word_out);
+                read(mem_bc3, a_lb, word_out);
             end if;
         end if;
     end process;
