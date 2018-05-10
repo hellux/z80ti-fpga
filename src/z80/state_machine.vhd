@@ -14,25 +14,16 @@ entity state_machine is port(
 end state_machine;
 
 architecture arch of state_machine is
-    signal STATE_INIT : state_t := (
-        im => 1,
-        mode => exec,
-        prefix => main,
-        m => m1,
-        t => t1,
-        cc => (others => false),
-        others => '-');
-
-    signal state : state_t := STATE_INIT;
+    signal state : state_t;
 begin 
     process(clk) begin
         if rising_edge(clk) then
             if cbi.reset = '1' then
-                state.im <= STATE_INIT.im;
-                state.mode <= STATE_INIT.mode;
-                state.prefix <= STATE_INIT.prefix;
-                state.m <= STATE_INIT.m;
-                state.t <= STATE_INIT.t;
+                state.im <= 0;
+                state.mode <= exec;
+                state.prefix <= main;
+                state.m <= m1;
+                state.t <= t1;
             elsif ce = '1' then
                 -- set t state
                 if ctrl.cycle_end = '1' then
