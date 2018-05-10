@@ -1,3 +1,5 @@
-ld a, 0x76
-ld (0x08), a
-rst 08h
+ld a, 0xc9 ; RET
+ld (0x28), a
+rst 28h
+ld a, 0xcc
+halt
