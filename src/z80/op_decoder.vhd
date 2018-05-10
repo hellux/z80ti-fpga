@@ -6,6 +6,7 @@ use work.cmp_comm.all;
 use work.util.all;
 
 entity op_decoder is port(
+    clk : in std_logic;
     state : in state_t;
     instr : in std_logic_vector(7 downto 0);
     ctrl : out id_ctrl_t;
@@ -2442,11 +2443,12 @@ architecture arch of op_decoder is
         q : integer range 0 to 1;
     end record;
 begin
-    process(state, instr)
+    process(clk)
         variable s : id_split_t;
         variable xy : integer range 0 to 1;
         variable f : id_frame_t;
     begin
+        if rising_edge(clk) then
         -- split for instruction
         s.x := to_integer(unsigned(instr(7 downto 6)));
         s.y := to_integer(unsigned(instr(5 downto 3)));
@@ -2809,5 +2811,7 @@ begin
         cw <= f.cw;
         cbo <= f.cb;
         ctrl <= f.ct;
+
+        end if;
     end process;
  end arch;

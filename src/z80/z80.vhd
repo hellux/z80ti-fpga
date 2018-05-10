@@ -54,6 +54,7 @@ architecture arch of z80 is
     end component;
 
     component op_decoder port(
+        clk : in std_logic;
         state : in state_t;
         instr : in std_logic_vector(7 downto 0);
         ctrl : out id_ctrl_t;
@@ -100,7 +101,7 @@ begin
     -- -- CONTROL SECTION -- --
     ir : reg generic map(x"ff", 8)
              port map(clk, cbi.reset, ce, cw.ir_rd, dbus, ir_out);
-    id : op_decoder port map(state, ir_out, ctrl, cbo, cw);
+    id : op_decoder port map(clk, state, ir_out, ctrl, cbo, cw);
     sm : state_machine port map(clk, ce, cbi, fi_out, iff, ctrl, state); 
 
     -- -- REGISTER SECTION -- --
