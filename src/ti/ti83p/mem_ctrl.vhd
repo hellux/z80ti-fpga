@@ -108,7 +108,7 @@ begin
     dbg.sec_ram_rom <= page1(5);
     dbg.sec_page <= page1(4 downto 0) when page1(5) = '1' else x"0" & page1(0);
     dbg.thi_ram_rom <= page2(5);
-    dbg.thi_page <= page2(4 downto 0) when page1(5) = '1' else x"0" & page2(0);
+    dbg.thi_page <= page2(4 downto 0) when page2(5) = '1' else x"0" & page2(0);
     dbg.fou_ram_rom <= page3(5);
-    dbg.fou_page <= page3(4 downto 0) when page1(5) = '1' else x"0" & page3(0);
+    dbg.fou_page <= page3(4 downto 0) when page3(5) = '1' else x"0" & page3(0);
 end arch;
