@@ -12,12 +12,10 @@ entity m45 is port(
 end m45;
 
 architecture arch of m45 is
-    constant INIT_SIZE : integer := 15;
-    constant ROM_SIZE : integer := 256;
+    constant INIT_SIZE : integer := 56;
+    constant APP_SIZE : integer := 256;
     constant STACK_SIZE : integer := 256;
-
-    constant RAM_L : integer := 16#00000#;
-    constant RAM_R : integer := 16#00027#;
+    constant RAM_SIZE : integer := 128;
 
     constant BCALL0_L : integer := 16#00028#;
     constant BCALL0_R : integer := 16#0002a#;
@@ -29,8 +27,11 @@ architecture arch of m45 is
     constant INIT_L : integer := 16#7c000#;
     constant INIT_R : integer := INIT_L+INIT_SIZE-1;
 
-    constant ROM_L : integer := 16#7dd49#;
-    constant ROM_R : integer := ROM_L+ROM_SIZE-1;
+    constant APP_L : integer := 16#85d49#;
+    constant APP_R : integer := APP_L+APP_SIZE-1;
+
+    constant RAM_L : integer := 16#80000#;
+    constant RAM_R : integer := RAM_L+RAM_SIZE-1;
 
     constant STACK_R : integer := 16#7ffff#;
     constant STACK_L : integer := STACK_R-STACK_SIZE+1;
@@ -86,10 +87,10 @@ architecture arch of m45 is
 
     -- modifiable
     signal mem_ram : mem_t(RAM_L to RAM_R) := (others => x"00");
-    signal mem_rom : mem_t(ROM_L to ROM_R) := file_to_mem("a.bin", ROM_SIZE);
+    signal mem_app : mem_t(APP_L to APP_R) := file_to_mem("a.bin", APP_SIZE);
     signal mem_stack : mem_t(STACK_L to STACK_R) := (others => x"00");
 
-    -- jump to user ram from pc init
+    -- jump to user ram fapp pc init
     signal mem_init : mem_t(INIT_L to INIT_R)
         := file_to_mem("tests/binary/init.z", INIT_SIZE);
     -- jump to bcall routine
@@ -111,13 +112,13 @@ begin
         if rising_edge(clk) then
             if mce_c = '0' then
                 if mwe_c = '0' then
-                    write(mem_rom, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_app, mub_c, mlb_c, a_lb, mdata);
                     write(mem_ram, mub_c, mlb_c, a_lb, mdata);
                     write(mem_stack, mub_c, mlb_c, a_lb, mdata);
                 end if;
                 word_out <= x"7676";
                 read(mem_init, a_lb, word_out);
-                read(mem_rom, a_lb, word_out);
+                read(mem_app, a_lb, word_out);
                 read(mem_ram, a_lb, word_out);
                 read(mem_stack, a_lb, word_out);
                 read(mem_bc0, a_lb, word_out);
