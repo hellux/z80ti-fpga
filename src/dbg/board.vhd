@@ -43,9 +43,9 @@ architecture arch of board is
     type board_state_t is (ctrl, edit);
     type bp_addr_t is array(0 to 3) of unsigned(3 downto 0);
 
-    signal state : board_state_t;
-    signal dig_sel : unsigned(1 downto 0);
-    signal bp_addr : bp_addr_t;
+    signal state : board_state_t := ctrl;
+    signal dig_sel : unsigned(1 downto 0) := "00";
+    signal bp_addr : bp_addr_t := (x"9", x"d", x"9", x"5");
     signal bp_addr_merge : std_logic_vector(15 downto 0);
 
     signal seg_dots : std_logic_vector(3 downto 0);

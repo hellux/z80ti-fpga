@@ -83,30 +83,13 @@ begin
     process begin
         sw(7 downto 6) <= "11";
         sw(5 downto 4) <= "00";
+        sw(0) <= '1'; -- break on addr
         btns <= (others => '0');
-
-        press(btns(2)); -- edit
-        press(btns(1)); -- inc to 1
-        press(btns(1)); -- inc to 2
-        press(btns(1)); -- inc to 3
-        press(btns(1)); -- inc to 4
-        press(btns(1)); -- inc to 5
-        press(btns(1)); -- inc to 6
-        press(btns(1)); -- inc to 7
-        press(btns(1)); -- inc to 8
-        press(btns(2)); -- goto dig3
-        press(btns(1)); -- inc to 1
-        press(btns(1)); -- inc to 2
-        press(btns(1)); -- inc to 3
-        press(btns(1)); -- inc to 4
-        press(btns(1)); -- inc to 5
-        press(btns(1)); -- inc to 6
-        press(btns(0)); -- finish edit
 
         press(btns(1)); -- reset
         sw(7 downto 6) <= "00";
         
-        wait for 1324 ns;
+        wait for 21324 ns;
         press(btns(0)); -- step after break
 
         -- wait
