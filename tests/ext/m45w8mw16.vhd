@@ -29,7 +29,8 @@ architecture arch of m45 is
 
     type mem_t is array(integer range <>) of std_logic_vector(7 downto 0);
 
-    impure function file_to_mem(filename : string; size : natural) return mem_t is
+    impure function file_to_mem(filename : string; size : natural)
+    return mem_t is
         use std.textio.all;
         type charfile is file of character;
         file file_p : charfile;
@@ -48,11 +49,34 @@ architecture arch of m45 is
         return mem;
     end function;
 
+    procedure read(signal mem : inout mem_t;
+                   signal a : in integer;
+                   signal data : out std_logic_vector(15 downto 0)) is begin
+        report "hej";
+        report integer'image(mem'left);
+        report integer'image(a+1);
+        report integer'image(mem'right);
+        if mem'left <= a+1 and a+1 <= mem'right then
+            data(15 downto 8) <= mem(a+1);
+        end if;
+        if mem'left <= a and a <= mem'right then
+            data(7 downto 0) <= mem(a);
+        end if;
+    end procedure;
+
     procedure write(signal mem : inout mem_t;
-                    signal data : in std_logic_vector(7 downto 0);
-                    signal addr : in integer) is begin
-        if mem'left <= addr and addr <= mem'right then
-            mem(addr) <= data;
+                    signal mub_c, mlb_c : in std_logic;
+                    signal a : in integer;
+                    signal data : in std_logic_vector(15 downto 0)) is begin
+        if mub_c = '0' then 
+            if mem'left <= a+1 and a+1 <= mem'right then
+                mem(a+1) <= data(15 downto 8);
+            end if;
+        end if;
+        if mlb_c = '0' then 
+            if mem'left <= a and a <= mem'right then
+                mem(a) <= data(7 downto 0);
+            end if;
         end if;
     end procedure;
 
@@ -71,45 +95,15 @@ begin
         if rising_edge(clk) then
             if mce_c = '0' then
                 if mwe_c = '0' then
-                    -- write upper byte
-                    if mub_c = '0' then 
-                        write(mem_rom, mdata(15 downto 8), a_ub);
-                        write(mem_ram, mdata(15 downto 8), a_ub);
-                        write(mem_stack, mdata(15 downto 8), a_ub);
-                    end if;
-                    -- write lower byte
-                    if mlb_c = '0' then 
-                        write(mem_rom, mdata(7 downto 0), a_lb);
-                        write(mem_ram, mdata(7 downto 0), a_lb);
-                        write(mem_stack, mdata(7 downto 0), a_lb);
-                    end if;
+                    write(mem_rom, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_ram, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_stack, mub_c, mlb_c, a_lb, mdata);
                 end if;
-
-                -- read upper byte
-                if mem_ram'left <= a_ub and a_ub <= mem_ram'right then
-                    word_out(15 downto 8) <= mem_ram(a_ub);
-                elsif mem_rom'left <= a_ub and a_ub <= mem_rom'right then
-                    word_out(15 downto 8) <= mem_rom(a_ub);
-                elsif mem_stack'left <= a_ub and a_ub <= mem_stack'right then
-                    word_out(15 downto 8) <= mem_stack(a_ub);
-                elsif mem_jp'left <= a_ub and a_ub <= mem_jp'right then
-                    word_out(15 downto 8) <= mem_jp(a_ub);
-                else
-                    word_out(15 downto 8) <= x"76";
-                end if;
-
-                -- read lower byte
-                if mem_ram'left <= a_lb and a_lb <= mem_ram'right then
-                    word_out(7 downto 0) <= mem_ram(a_lb);
-                elsif mem_rom'left <= a_lb and a_lb <= mem_rom'right then
-                    word_out(7 downto 0) <= mem_rom(a_lb);
-                elsif mem_stack'left <= a_lb and a_lb <= mem_stack'right then
-                    word_out(7 downto 0) <= mem_stack(a_lb);
-                elsif mem_jp'left <= a_lb and a_lb <= mem_jp'right then
-                    word_out(7 downto 0) <= mem_jp(a_lb);
-                else
-                    word_out(7 downto 0) <= x"76";
-                end if;
+                word_out <= x"7676";
+                read(mem_jp, a_lb, word_out);
+                read(mem_rom, a_lb, word_out);
+                read(mem_ram, a_lb, word_out);
+                read(mem_stack, a_lb, word_out);
             end if;
         end if;
     end process;
