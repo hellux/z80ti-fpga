@@ -286,7 +286,7 @@ begin
                           mwe_c, mlb_c, mub_c);
     kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_data,
                            keys_down, on_key_down, dbg.scancode, dbg.keycode);
-    boot : bootloader port map(clk, rst, boot_ld, boot_done,
+    boot : bootloader port map(clk, rst, '0', boot_done,
                                mem_wr_bl, data_bl, addr_bl, rx);
 
     -- debug
