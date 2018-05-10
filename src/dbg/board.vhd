@@ -71,7 +71,7 @@ begin
                 end if;
             when edit =>
                 if btns(EDIT_DONE) = '1' then
-                    state <= edit;
+                    state <= ctrl;
                 end if;
                 if btns_op(EDIT_INC) = '1' then
                     bp_addr(ds) <= bp_addr(ds) + 1;
