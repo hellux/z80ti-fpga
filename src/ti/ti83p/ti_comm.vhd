@@ -68,6 +68,11 @@ package ti_comm is
     constant PI10_WL_8_6            : natural := 6;
     constant PI10_LCD_BUSY          : natural := 7;
 
+    type dbg_int_t is record 
+        on_key : std_logic;
+        hwt1, hwt2 : std_logic;
+    end record;
+
     type dbg_memctrl_t is record 
         mode : std_logic;
         sec_ram_rom : std_logic;
@@ -95,6 +100,7 @@ package ti_comm is
     type dbg_ti_t is record
         asic : dbg_asic_t;
         memctrl : dbg_memctrl_t;
+        int : dbg_int_t;
     end record;
 end ti_comm;
 

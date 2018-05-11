@@ -80,10 +80,13 @@ begin
         if dbg.z80.state.cc(4) then val_cond(6) := 'O'; end if;
         if dbg.z80.state.cc(6) then val_cond(8) := 'P'; end if;
 
-        val_asic := " RD     ";
-        if dbg.ti.asic.rd_wr = '1' then val_asic(2 to 3) := "WR"; end if;
-        if dbg.ti.asic.ce = '1' then val_asic(5) := 'E'; end if;
-        val_asic(7 to 8) := hex_str(dbg.ti.asic.paddr);
+        val_asic := "R       ";
+        if dbg.ti.asic.rd_wr = '1' then val_asic(1) := 'W'; end if;
+        if dbg.ti.asic.ce = '1' then val_asic(2) := 'E'; end if;
+        val_asic(3 to 4) := hex_str(dbg.ti.asic.paddr);
+        if dbg.ti.int.on_key = '1' then val_asic(6) := 'O'; end if;
+        if dbg.ti.int.hwt1 = '1' then val_asic(7) := '1'; end if;
+        if dbg.ti.int.hwt2 = '1' then val_asic(8) := '2'; end if;
 
         val_cb := (others => ' ');
         if dbg.cbo.m1   = '1' then val_cb(1) := '1'; end if;

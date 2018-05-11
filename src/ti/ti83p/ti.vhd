@@ -49,7 +49,8 @@ architecture arch of ti is
         p04_mmap_int_i : out port_in_t;
         hwt_fin : in std_logic_vector(1 to 2);
         on_key_down : in std_logic;
-        int : out std_logic);
+        int : out std_logic;
+        dbg : out dbg_int_t);
     end component;
 
     component mem_ctrl port(
@@ -131,7 +132,8 @@ begin
                               ports_out.p04_mmap_int,
                               ports_in.p04_mmap_int,
                               hwt_fin, on_key_down,
-                              int);
+                              int,
+                              dbg.int);
 
     mctrl : mem_ctrl port map(cbo,
                               ports_out.p04_mmap_int,

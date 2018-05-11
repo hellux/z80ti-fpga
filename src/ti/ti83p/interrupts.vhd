@@ -51,7 +51,9 @@ entity interrupt is port(
     hwt_fin : in std_logic_vector(1 to 2);
     on_key_down : in std_logic;
 -- cpu comm
-    int : out std_logic);
+    int : out std_logic;
+-- debug 
+    dbg : out dbg_int_t);
 end interrupt;
 
 architecture arch of interrupt is
@@ -107,4 +109,9 @@ begin
         PI04_LINK_INT    => '0',
         PI04_ON_KEY_DOWN => on_key_down,
         others => '0');
+
+    -- debug
+    dbg.on_key <= fire.on_key;
+    dbg.hwt1 <= fire.hwt1;
+    dbg.hwt2 <= fire.hwt2;
 end arch;
