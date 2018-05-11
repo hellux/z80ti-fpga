@@ -146,21 +146,18 @@ begin
         pages(31) := " P11:" & hex_str(dbg.ti.asic.p11_lcd_data) & ' ';
     
     -- mem map
-        pages(32) := " MODE 0 ";
-        pages(33) := "  ROM00 ";
-        pages(34) := " -------";
+        pages(32) := "  MODE0 ";
+        pages(34) := "  ROM00 ";
         pages(35) := "  ROM ? ";
-        pages(36) := " -------";
+        pages(36) := "  ROM ? ";
         pages(37) := "  ROM ? ";
-        pages(38) := " -------";
-        pages(39) := "  ROM ? ";
         if dbg.ti.memctrl.mode = '1' then pages(32)(7) := '1'; end if;
-        if dbg.ti.memctrl.sec_ram_rom = '1' then pages(33)(4) := 'A'; end if;
+        if dbg.ti.memctrl.sec_ram_rom = '1' then pages(35)(4) := 'A'; end if;
         pages(35)(6 to 7) := hex_str(dbg.ti.memctrl.sec_page);
-        if dbg.ti.memctrl.thi_ram_rom = '1' then pages(35)(4) := 'A'; end if;
-        pages(37)(6 to 7) := hex_str(dbg.ti.memctrl.thi_page);
+        if dbg.ti.memctrl.thi_ram_rom = '1' then pages(36)(4) := 'A'; end if;
+        pages(36)(6 to 7) := hex_str(dbg.ti.memctrl.thi_page);
         if dbg.ti.memctrl.fou_ram_rom = '1' then pages(37)(4) := 'A'; end if;
-        pages(39)(6 to 7) := hex_str(dbg.ti.memctrl.fou_page);
+        pages(37)(6 to 7) := hex_str(dbg.ti.memctrl.fou_page);
 
         char_ch := pages(page_index)(page_col+1);
         char_int := character'pos(char_ch);
