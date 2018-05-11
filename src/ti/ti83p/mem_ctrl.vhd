@@ -105,6 +105,7 @@ begin
     wr <= cbo.mreq and cbo.wr; -- TODO check flash protection
 
     -- debug
+    dbg.mode <= mode;
     dbg.sec_ram_rom <= page1(5);
     dbg.sec_page <= page1(4 downto 0) when page1(5) = '1' else x"0" & page1(0);
     dbg.thi_ram_rom <= page2(5);

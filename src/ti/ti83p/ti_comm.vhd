@@ -69,6 +69,7 @@ package ti_comm is
     constant PI10_LCD_BUSY          : natural := 7;
 
     type dbg_memctrl_t is record 
+        mode : std_logic;
         sec_ram_rom : std_logic;
         sec_page : std_logic_vector(4 downto 0);
         thi_ram_rom : std_logic;

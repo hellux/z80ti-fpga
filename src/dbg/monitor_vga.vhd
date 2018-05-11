@@ -74,6 +74,12 @@ begin
         if dbg.z80.regs.af(1) = '1' then val_flags(7) := 'N'; end if;
         if dbg.z80.regs.af(0) = '1' then val_flags(8) := 'C'; end if;
 
+        val_cond := " Z CPE M";
+        if dbg.z80.state.cc(0) then val_cond(1) := 'N'; end if;
+        if dbg.z80.state.cc(2) then val_cond(3) := 'N'; end if;
+        if dbg.z80.state.cc(4) then val_cond(6) := 'O'; end if;
+        if dbg.z80.state.cc(6) then val_cond(8) := 'P'; end if;
+
         val_asic := " RD     ";
         if dbg.ti.asic.rd_wr = '1' then val_asic(2 to 3) := "WR"; end if;
         if dbg.ti.asic.ce = '1' then val_asic(5) := 'E'; end if;
@@ -104,7 +110,7 @@ begin
         pages(1) := val_mode & ' ' & val_cycle;
         pages(2) := val_prefix & "  " & hex_str(dbg.z80.ir);
         pages(3) := val_flags;
-        
+        pages(4) := val_cond;
         pages(5) := val_int;
         pages(6) := val_cb;
         pages(7) := val_asic;
@@ -137,7 +143,7 @@ begin
         pages(31) := " P11:" & hex_str(dbg.ti.asic.p11_lcd_data) & ' ';
     
     -- mem map
-        pages(32) := " MEM MAP";
+        pages(32) := " MODE 0 ";
         pages(33) := "  ROM00 ";
         pages(34) := " -------";
         pages(35) := "  ROM ? ";
@@ -145,6 +151,7 @@ begin
         pages(37) := "  ROM ? ";
         pages(38) := " -------";
         pages(39) := "  ROM ? ";
+        if dbg.ti.memctrl.mode = '1' then pages(32)(7) := '1'; end if;
         if dbg.ti.memctrl.sec_ram_rom = '1' then pages(33)(4) := 'A'; end if;
         pages(35)(6 to 7) := hex_str(dbg.ti.memctrl.sec_page);
         if dbg.ti.memctrl.thi_ram_rom = '1' then pages(35)(4) := 'A'; end if;
