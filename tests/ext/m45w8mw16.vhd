@@ -18,12 +18,12 @@ architecture arch of m45 is
     constant RAM_SIZE : integer := 128;
 
     constant BCALL0_L : integer := 16#00028#; -- jmp to routine
-    constant BCALL0_R : integer := 16#0002a#;
+    constant BCALL0_R : integer := 16#00039#; -- interrupt
     constant BCALL1_L : integer := 16#02a37#; -- parse bc address
     constant BCALL1_R : integer := 16#02ab2#;
     constant BCALL2_L : integer := 16#0249f#; -- jp to bc address
     constant BCALL2_R : integer := 16#024b4#;
-    constant BCALL3_L : integer := 16#6c570#; -- bc address location
+    constant BCALL3_L : integer := 16#6c540#; -- bc address location
     constant BCALL3_R : integer := 16#6c57f#;
 
     constant BC_RUNINDICOFF0_L : integer := 16#05f73#;
@@ -32,8 +32,8 @@ architecture arch of m45 is
     constant BC_RUNINDICOFF1_R : integer := 16#060c4#;
 
     constant BC_CLRLCDFULL0_L : integer := 16#05b76#;
-    constant BC_CLRLCDFULL0_R : integer := 16#05bb0#;
-    constant BC_CLRLCDFULL1_L : integer := 16#06358#;
+    constant BC_CLRLCDFULL0_R : integer := 16#05bb9#;
+    constant BC_CLRLCDFULL1_L : integer := 16#06354#;
     constant BC_CLRLCDFULL1_R : integer := 16#06375#;
     constant BC_CLRLCDFULL2_L : integer := 16#055e5#;
     constant BC_CLRLCDFULL2_R : integer := 16#055f3#;
@@ -112,7 +112,8 @@ architecture arch of m45 is
         := file_to_mem("tests/binary/init.z", INIT_SIZE);
 
     -- bcall init
-    signal mem_bc0 : mem_t(BCALL0_L to BCALL0_R) := (x"c3", x"37", x"2a");
+    signal mem_bc0 : mem_t(BCALL0_L to BCALL0_R)
+        := file_to_mem("bc0.bin", BCALL0_R-BCALL0_L+1);
     signal mem_bc1 : mem_t(BCALL1_L to BCALL1_R)
         := file_to_mem("bc1.bin", BCALL1_R-BCALL1_L+1);
     signal mem_bc2 : mem_t(BCALL2_L to BCALL2_R)
