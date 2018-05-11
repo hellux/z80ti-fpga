@@ -322,6 +322,8 @@ begin
 
         report "rla";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"ff", x"76", rla_i, 0, "11111111", "11-0-100", x"ed");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"ff", x"01", rla_i, 0, "11111111", "11-0-100", x"03");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"01", rla_i, 0, "00000000", "00-0-000", x"02");
