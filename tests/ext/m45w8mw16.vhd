@@ -17,18 +17,30 @@ architecture arch of m45 is
     constant STACK_SIZE : integer := 256;
     constant RAM_SIZE : integer := 128;
 
-    constant BCALL0_L : integer := 16#00028#;
-    constant BCALL0_R : integer := 16#0002a#;
-    constant BCALL1_L : integer := 16#02a37#;
+    constant BCALL0_L : integer := 16#00028#; -- jmp to routine
+    constant BCALL0_R : integer := 16#00039#; -- interrupt
+    constant BCALL1_L : integer := 16#02a37#; -- parse bc address
     constant BCALL1_R : integer := 16#02ab2#;
-    constant BCALL2_L : integer := 16#0249f#;
+    constant BCALL2_L : integer := 16#0249f#; -- jp to bc address
     constant BCALL2_R : integer := 16#024b4#;
-    constant BCALL3_L : integer := 16#6c570#;
+    constant BCALL3_L : integer := 16#6c540#; -- bc address location
     constant BCALL3_R : integer := 16#6c57f#;
-    constant BCALL4_L : integer := 16#05f73#;
-    constant BCALL4_R : integer := 16#05f7d#;
-    constant BCALL5_L : integer := 16#060c2#;
-    constant BCALL5_R : integer := 16#060c4#;
+
+    constant BC_RUNINDICOFF0_L : integer := 16#05f73#;
+    constant BC_RUNINDICOFF0_R : integer := 16#05f7d#;
+    constant BC_RUNINDICOFF1_L : integer := 16#060c2#;
+    constant BC_RUNINDICOFF1_R : integer := 16#060c4#;
+
+    constant BC_CLRLCDFULL0_L : integer := 16#05b76#;
+    constant BC_CLRLCDFULL0_R : integer := 16#05bb9#;
+    constant BC_CLRLCDFULL1_L : integer := 16#06354#;
+    constant BC_CLRLCDFULL1_R : integer := 16#06375#;
+    constant BC_CLRLCDFULL2_L : integer := 16#055e5#;
+    constant BC_CLRLCDFULL2_R : integer := 16#055f3#;
+    constant BC_CLRLCDFULL3_L : integer := 16#01813#;
+    constant BC_CLRLCDFULL3_R : integer := 16#01821#;
+    constant BC_CLRLCDFULL4_L : integer := 16#00aae#;
+    constant BC_CLRLCDFULL4_R : integer := 16#00ab6#;
 
     constant INIT_L : integer := 16#7c000#;
     constant INIT_R : integer := INIT_L+INIT_SIZE-1;
@@ -91,25 +103,48 @@ architecture arch of m45 is
         end if;
     end procedure;
 
-    -- modifiable
     signal mem_ram : mem_t(RAM_L to RAM_R) := (others => x"00");
     signal mem_app : mem_t(APP_L to APP_R) := file_to_mem("a.bin", APP_SIZE);
     signal mem_stack : mem_t(STACK_L to STACK_R) := (others => x"00");
 
-    -- jump to user ram fapp pc init
+    -- jump to user ram/app, pc init
     signal mem_init : mem_t(INIT_L to INIT_R)
         := file_to_mem("tests/binary/init.z", INIT_SIZE);
-    -- jump to bcall routine
-    signal mem_bc0 : mem_t(BCALL0_L to BCALL0_R) := (x"c3", x"37", x"2a");
-    -- bcall routine 1
+
+    -- bcall init
+    signal mem_bc0 : mem_t(BCALL0_L to BCALL0_R)
+        := file_to_mem("bc0.bin", BCALL0_R-BCALL0_L+1);
     signal mem_bc1 : mem_t(BCALL1_L to BCALL1_R)
         := file_to_mem("bc1.bin", BCALL1_R-BCALL1_L+1);
-    -- bcall routine 2
     signal mem_bc2 : mem_t(BCALL2_L to BCALL2_R)
         := file_to_mem("bc2.bin", BCALL2_R-BCALL2_L+1);
-    -- bcall address parse
     signal mem_bc3 : mem_t(BCALL3_L to BCALL3_R)
         := file_to_mem("bc3.bin", BCALL3_R-BCALL3_L+1);
+
+    -- runindicoff
+    signal mem_bc_rio0 : mem_t(BC_RUNINDICOFF0_L to BC_RUNINDICOFF0_R)
+        := file_to_mem("bc_rio0.bin",
+                       BC_RUNINDICOFF0_R-BC_RUNINDICOFF0_L+1);
+    signal mem_bc_rio1 : mem_t(BC_RUNINDICOFF1_L to BC_RUNINDICOFF1_R)
+        := file_to_mem("bc_rio1.bin",
+                       BC_RUNINDICOFF1_R-BC_RUNINDICOFF1_L+1);
+
+    -- clrlcd
+    signal mem_bc_clrlcdf0 : mem_t(BC_CLRLCDFULL0_L to BC_CLRLCDFULL0_R)
+        := file_to_mem("bc_clrlcdf0.bin",
+                       BC_CLRLCDFULL0_R-BC_CLRLCDFULL0_L+1);
+    signal mem_bc_clrlcdf1 : mem_t(BC_CLRLCDFULL1_L to BC_CLRLCDFULL1_R)
+        := file_to_mem("bc_clrlcdf1.bin",
+                       BC_CLRLCDFULL1_R-BC_CLRLCDFULL1_L+1);
+    signal mem_bc_clrlcdf2 : mem_t(BC_CLRLCDFULL2_L to BC_CLRLCDFULL2_R)
+        := file_to_mem("bc_clrlcdf2.bin",
+                       BC_CLRLCDFULL2_R-BC_CLRLCDFULL2_L+1);
+    signal mem_bc_clrlcdf3 : mem_t(BC_CLRLCDFULL3_L to BC_CLRLCDFULL3_R)
+        := file_to_mem("bc_clrlcdf3.bin",
+                       BC_CLRLCDFULL2_R-BC_CLRLCDFULL2_L+1);
+    signal mem_bc_clrlcdf4 : mem_t(BC_CLRLCDFULL4_L to BC_CLRLCDFULL4_R)
+        := file_to_mem("bc_clrlcdf4.bin",
+                       BC_CLRLCDFULL4_R-BC_CLRLCDFULL4_L+1);
 
     signal word_out : std_logic_vector(15 downto 0);
     signal a_ub, a_lb : integer;
@@ -122,20 +157,29 @@ begin
             if mce_c = '0' then
                 if mwe_c = '0' then
                     write(mem_app, mub_c, mlb_c, a_lb, mdata);
-                    write(mem_app, mub_c, mlb_c, a_lb, mdata);
                     write(mem_ram, mub_c, mlb_c, a_lb, mdata);
                     write(mem_stack, mub_c, mlb_c, a_lb, mdata);
                 end if;
                 word_out <= x"7676";
-                read(mem_init, a_lb, word_out);
                 read(mem_app, a_lb, word_out);
                 read(mem_ram, a_lb, word_out);
                 read(mem_stack, a_lb, word_out);
+
+                read(mem_init, a_lb, word_out);
 
                 read(mem_bc0, a_lb, word_out);
                 read(mem_bc1, a_lb, word_out);
                 read(mem_bc2, a_lb, word_out);
                 read(mem_bc3, a_lb, word_out);
+
+                read(mem_bc_rio0, a_lb, word_out);
+                read(mem_bc_rio1, a_lb, word_out);
+
+                read(mem_bc_clrlcdf0, a_lb, word_out);
+                read(mem_bc_clrlcdf1, a_lb, word_out);
+                read(mem_bc_clrlcdf2, a_lb, word_out);
+                read(mem_bc_clrlcdf3, a_lb, word_out);
+                read(mem_bc_clrlcdf4, a_lb, word_out);
             end if;
         end if;
     end process;

@@ -90,9 +90,9 @@ begin
                                  enable.on_key,
                                  fire.on_key);
     hwt1_c : int_ctrl port map(clk, rst, ce,
-                                 activate.hwt1,
-                                 enable.hwt1,
-                                 fire.hwt1);
+                               activate.hwt1,
+                               enable.hwt1,
+                               fire.hwt1);
     hwt2_c : int_ctrl port map(clk, rst, ce,
                                activate.hwt2,
                                enable.hwt2,

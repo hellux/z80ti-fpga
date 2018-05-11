@@ -90,6 +90,9 @@ if [ "$analyze" = true ]; then
 fi
 
 if [ "$clean" = true ]; then
+    if [ "$asm" = true ]; then
+        rm *.bin
+    fi
     rm -f $entity 
     ghdl --clean --workdir=build
 fi
