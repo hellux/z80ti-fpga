@@ -11,7 +11,8 @@ entity hw_timers is port(
 end hw_timers;
 
 architecture arch of hw_timers is
-    component dcntr generic(bitwidth : integer); port(
+    component dcntr generic(init : std_logic_vector;
+                            bitwidth : integer); port(
         clk, rst, ce : in std_logic;
         cnten : in std_logic;
         ld : in std_logic;
@@ -33,13 +34,13 @@ begin
     hwt1_div <= HWT1_DIVS(freq_ctrl);
     hwt1_finish <= '1' when hwt1_val = x"00000" else '0';
     hwt1_ld <= (p04_mmap_int.wr or hwt1_finish);
-    hwt1 : dcntr generic map(20)
+    hwt1 : dcntr generic map(HWT1_DIVS(3), 20)
                  port map(clk, rst, ce, '1', hwt1_ld, hwt1_div, hwt1_val);
 
     hwt2_div <= HWT2_DIVS(freq_ctrl);
     hwt2_finish <= '1' when hwt2_val = x"00000" else '0';
     hwt2_ld <= (p04_mmap_int.wr or hwt2_finish);
-    hwt2 : dcntr generic map(20)
+    hwt2 : dcntr generic map(HWT2_DIVS(3), 20)
                  port map(clk, rst, ce, '1', hwt2_ld, hwt2_div, hwt2_val);
 
     fin <= hwt1_finish & hwt2_finish;

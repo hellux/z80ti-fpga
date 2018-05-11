@@ -2,7 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity dcntr is generic(bitwidth : integer); port(
+entity dcntr is generic(init : std_logic_vector;
+                        bitwidth : integer); port(
     clk, rst, ce : in std_logic;
     cnten : in std_logic;
     ld : in std_logic;
@@ -16,7 +17,7 @@ begin
     process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                count <= (others => '0');
+                count <= unsigned(init);
             elsif ce = '1' then
                 count <= count_next;
             end if;
