@@ -141,10 +141,11 @@ begin
     fi : reg generic map(x"ff", 8) -- flags internal
              port map(clk, cbi.reset, ce, fi_rd, fi_in, fi_out);
     iff_r : ff port map(clk, cbi.reset, ce, '1', cw.iff_next, iff);
+    -- TODO find better internal/external flags solution
     fi_in <= dbus when cw.rf_addr = regF and cw.rf_rdd = '1' else
              rf_f_out when cw.fi_rst = '1' else
              flags;
-    fi_rd <= cw.fi_rd or
+    fi_rd <= cw.fi_rd or                                 -- only fi from alu
              cw.fi_rst or                                -- done with internal
              cw.f_rd or                                  -- update f from alu
              (cw.rf_rdd and bool_sl(cw.rf_addr = regF)); -- update f from dbus

@@ -1,13 +1,15 @@
-init:
-ld b, 4     ; x
-ld e, 8     ; y
-ld a, 0     ; x*y
+org 0x9d95
 
-inc b
+ld b, 4
 loop:
-djnz continue
+add a, 10 ; reset zero flag
+djnz loop ; set internal zero flag when b = 0
+jp z, fail ; assert zero flag unchanged
+
+success:
+ld a, 0xcc
 halt
 
-continue:
-add a, e
-jr loop
+fail:
+ld a, 0xee
+halt
