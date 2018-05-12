@@ -1,0 +1,6 @@
+src/pkg/util.vhd
+src/pkg/z80_comm.vhd
+src/ti/ti83p/ti_comm.vhd
+src/pkg/cmp_comm.vhd
+src/ti/ti83p/mem_ctrl.vhd
+tests/ti/mem_ctrl_tb.vhd
