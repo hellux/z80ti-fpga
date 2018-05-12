@@ -23,8 +23,6 @@ entity comp is port(
     mdata : inout std_logic_vector(15 downto 0);
     mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
     mlb_c, mub_c : out std_logic;
--- uart
-    rx : in std_logic;
 -- 7 segment, led
     seg : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
@@ -101,9 +99,7 @@ architecture arch of comp is
         PS2KeyboardCLK : in std_logic;
         PS2KeyboardData	: in std_logic;
         keys_down : out keys_down_t;
-        on_key_down : out std_logic;
-        scancode_out : out std_logic_vector(7 downto 0);
-        keycode_out : out std_logic_vector(7 downto 0));
+        on_key_down : out std_logic);
     end component;
 
     component memory port(
@@ -139,15 +135,6 @@ architecture arch of comp is
         break_addr : out std_logic_vector(15 downto 0);
         seg : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
-    end component;
-
-    component bootloader port(
-        clk, rst : in std_logic;
-        ld, done : in std_logic;
-        mem_wr : out std_logic;
-        mem_data : out std_logic_vector(7 downto 0);
-        mem_addr : out std_logic_vector(19 downto 0);
-        rx : in std_logic);
     end component;
 
     -- clocks
@@ -202,9 +189,7 @@ architecture arch of comp is
     signal mon_crom_char : std_logic_vector(5 downto 0);
     signal crom_mon_pixel : std_logic;
 
-    -- ti/bootloader <-> mem controller
-    signal mem_wr_bl, mem_wr_ti : std_logic;
-    signal mem_data : std_logic_vector(7 downto 0);
+    -- ti <-> mem controller
     signal mem_rd, mem_wr : std_logic;
 begin
     with sw(7 downto 6) select
@@ -235,8 +220,8 @@ begin
     sp_op <= sp_s and not sp_q;
     cpu_stop <= not sp_op and 
         (bool_sl(run_mode = step_t) or
-        (bool_sl(run_mode = step_m) and dbg.z80.ct.cycle_end) or
-        (bool_sl(run_mode = step_i) and dbg.z80.ct.instr_end) or
+        (bool_sl(run_mode = step_m) and dbg.z80.cycle_end) or
+        (bool_sl(run_mode = step_i) and dbg.z80.instr_end) or
         (bool_sl(addr = break_addr) and break and mem_rd and cbo.m1));
 
     gen_z80_main : clkgen generic map(DIV_Z80)
@@ -267,13 +252,8 @@ begin
                           int, cbo, addr, data, data_ti,
                           keys_down, on_key_down,
                           vga_gmem_x, vga_gmem_y, gmem_vga_data,
-                          mem_rd, mem_wr_ti, addr_ti,
+                          mem_rd, mem_wr, addr_phy,
                           dbg.ti);
-
-    -- mem signals (bootloader priority)
-    mem_wr <= mem_wr_bl or mem_wr_ti;
-    addr_phy <= addr_bl when mem_wr_bl = '1' else addr_ti;
-    mem_data <= data_bl when mem_wr_bl = '1' else data;
 
     -- external controllers
     vga : vga_motor port map(clk, rst, clk_vga,
@@ -281,24 +261,15 @@ begin
                              mon_vga_data, vga_mon_x, vga_mon_y,
                              vga_red, vga_green, vga_blue, hsync, vsync);
     mif : mem_if port map(clk, rst,
-                          mem_rd, mem_wr, addr_phy, mem_data, data_mem,
+                          mem_rd, mem_wr, addr_phy, data, data_mem,
                           maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                           mwe_c, mlb_c, mub_c);
     kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_data,
-                           keys_down, on_key_down, dbg.scancode, dbg.keycode);
-    boot : bootloader port map(clk, rst, '0', boot_done,
-                               mem_wr_bl, data_bl, addr_bl, rx);
+                           keys_down, on_key_down);
 
     -- debug
-    dbg.mem_rd <= mem_rd;
-    dbg.mem_wr <= mem_wr;
-    dbg.mem_wr_bl <= mem_wr_bl;
-    dbg.keys_down <= keys_down;
-    dbg.on_key_down <= on_key_down;
     dbg.data <= data;
-    dbg.data_mem <= data_mem;
     dbg.addr_log <= addr;
-    dbg.data_mem <= data_mem;
     dbg.addr_phy <= addr_phy;
     dbg.cbi <= cbi;
     dbg.cbo <= cbo;

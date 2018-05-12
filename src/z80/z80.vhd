@@ -190,9 +190,9 @@ begin
 
     -- debug
     dbg.state <= state;
-    dbg.ct <= ctrl;
+    dbg.instr_end <= ctrl.instr_end;
+    dbg.cycle_end <= ctrl.cycle_end;
     dbg.pc <= pc_out;
-    dbg.cw <= cw;
     dbg.abus <= abus;
     dbg.ir <= ir_out;
     dbg.tmp <= tmp_out;

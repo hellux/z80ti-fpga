@@ -126,4 +126,4 @@ Net "mdata<14>"  LOC = R8  |  IOSTANDARD = LVCMOS33; #Bank = 2, pin name = IO_L3
 Net "mdata<15>"  LOC = T8  |  IOSTANDARD = LVCMOS33; #Bank = 2, pin name = IO_L31N_GCLK30_D15, Sch name = P30-DQ15
 
 ## Usb-RS232 interface
-Net "rx" LOC = N17 | IOSTANDARD=LVCMOS33; #Bank = 1, pin name = IO_L48P_HDC_M1DQ8    , Sch name = MCU-RX
+#Net "rx" LOC = N17 | IOSTANDARD=LVCMOS33; #Bank = 1, pin name = IO_L48P_HDC_M1DQ8    , Sch name = MCU-RX

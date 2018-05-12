@@ -29,13 +29,7 @@ package cmp_comm is
     type dbg_cmp_t is record
         z80 : dbg_z80_t;
         ti : dbg_ti_t;
-        scancode : std_logic_vector(7 downto 0);
-        keycode : std_logic_vector(7 downto 0);
-        keys_down : keys_down_t;
-        on_key_down : std_logic;
-        mem_rd, mem_wr, mem_wr_bl : std_logic;
         data : std_logic_vector(7 downto 0);
-        data_mem : std_logic_vector(7 downto 0);
         addr_log : std_logic_vector(15 downto 0);
         addr_phy : std_logic_vector(19 downto 0);
         cbi : ctrlbus_in;
