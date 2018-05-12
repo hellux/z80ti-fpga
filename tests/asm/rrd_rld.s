@@ -1,3 +1,4 @@
+org 0x9d95
 ; manual example
 rld_test:
 ld hl, 0x0090
