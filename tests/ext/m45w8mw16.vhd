@@ -112,8 +112,8 @@ architecture arch of m45 is
     signal mem_ram : mem_t(RAM_L to RAM_R) := (others => x"00");
     signal mem_app : mem_t(APP_L to APP_R) := file_to_mem("a.bin", APP_SIZE);
     signal mem_stack : mem_t(STACK_L to STACK_R) := (others => x"00");
-    signal mem_sscreen : mem_t(SSCREEN_L to SSCREEN_R)
-        := file_to_mem("gbuf.bin", 768);
+    --signal mem_sscreen : mem_t(SSCREEN_L to SSCREEN_R)
+    --    := file_to_mem("gbuf.bin", 768);
     signal mem_pscreen : mem_t(PSCREEN_L to PSCREEN_R) := (others => x"00");
     signal mem_opram : mem_t(OPRAM_L to OPRAM_R) := (others => x"00");
 
@@ -170,16 +170,16 @@ begin
                     write(mem_app, mub_c, mlb_c, a_lb, mdata);
                     write(mem_ram, mub_c, mlb_c, a_lb, mdata);
                     write(mem_opram, mub_c, mlb_c, a_lb, mdata);
-                    write(mem_sscreen, mub_c, mlb_c, a_lb, mdata);
-                    write(mem_pscreen, mub_c, mlb_c, a_lb, mdata);
+                    --write(mem_sscreen, mub_c, mlb_c, a_lb, mdata);
+                    --write(mem_pscreen, mub_c, mlb_c, a_lb, mdata);
                     write(mem_stack, mub_c, mlb_c, a_lb, mdata);
                 end if;
                 word_out <= x"7676";
                 read(mem_app, a_lb, word_out);
                 read(mem_ram, a_lb, word_out);
                 read(mem_stack, a_lb, word_out);
-                read(mem_sscreen, a_lb, word_out);
-                read(mem_pscreen, a_lb, word_out);
+                --read(mem_sscreen, a_lb, word_out);
+                --read(mem_pscreen, a_lb, word_out);
 
                 read(mem_init, a_lb, word_out);
 
