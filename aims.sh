@@ -30,6 +30,7 @@ quit=false          # quit immediately
 analyze=false       # analyze src files
 make=false          # make executable
 sim=false           # run simulation
+emulate=false
 clean=false         # remove executable
 asm=false;          # assemble z80 obj
 
@@ -40,12 +41,13 @@ args="--ieee-asserts=disable"
 wave="wave.ghw"
 args_ghdl="--workdir=build --ieee=synopsys"
 
-while getopts hAM:S:Cf:u:z:at:w: OPT; do
+while getopts hAM:S:ECf:u:z:at:w: OPT; do
     case $OPT in
         h) quit=true ;;
         A) analyze=true ;;
         M) analyze=true; make=true;          entity=$OPTARG ;;
         S) analyze=true; make=true; sim=true entity=$OPTARG ;;
+        E) emulate=true ;;
         C) clean=true ;;
         f) src=$OPTARG ;;
         u) 
@@ -73,8 +75,12 @@ if [ "$asm" = true ]; then
         exit 1
     fi
     # 76 = 4c = size of ti asm/basic header
-    head -c 76 </dev/zero | cat - a.z > a.bin
-    rm a.z
+    if [ "$emulate" = true ]; then
+        mv a.z a.bin
+    else
+        head -c 76 </dev/zero | cat - a.z > a.bin
+        rm a.z
+    fi
 fi
 
 if [ "$analyze" = true ]; then
@@ -89,10 +95,11 @@ if [ "$analyze" = true ]; then
     fi
 fi
 
+if [ "$emulate" = true ]; then
+    z80e-sdl a.bin --no-rom-check
+fi
+
 if [ "$clean" = true ]; then
-    if [ "$asm" = true ]; then
-        rm *.bin
-    fi
     rm -f $entity 
     ghdl --clean --workdir=build
 fi

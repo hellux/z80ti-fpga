@@ -13,7 +13,7 @@ end m45;
 
 architecture arch of m45 is
     constant INIT_SIZE : integer := 56;
-    constant APP_SIZE : integer := 256;
+    constant APP_SIZE : integer := 700;
     constant STACK_SIZE : integer := 256;
     constant RAM_SIZE : integer := 128;
 
@@ -50,6 +50,12 @@ architecture arch of m45 is
 
     constant RAM_L : integer := 16#80000#;
     constant RAM_R : integer := RAM_L+RAM_SIZE-1;
+    constant OPRAM_L : integer := 16#84478#; -- (0x8478)
+    constant OPRAM_R : integer := OPRAM_L+11*6-1; -- (0x8478)
+    constant SSCREEN_L : integer := 16#846ec#; -- (0x86ec)
+    constant SSCREEN_R : integer := SSCREEN_L+768-1;
+    constant PSCREEN_L : integer := 16#85340#; -- (0x9340)
+    constant PSCREEN_R : integer := PSCREEN_L+768-1;
 
     constant STACK_R : integer := 16#83fff#;
     constant STACK_L : integer := STACK_R-STACK_SIZE+1;
@@ -106,6 +112,10 @@ architecture arch of m45 is
     signal mem_ram : mem_t(RAM_L to RAM_R) := (others => x"00");
     signal mem_app : mem_t(APP_L to APP_R) := file_to_mem("a.bin", APP_SIZE);
     signal mem_stack : mem_t(STACK_L to STACK_R) := (others => x"00");
+    signal mem_sscreen : mem_t(SSCREEN_L to SSCREEN_R)
+        := file_to_mem("gbuf.bin", 768);
+    signal mem_pscreen : mem_t(PSCREEN_L to PSCREEN_R) := (others => x"00");
+    signal mem_opram : mem_t(OPRAM_L to OPRAM_R) := (others => x"00");
 
     -- jump to user ram/app, pc init
     signal mem_init : mem_t(INIT_L to INIT_R)
@@ -156,30 +166,36 @@ begin
         if rising_edge(clk) then
             if mce_c = '0' then
                 if mwe_c = '0' then
+                    --write(mem_bc0, mub_c, mlb_c, a_lb, mdata);
                     write(mem_app, mub_c, mlb_c, a_lb, mdata);
                     write(mem_ram, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_opram, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_sscreen, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_pscreen, mub_c, mlb_c, a_lb, mdata);
                     write(mem_stack, mub_c, mlb_c, a_lb, mdata);
                 end if;
                 word_out <= x"7676";
                 read(mem_app, a_lb, word_out);
                 read(mem_ram, a_lb, word_out);
                 read(mem_stack, a_lb, word_out);
+                read(mem_sscreen, a_lb, word_out);
+                read(mem_pscreen, a_lb, word_out);
 
                 read(mem_init, a_lb, word_out);
 
-                read(mem_bc0, a_lb, word_out);
-                read(mem_bc1, a_lb, word_out);
-                read(mem_bc2, a_lb, word_out);
-                read(mem_bc3, a_lb, word_out);
+                --read(mem_bc0, a_lb, word_out);
+                --read(mem_bc1, a_lb, word_out);
+                --read(mem_bc2, a_lb, word_out);
+                --read(mem_bc3, a_lb, word_out);
 
-                read(mem_bc_rio0, a_lb, word_out);
-                read(mem_bc_rio1, a_lb, word_out);
+                --read(mem_bc_rio0, a_lb, word_out);
+                --read(mem_bc_rio1, a_lb, word_out);
 
-                read(mem_bc_clrlcdf0, a_lb, word_out);
-                read(mem_bc_clrlcdf1, a_lb, word_out);
-                read(mem_bc_clrlcdf2, a_lb, word_out);
-                read(mem_bc_clrlcdf3, a_lb, word_out);
-                read(mem_bc_clrlcdf4, a_lb, word_out);
+                --read(mem_bc_clrlcdf0, a_lb, word_out);
+                --read(mem_bc_clrlcdf1, a_lb, word_out);
+                --read(mem_bc_clrlcdf2, a_lb, word_out);
+                --read(mem_bc_clrlcdf3, a_lb, word_out);
+                --read(mem_bc_clrlcdf4, a_lb, word_out);
             end if;
         end if;
     end process;
