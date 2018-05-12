@@ -166,7 +166,7 @@ begin
         if rising_edge(clk) then
             if mce_c = '0' then
                 if mwe_c = '0' then
-                    --write(mem_bc0, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_bc0, mub_c, mlb_c, a_lb, mdata);
                     write(mem_app, mub_c, mlb_c, a_lb, mdata);
                     write(mem_ram, mub_c, mlb_c, a_lb, mdata);
                     write(mem_opram, mub_c, mlb_c, a_lb, mdata);
@@ -183,7 +183,7 @@ begin
 
                 read(mem_init, a_lb, word_out);
 
-                --read(mem_bc0, a_lb, word_out);
+                read(mem_bc0, a_lb, word_out);
                 --read(mem_bc1, a_lb, word_out);
                 --read(mem_bc2, a_lb, word_out);
                 --read(mem_bc3, a_lb, word_out);

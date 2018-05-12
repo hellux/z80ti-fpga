@@ -55,7 +55,6 @@ begin
         end case;
         case dbg.z80.state.mode is
         when exec => val_mode := "EXE";
-        when   wz => val_mode := " WZ";
         when halt => val_mode := "HLT";
         when  int => val_mode := "INT";
         end case;
