@@ -22,11 +22,12 @@ package z80_comm is
     type cond_t is array(0 to 7) of boolean;
 
     type id_prefix_t is (main, ed, cb, dd, ddcb, fd, fdcb);
-    type id_mode_t is (exec, wz, halt, int);
+    type id_mode_t is (exec, halt, int);
 
     -- control signals for id
     type id_ctrl_t is record
         cycle_end : std_logic;      -- last state of current cycle
+        set_m1 : std_logic;         -- reset machine cycle to m1
         instr_end : std_logic;      -- last state of current instr
         mode_next : id_mode_t;      -- mode for next cp
         prefix_next : id_prefix_t;  -- prefix for next cp
@@ -64,7 +65,9 @@ package z80_comm is
         i_rd, r_rd : std_logic;          -- dbus -> I, dbus -> R
         ir_rd : std_logic;               -- dbus -> IR
         tmpa_rd : std_logic;             -- addr_in -> tmpa
-        pc_rd : std_logic;               -- add_in -> pc
+        pc_rd : std_logic;               -- addr_in -> pc
+        pc_rdh : std_logic;              -- dbus -> pch
+        pc_rdl : std_logic;              -- dbus -> pcl
         addr_op : addr_op_t;             -- op for addr_in
         rst_addr : std_logic_vector(2 downto 0); -- addr >> 3 for RST
         iff_next : std_logic;            -- next value for iff

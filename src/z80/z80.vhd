@@ -77,6 +77,8 @@ architecture arch of z80 is
     signal cw : ctrlword;
 
     signal addr_in : std_logic_vector(15 downto 0);
+    signal pc_in : std_logic_vector(15 downto 0);
+    signal pc_rd : std_logic;
     signal addr_zero : std_logic;
     signal rf_dis : std_logic_vector(15 downto 0);
     signal iff : std_logic;
@@ -123,7 +125,11 @@ begin
     r : reg generic map(x"ff", 8)
             port map(clk, cbi.reset, ce, cw.r_rd, dbus, r_out);
     pc : reg generic map(x"8000", 16)
-             port map(clk, cbi.reset, ce, cw.pc_rd, addr_in, pc_out);
+             port map(clk, cbi.reset, ce, pc_rd, pc_in, pc_out);
+    pc_rd <= cw.pc_rd or cw.pc_rdh or cw.pc_rdl;
+    pc_in <= dbus & pc_out(7 downto 0) when cw.pc_rdh = '1' else
+             pc_out(15 downto 8) & dbus when cw.pc_rdl = '1' else
+             addr_in;
     tmpa : reg generic map(x"ffff", 16)
                port map(clk, cbi.reset, ce, cw.tmpa_rd, addr_in, tmpa_out);
     dis_out <= std_logic_vector(signed(rf_dis) + resize(signed(dbus), 16));

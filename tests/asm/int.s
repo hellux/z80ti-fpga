@@ -12,7 +12,13 @@ ei
 halt
 call reti_test
 ld l, 0xcc
+
+call enable
 halt
+
+enable:
+ei
+reti
 
 reti_test:
 call retn_test
