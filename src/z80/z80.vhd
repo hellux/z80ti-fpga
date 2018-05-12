@@ -85,7 +85,8 @@ architecture arch of z80 is
     signal acc, act_in, act_out : std_logic_vector(7 downto 0);
     signal fi_rd : std_logic;
     signal f_pv : std_logic;
-    signal f_alu_in, f_alu_out, fi_out : std_logic_vector(7 downto 0);
+    signal f_alu_in, f_alu_out : std_logic_vector(7 downto 0);
+    signal fi_in, fi_out : std_logic_vector(7 downto 0);
     signal flags : std_logic_vector(7 downto 0);
     signal pv_src : pv_src_t;
 
@@ -138,9 +139,12 @@ begin
     tmp : reg generic map(x"ff", 8)
               port map(clk, cbi.reset, ce, cw.tmp_rd, dbus, tmp_out);
     fi : reg generic map(x"ff", 8) -- flags internal
-             port map(clk, cbi.reset, ce, fi_rd, flags, fi_out);
+             port map(clk, cbi.reset, ce, fi_rd, fi_in, fi_out);
     iff_r : ff port map(clk, cbi.reset, ce, '1', cw.iff_next, iff);
-    fi_rd <= cw.fi_rd or cw.f_rd;
+    fi_in <= dbus when cw.rf_addr = regF and cw.rf_rdd = '1' else flags;
+    fi_rd <= cw.fi_rd or
+             cw.f_rd or                                  -- update f from alu
+             (cw.rf_rdd and bool_sl(cw.rf_addr = regF)); -- update f from dbus
     flags(7 downto PV_f+1) <= f_alu_out(7 downto PV_f+1);
     flags(PV_f) <= f_pv;
     flags(PV_f-1 downto 0) <= f_alu_out(PV_f-1 downto 0);
