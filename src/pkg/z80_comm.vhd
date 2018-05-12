@@ -60,6 +60,7 @@ package z80_comm is
         rf_swp : rf_swap_t;              -- swap regs in regfile
         f_rd : std_logic;                -- alu -> F
         fi_rd : std_logic;               -- alu -> internal flags
+        fi_rst : std_logic;              -- F -> internal flags
         pv_src : pv_src_t;               -- signal to use for pv flag
         i_rd, r_rd : std_logic;          -- dbus -> I, dbus -> R
         ir_rd : std_logic;               -- dbus -> IR

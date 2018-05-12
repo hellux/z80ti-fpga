@@ -921,6 +921,7 @@ architecture arch of op_decoder is
                     if state.cc(PO_c) then
                         f.ct.instr_end := '1';
                     end if;
+                    f.cw.fi_rst := '1'; -- restore flags after internal use
                 when inir_i|indr_i|otir_i|otdr_i =>
                     if state.cc(Z_c) then
                         f.ct.instr_end := '1';
@@ -2196,6 +2197,7 @@ architecture arch of op_decoder is
                 if state.cc(Z_c) then
                     f.ct.instr_end := '1';
                 end if;
+                f.cw.fi_rst := '1'; -- restore flags after internal use
             when others => null; end case;
         when m3 => -- load pc+d to pc
             case state.t is

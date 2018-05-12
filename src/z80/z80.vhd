@@ -85,7 +85,7 @@ architecture arch of z80 is
     signal acc, act_in, act_out : std_logic_vector(7 downto 0);
     signal fi_rd : std_logic;
     signal f_pv : std_logic;
-    signal f_alu_in, f_alu_out : std_logic_vector(7 downto 0);
+    signal rf_f_out, f_alu_out : std_logic_vector(7 downto 0);
     signal fi_in, fi_out : std_logic_vector(7 downto 0);
     signal flags : std_logic_vector(7 downto 0);
     signal pv_src : pv_src_t;
@@ -108,7 +108,7 @@ begin
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset, ce,
         cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_swp,
-        dbus, addr_in, flags, rf_do, rf_ao, rf_dis, acc, f_alu_in,
+        dbus, addr_in, flags, rf_do, rf_ao, rf_dis, acc, rf_f_out,
         dbg.regs);
     i : reg generic map(x"ff", 8)
             port map(clk, cbi.reset, ce, cw.i_rd, dbus, i_out);
@@ -129,7 +129,7 @@ begin
     rst_addr <= x"00" & "00" & cw.rst_addr & "000";
 
     -- -- ALU section -- --
-    alu_comp : alu port map(act_out, tmp_out, f_alu_in,
+    alu_comp : alu port map(act_out, tmp_out, rf_f_out,
                             cw.alu_op, cw.alu_bs,
                             alu_out, f_alu_out);
     act : reg generic map(x"ff", 8)
@@ -141,8 +141,11 @@ begin
     fi : reg generic map(x"ff", 8) -- flags internal
              port map(clk, cbi.reset, ce, fi_rd, fi_in, fi_out);
     iff_r : ff port map(clk, cbi.reset, ce, '1', cw.iff_next, iff);
-    fi_in <= dbus when cw.rf_addr = regF and cw.rf_rdd = '1' else flags;
+    fi_in <= dbus when cw.rf_addr = regF and cw.rf_rdd = '1' else
+             rf_f_out when cw.fi_rst = '1' else
+             flags;
     fi_rd <= cw.fi_rd or
+             cw.fi_rst or                                -- done with internal
              cw.f_rd or                                  -- update f from alu
              (cw.rf_rdd and bool_sl(cw.rf_addr = regF)); -- update f from dbus
     flags(7 downto PV_f+1) <= f_alu_out(7 downto PV_f+1);
