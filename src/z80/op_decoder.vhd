@@ -888,7 +888,8 @@ architecture arch of op_decoder is
                     -- dec BC
                     f.cw.addr_op := dec;
                     f.cw.pv_src := anz_f; --addr not zero flag
-                    f.cw.fi_rd := '1';
+                    f.cw.f_rd := '1';
+                    f.cw.f_save := '1';
                 when ldi_i|ldd_i|ldir_i|lddr_i =>
                     -- dec BC
                     f.cw.addr_op := dec;
@@ -921,7 +922,8 @@ architecture arch of op_decoder is
                     if state.cc(PO_c) then
                         f.ct.instr_end := '1';
                     end if;
-                    f.cw.fi_rst := '1'; -- restore flags after internal use
+                    -- TODO test flags with new internal flags structure
+                    f.cw.f_load := '1'; -- restore flags after internal use
                 when inir_i|indr_i|otir_i|otdr_i =>
                     if state.cc(Z_c) then
                         f.ct.instr_end := '1';
@@ -2183,7 +2185,8 @@ architecture arch of op_decoder is
             when t5 =>
                 f.cw.alu_op := dec_i;
                 f.cw.dbus_src := alu_o;
-                f.cw.fi_rd := '1'; -- read to internal flags only
+                f.cw.f_save := '1'; -- save old flags to fsav
+                f.cw.f_rd := '1'; -- overwrite flags
                 f.cw.rf_addr := regB;
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
@@ -2197,7 +2200,7 @@ architecture arch of op_decoder is
                 if state.cc(Z_c) then
                     f.ct.instr_end := '1';
                 end if;
-                f.cw.fi_rst := '1'; -- restore flags after internal use
+                f.cw.f_load := '1'; -- restore old flags after internal use
             when others => null; end case;
         when m3 => -- load pc+d to pc
             case state.t is

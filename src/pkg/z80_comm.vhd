@@ -59,8 +59,7 @@ package z80_comm is
         rf_rdd, rf_rda : std_logic;      -- rd to regfile from dbus/abus
         rf_swp : rf_swap_t;              -- swap regs in regfile
         f_rd : std_logic;                -- alu -> F
-        fi_rd : std_logic;               -- alu -> internal flags
-        fi_rst : std_logic;              -- F -> internal flags
+        f_save, f_load : std_logic;      -- F -> fsav, fsav -> F
         pv_src : pv_src_t;               -- signal to use for pv flag
         i_rd, r_rd : std_logic;          -- dbus -> I, dbus -> R
         ir_rd : std_logic;               -- dbus -> IR
