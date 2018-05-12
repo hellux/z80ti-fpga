@@ -148,6 +148,7 @@ package z80_comm is
         regs : dbg_regs_t;
         state : state_t;
         instr_end, cycle_end : std_logic;
+        alu_op : instr_t;
         pc, abus, tmpa : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
     end record;

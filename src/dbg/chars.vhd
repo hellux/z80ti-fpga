@@ -16,7 +16,7 @@ architecture arch of char_rom is
     type char_arr_t is array(0 to CHAR_COUNT*CHAR_ROWS-1) of
                         std_logic_vector(0 to CHAR_COLS-1);
 
-    signal char_arr : char_arr_t := (
+    constant char_arr : char_arr_t := (
         "00000000",
         "00111000",
         "01000100",
@@ -321,18 +321,21 @@ architecture arch of char_rom is
         "00000000",
         "00000000",
         "00000000");
+
+    signal selected_row : std_logic_vector(0 to CHAR_COLS-1);
 begin
     process(clk)
-        variable r, c : integer range 0 to 7;
-        variable ch : integer;
+        variable r : natural range 0 to 7;
+        variable ch : natural;
     begin
         if rising_edge(clk) then
             r := to_integer(unsigned(row));
-            c := to_integer(unsigned(col));
             ch := to_integer(unsigned(char));
             if ch >= CHAR_COUNT then ch := CHAR_COUNT-1; end if;
 
-            pixel <= char_arr(ch*CHAR_ROWS+r)(c);
+            selected_row <= char_arr(ch*CHAR_ROWS+r);
         end if;
     end process;
+
+    pixel <= selected_row(to_integer(unsigned(col)));
 end arch;
