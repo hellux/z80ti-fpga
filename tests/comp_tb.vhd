@@ -19,7 +19,6 @@ architecture arch of comp_tb is
         mdata : inout std_logic_vector(15 downto 0);
         mclk, madv_c, mcre, mce_c, moe_c, mwe_c : out std_logic;
         mlb_c, mub_c : out std_logic;
-        rx : in std_logic;
         seg : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
@@ -50,8 +49,6 @@ architecture arch of comp_tb is
     signal mlb_c, mub_c : std_logic;
 
 
-    signal rx : std_logic;
-
     signal seg : std_logic_vector(7 downto 0);
     signal an : std_logic_vector(3 downto 0);
     signal sw : std_logic_vector(7 downto 0) := x"00";
@@ -68,7 +65,6 @@ begin
                       vga_red, vga_green, vga_blue, hsync, vsync,
                       maddr, mdata, mclk, madv_c, mcre, mce_c,
                       moe_c, mwe_c, mlb_c, mub_c,
-                      rx,
                       seg, an);
     m : m45 port map(clk,
                      maddr, mdata, mclk, madv_c, mcre, mce_c,

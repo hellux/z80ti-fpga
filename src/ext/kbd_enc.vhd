@@ -8,10 +8,7 @@ entity kbd_enc is port (
     PS2KeyboardCLK : in std_logic;
     PS2KeyboardData	: in std_logic;
     keys_down : out keys_down_t;
-    on_key_down : out std_logic;
--- debug
-    scancode_out : out std_logic_vector(7 downto 0);
-    keycode_out : out std_logic_vector(7 downto 0));
+    on_key_down : out std_logic);
 end kbd_enc;
 
 architecture behavioral of KBD_ENC is
@@ -193,8 +190,4 @@ begin
     -- set as keycode
     keys_down <= keys_down_int;
     on_key_down <= on_key_down_int;
-
-    -- debug
-    scancode_out <= scancode;
-    keycode_out <= keycode;
 end behavioral;

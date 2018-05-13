@@ -55,7 +55,6 @@ begin
         end case;
         case dbg.z80.state.mode is
         when exec => val_mode := "EXE";
-        when   wz => val_mode := " WZ";
         when halt => val_mode := "HLT";
         when  int => val_mode := "INT";
         end case;
@@ -136,14 +135,14 @@ begin
         pages(20) := " AT:" & hex_str(dbg.z80.act & dbg.z80.tmp);
 
     -- ports
-        pages(24) := " P01:" & hex_str(dbg.ti.asic.p01_kbd) & ' ';
-        pages(25) := " P02:" & hex_str(dbg.ti.asic.p02_status) & ' ';
-        pages(26) := " P03:" & hex_str(dbg.ti.asic.p03_intmask) & ' ';
-        pages(27) := " P04:" & hex_str(dbg.ti.asic.p04_mmap_int) & ' ';
-        pages(28) := " P06:" & hex_str(dbg.ti.asic.p06_mempage_a) & ' ';
-        pages(29) := " P07:" & hex_str(dbg.ti.asic.p07_mempage_b) & ' ';
-        pages(30) := " P10:" & hex_str(dbg.ti.asic.p10_lcd_status) & ' ';
-        pages(31) := " P11:" & hex_str(dbg.ti.asic.p11_lcd_data) & ' ';
+        pages(24) := " PI01:" & hex_str(dbg.ti.asic.p01_kbd);
+        pages(25) := " PI02:" & hex_str(dbg.ti.asic.p02_status);
+        pages(26) := " PI03:" & hex_str(dbg.ti.asic.p03_intmask);
+        pages(27) := " PI04:" & hex_str(dbg.ti.asic.p04_mmap_int);
+        pages(28) := " PI06:" & hex_str(dbg.ti.asic.p06_mempage_a);
+        pages(29) := " PI07:" & hex_str(dbg.ti.asic.p07_mempage_b);
+        pages(30) := " PI10:" & hex_str(dbg.ti.asic.p10_lcd_status);
+        pages(31) := " PI11:" & hex_str(dbg.ti.asic.p11_lcd_data);
     
     -- mem map
         pages(32) := "  MODE0 ";

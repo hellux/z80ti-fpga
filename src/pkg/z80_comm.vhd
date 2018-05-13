@@ -22,11 +22,12 @@ package z80_comm is
     type cond_t is array(0 to 7) of boolean;
 
     type id_prefix_t is (main, ed, cb, dd, ddcb, fd, fdcb);
-    type id_mode_t is (exec, wz, halt, int);
+    type id_mode_t is (exec, halt, int);
 
     -- control signals for id
     type id_ctrl_t is record
         cycle_end : std_logic;      -- last state of current cycle
+        set_m1 : std_logic;         -- reset machine cycle to m1
         instr_end : std_logic;      -- last state of current instr
         mode_next : id_mode_t;      -- mode for next cp
         prefix_next : id_prefix_t;  -- prefix for next cp
@@ -59,13 +60,14 @@ package z80_comm is
         rf_rdd, rf_rda : std_logic;      -- rd to regfile from dbus/abus
         rf_swp : rf_swap_t;              -- swap regs in regfile
         f_rd : std_logic;                -- alu -> F
-        fi_rd : std_logic;               -- alu -> internal flags
-        fi_rst : std_logic;              -- F -> internal flags
+        f_save, f_load : std_logic;      -- F -> fsav, fsav -> F
         pv_src : pv_src_t;               -- signal to use for pv flag
         i_rd, r_rd : std_logic;          -- dbus -> I, dbus -> R
         ir_rd : std_logic;               -- dbus -> IR
         tmpa_rd : std_logic;             -- addr_in -> tmpa
-        pc_rd : std_logic;               -- add_in -> pc
+        pc_rd : std_logic;               -- addr_in -> pc
+        pc_rdh : std_logic;              -- dbus -> pch
+        pc_rdl : std_logic;              -- dbus -> pcl
         addr_op : addr_op_t;             -- op for addr_in
         rst_addr : std_logic_vector(2 downto 0); -- addr >> 3 for RST
         iff_next : std_logic;            -- next value for iff
@@ -148,8 +150,7 @@ package z80_comm is
     type dbg_z80_t is record
         regs : dbg_regs_t;
         state : state_t;
-        ct : id_ctrl_t;
-        cw : ctrlword;
+        instr_end, cycle_end : std_logic;
         pc, abus, tmpa : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
     end record;

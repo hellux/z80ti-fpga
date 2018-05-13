@@ -77,21 +77,27 @@ architecture arch of z80 is
     signal cw : ctrlword;
 
     signal addr_in : std_logic_vector(15 downto 0);
+    signal pc_in : std_logic_vector(15 downto 0);
+    signal pc_rd : std_logic;
     signal addr_zero : std_logic;
     signal rf_dis : std_logic_vector(15 downto 0);
     signal iff : std_logic;
 
     signal act_rd : std_logic;
     signal acc, act_in, act_out : std_logic_vector(7 downto 0);
-    signal fi_rd : std_logic;
-    signal f_pv : std_logic;
-    signal rf_f_out, f_alu_out : std_logic_vector(7 downto 0);
-    signal fi_in, fi_out : std_logic_vector(7 downto 0);
+
+    -- flags
+    signal rf_f_rd : std_logic;
+    signal rf_f_in, rf_f_out, alu_f_out : std_logic_vector(7 downto 0);
     signal flags : std_logic_vector(7 downto 0);
+    -- pv source
+    signal f_pv : std_logic;
     signal pv_src : pv_src_t;
+    -- internal flag swap reg
+    signal fsav_out : std_logic_vector(7 downto 0);
 
     -- dbus/abus src
-    signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_out, i_out, r_out
+    signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_res_out, i_out, r_out
         : std_logic_vector(7 downto 0);
     signal rf_ao, tmpa_out, pc_out, dis_out, int_addr, rst_addr
         : std_logic_vector(15 downto 0);
@@ -103,19 +109,27 @@ begin
     ir : reg generic map(x"ff", 8)
              port map(clk, cbi.reset, ce, cw.ir_rd, dbus, ir_out);
     id : op_decoder port map(clk, state, ir_out, ctrl, cbo, cw);
-    sm : state_machine port map(clk, ce, cbi, fi_out, iff, ctrl, state); 
+    sm : state_machine port map(clk, ce, cbi, rf_f_out, iff, ctrl, state); 
 
     -- -- REGISTER SECTION -- --
+    rf_f_rd <= cw.f_rd or cw.f_load;
+    rf_f_in <= fsav_out when cw.f_load = '1' else flags;
     rf : regfile port map(clk, cbi.reset, ce,
-        cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_swp,
-        dbus, addr_in, flags, rf_do, rf_ao, rf_dis, acc, rf_f_out,
+        cw.rf_addr, cw.rf_rdd, cw.rf_rda, rf_f_rd, cw.rf_swp,
+        dbus, addr_in, rf_f_in, rf_do, rf_ao, rf_dis, acc, rf_f_out,
         dbg.regs);
+    fsav : reg generic map(x"ff", 8)
+               port map(clk, cbi.reset, ce, cw.f_save, rf_f_out, fsav_out);
     i : reg generic map(x"ff", 8)
             port map(clk, cbi.reset, ce, cw.i_rd, dbus, i_out);
     r : reg generic map(x"ff", 8)
             port map(clk, cbi.reset, ce, cw.r_rd, dbus, r_out);
     pc : reg generic map(x"8000", 16)
-             port map(clk, cbi.reset, ce, cw.pc_rd, addr_in, pc_out);
+             port map(clk, cbi.reset, ce, pc_rd, pc_in, pc_out);
+    pc_rd <= cw.pc_rd or cw.pc_rdh or cw.pc_rdl;
+    pc_in <= dbus & pc_out(7 downto 0) when cw.pc_rdh = '1' else
+             pc_out(15 downto 8) & dbus when cw.pc_rdl = '1' else
+             addr_in;
     tmpa : reg generic map(x"ffff", 16)
                port map(clk, cbi.reset, ce, cw.tmpa_rd, addr_in, tmpa_out);
     dis_out <= std_logic_vector(signed(rf_dis) + resize(signed(dbus), 16));
@@ -131,29 +145,20 @@ begin
     -- -- ALU section -- --
     alu_comp : alu port map(act_out, tmp_out, rf_f_out,
                             cw.alu_op, cw.alu_bs,
-                            alu_out, f_alu_out);
+                            alu_res_out, alu_f_out);
     act : reg generic map(x"ff", 8)
               port map(clk, cbi.reset, ce, act_rd, act_in, act_out);
     act_rd <= cw.act_rd or cw.act_rd_dbus;
     act_in <= dbus when cw.act_rd_dbus = '1' else acc;
     tmp : reg generic map(x"ff", 8)
               port map(clk, cbi.reset, ce, cw.tmp_rd, dbus, tmp_out);
-    fi : reg generic map(x"ff", 8) -- flags internal
-             port map(clk, cbi.reset, ce, fi_rd, fi_in, fi_out);
+
     iff_r : ff port map(clk, cbi.reset, ce, '1', cw.iff_next, iff);
-    -- TODO find better internal/external flags solution
-    fi_in <= dbus when cw.rf_addr = regF and cw.rf_rdd = '1' else
-             rf_f_out when cw.fi_rst = '1' else
-             flags;
-    fi_rd <= cw.fi_rd or                                 -- only fi from alu
-             cw.fi_rst or                                -- done with internal
-             cw.f_rd or                                  -- update f from alu
-             (cw.rf_rdd and bool_sl(cw.rf_addr = regF)); -- update f from dbus
-    flags(7 downto PV_f+1) <= f_alu_out(7 downto PV_f+1);
+    flags(7 downto PV_f+1) <= alu_f_out(7 downto PV_f+1);
     flags(PV_f) <= f_pv;
-    flags(PV_f-1 downto 0) <= f_alu_out(PV_f-1 downto 0);
+    flags(PV_f-1 downto 0) <= alu_f_out(PV_f-1 downto 0);
     with cw.pv_src select
-        f_pv <= f_alu_out(PV_f) when alu_f,
+        f_pv <= alu_f_out(PV_f) when alu_f,
                 iff             when iff_f,
                 not addr_zero   when anz_f;
 
@@ -165,7 +170,7 @@ begin
                 dbufi_out           when ext_o,
                 rf_do               when rf_o,
                 tmp_out             when tmp_o,
-                alu_out             when alu_o,
+                alu_res_out         when alu_o,
                 pc_out(15 downto 8) when pch_o,
                 pc_out(7 downto 0)  when pcl_o,
                 i_out               when i_o,
@@ -190,9 +195,9 @@ begin
 
     -- debug
     dbg.state <= state;
-    dbg.ct <= ctrl;
+    dbg.instr_end <= ctrl.instr_end;
+    dbg.cycle_end <= ctrl.cycle_end;
     dbg.pc <= pc_out;
-    dbg.cw <= cw;
     dbg.abus <= abus;
     dbg.ir <= ir_out;
     dbg.tmp <= tmp_out;

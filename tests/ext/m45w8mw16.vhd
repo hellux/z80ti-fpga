@@ -18,7 +18,7 @@ architecture arch of m45 is
     constant RAM_SIZE : integer := 128;
 
     constant BCALL0_L : integer := 16#00028#; -- jmp to routine
-    constant BCALL0_R : integer := 16#00039#; -- interrupt
+    constant BCALL0_R : integer := 16#00100#;
     constant BCALL1_L : integer := 16#02a37#; -- parse bc address
     constant BCALL1_R : integer := 16#02ab2#;
     constant BCALL2_L : integer := 16#0249f#; -- jp to bc address
@@ -112,8 +112,8 @@ architecture arch of m45 is
     signal mem_ram : mem_t(RAM_L to RAM_R) := (others => x"00");
     signal mem_app : mem_t(APP_L to APP_R) := file_to_mem("a.bin", APP_SIZE);
     signal mem_stack : mem_t(STACK_L to STACK_R) := (others => x"00");
-    signal mem_sscreen : mem_t(SSCREEN_L to SSCREEN_R)
-        := file_to_mem("gbuf.bin", 768);
+    --signal mem_sscreen : mem_t(SSCREEN_L to SSCREEN_R)
+    --    := file_to_mem("gbuf.bin", 768);
     signal mem_pscreen : mem_t(PSCREEN_L to PSCREEN_R) := (others => x"00");
     signal mem_opram : mem_t(OPRAM_L to OPRAM_R) := (others => x"00");
 
@@ -166,24 +166,24 @@ begin
         if rising_edge(clk) then
             if mce_c = '0' then
                 if mwe_c = '0' then
-                    --write(mem_bc0, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_bc0, mub_c, mlb_c, a_lb, mdata);
                     write(mem_app, mub_c, mlb_c, a_lb, mdata);
                     write(mem_ram, mub_c, mlb_c, a_lb, mdata);
                     write(mem_opram, mub_c, mlb_c, a_lb, mdata);
-                    write(mem_sscreen, mub_c, mlb_c, a_lb, mdata);
-                    write(mem_pscreen, mub_c, mlb_c, a_lb, mdata);
+                    --write(mem_sscreen, mub_c, mlb_c, a_lb, mdata);
+                    --write(mem_pscreen, mub_c, mlb_c, a_lb, mdata);
                     write(mem_stack, mub_c, mlb_c, a_lb, mdata);
                 end if;
                 word_out <= x"7676";
                 read(mem_app, a_lb, word_out);
                 read(mem_ram, a_lb, word_out);
                 read(mem_stack, a_lb, word_out);
-                read(mem_sscreen, a_lb, word_out);
-                read(mem_pscreen, a_lb, word_out);
+                --read(mem_sscreen, a_lb, word_out);
+                --read(mem_pscreen, a_lb, word_out);
 
                 read(mem_init, a_lb, word_out);
 
-                --read(mem_bc0, a_lb, word_out);
+                read(mem_bc0, a_lb, word_out);
                 --read(mem_bc1, a_lb, word_out);
                 --read(mem_bc2, a_lb, word_out);
                 --read(mem_bc3, a_lb, word_out);

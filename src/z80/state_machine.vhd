@@ -33,7 +33,7 @@ begin
                 end if;
 
                 -- set m state
-                if ctrl.instr_end = '1' then
+                if ctrl.set_m1 = '1' or ctrl.instr_end = '1' then
                     state.m <= m1;
                 elsif ctrl.cycle_end = '1' then
                     state.m <= state.m + 1;
@@ -50,7 +50,7 @@ begin
                 end if;
 
                 -- set prefix
-                if ctrl.instr_end = '1' then
+                if ctrl.set_m1 = '1' or ctrl.instr_end = '1' then
                     state.prefix <= ctrl.prefix_next;
                 end if;
 
