@@ -45,7 +45,6 @@ architecture arch of mem_ctrl_tb is
             "phy_actu: " & hex_str(addr_phy_s) & lf &
             "phy_want: " & hex_str(addr_phy);
     end procedure;
-
     
     signal rd, wr : std_logic;
     signal p04, p06, p07 : port_out_t;
@@ -63,41 +62,41 @@ begin
         report "page 0";
         --        addr_log mode pageA  pageB
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"0028", '0', x"07", x"41",
+                  x"0028", '0', x"07", x"40",
                   x"00028");
         report "page 1";
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"4523", '0', x"07", x"41",
+                  x"4523", '0', x"07", x"40",
                   x"1c523");
         test_addr(p04, p06, p07, addr_log, addr_phy,
                   x"5508", '0', x"07", x"00",
                   x"1d508");
         report "page 2";
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"85aa", '0', x"07", x"41",
+                  x"85aa", '0', x"07", x"40",
                   x"845aa");
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"95bc", '0', x"00", x"41",
+                  x"95bc", '0', x"00", x"40",
                   x"855bc");
         report "page 3";
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"c134", '0', x"00", x"41",
+                  x"c134", '0', x"00", x"40",
                   x"80134");
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"ffff", '0', x"1f", x"41",
+                  x"ffff", '0', x"1f", x"40",
                   x"83fff");
 
         report "---- MODE 1 ----";
         report "page 0";
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"0028", '1', x"07", x"41",
+                  x"0028", '1', x"07", x"40",
                   x"00028");
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"3fff", '1', x"1f", x"40",
+                  x"3fff", '1', x"1f", x"41",
                   x"03fff");
         report "page 1";
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"7fff", '1', x"1f", x"40",
+                  x"7fff", '1', x"1f", x"41",
                   x"7bfff");
         test_addr(p04, p06, p07, addr_log, addr_phy,
                   x"4000", '1', x"1f", x"00",
@@ -123,13 +122,13 @@ begin
                   x"c000", '1', x"01", x"1f",
                   x"7c000");
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"ffff", '1', x"01", x"40",
+                  x"ffff", '1', x"01", x"41",
                   x"83fff");
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"ffff", '1', x"1f", x"41",
+                  x"ffff", '1', x"1f", x"40",
                   x"87fff");
         test_addr(p04, p06, p07, addr_log, addr_phy,
-                  x"e123", '1', x"1f", x"41",
+                  x"e123", '1', x"1f", x"40",
                   x"86123");
 
 

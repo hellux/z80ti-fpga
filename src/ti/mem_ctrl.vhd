@@ -20,13 +20,16 @@ use work.ti_comm.all;
 --   :      |_______:______|    :
 -- 0x78000  |____ROM_1e____|  0x7bfff
 -- 0x7c000  |____ROM_1f____|  0x7ffff
--- 0x80000  |____RAM_0_____|  0x83fff
--- 0x84000  |____RAM_1_____|  0x87fff
+-- 0x80000  |____RAM_1_____|  0x83fff
+-- 0x84000  |____RAM_0_____|  0x87fff
 -- 0x88000  |____unused____|
 --          |____unused____|
 --          |       :      |
 --          |       :      |
 --          |_______:______|  0xfffff
+-- NOTE: RAM1 is placed before RAM0 to enable sequential read to mem
+--       over both pages when in mode 0 with page b as RAM1
+--       (which we are at asm prgm load)
 --
 --       LOGICAL->PHYSICAL MEMORY MAPPING
 --        mode 0                  mode 1
@@ -78,12 +81,12 @@ begin
 
     -- logical -> physical address
     with ram_rom_a select page_a <=
-        ROM_START(19)           & rom_page_a when '0',
-        RAM_START(19 downto 15) & ram_page_a when '1',
+        ROM_START(19)           & rom_page_a     when '0',
+        RAM_START(19 downto 15) & not ram_page_a when '1',
         (others => '0')                      when others;
     with ram_rom_b select page_b <=
-        ROM_START(19)           & rom_page_b when '0',
-        RAM_START(19 downto 15) & ram_page_b when '1',
+        ROM_START(19)           & rom_page_b     when '0',
+        RAM_START(19 downto 15) & not ram_page_b when '1',
         (others => '0')                    when others;
 
     page0 <= ROM_START(19 downto 14);
@@ -107,9 +110,12 @@ begin
     -- debug
     dbg.mode <= mode;
     dbg.sec_ram_rom <= page1(5);
-    dbg.sec_page <= page1(4 downto 0) when page1(5) = '0' else x"0" & page1(0);
+    dbg.sec_page <= page1(4 downto 0) when page1(5) = '0' else
+                    x"0" & not page1(0);
     dbg.thi_ram_rom <= page2(5);
-    dbg.thi_page <= page2(4 downto 0) when page2(5) = '0' else x"0" & page2(0);
+    dbg.thi_page <= page2(4 downto 0) when page2(5) = '0' else
+                    x"0" & not page2(0);
     dbg.fou_ram_rom <= page3(5);
-    dbg.fou_page <= page3(4 downto 0) when page3(5) = '0' else x"0" & page3(0);
+    dbg.fou_page <= page3(4 downto 0) when page3(5) = '0' else
+                    x"0" & not page3(0);
 end arch;
