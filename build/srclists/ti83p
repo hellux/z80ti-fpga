@@ -1,5 +1,5 @@
 src/pkg/util.vhd
-src/ti/ti_comm.vhd
+src/pkg/ti_comm.vhd
 src/pkg/z80_comm.vhd
 src/pkg/cmp_comm.vhd
 src/prm/clkgen.vhd
