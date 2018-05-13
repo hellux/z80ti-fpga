@@ -1,3 +1,4 @@
+org 0x9d95
 ld a, 0xc9 ; RET
 ld (0x28), a
 rst 28h
