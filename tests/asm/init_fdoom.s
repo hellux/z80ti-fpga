@@ -8,7 +8,7 @@ aux_addr: equ 0xf000 ; jump here to setup memory mapping
 
 ; GAME START
 pc_high: equ 0xa1
-pc_low: equ 0x40
+pc_low: equ 0x4e
 
 im 1
 ld a, 0x40 ; page B to RAM 0
