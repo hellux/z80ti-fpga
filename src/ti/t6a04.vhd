@@ -153,9 +153,9 @@ begin
          others              => '0');
 
     -- debug
-    dbg.x <= to_integer(x);
-    dbg.y <= to_integer(y);
-    dbg.z <= to_integer(unsigned(z));
+    dbg.x <= std_logic_vector(x);
+    dbg.y <= std_logic_vector(y);
+    dbg.z <= z;
     dbg.up <= mode.up;
     dbg.counter <= mode.counter;
     dbg.active <= mode.active;

@@ -44,8 +44,6 @@ begin
         variable val_hwt1, val_hwt2 : string(1 to 8);
         variable val_lcd_ptr, val_lcd_mode : string(1 to 8);
 
-        variable x_str, y_str, z_str : string(1 to 2);
-
         variable pages : pages_t;
         variable char_ch : character;
         variable char_int, char_int_o : integer;
@@ -185,22 +183,10 @@ begin
         val_hwt2(1 to 3) := "H2:";
         val_hwt2(4 to 8) := hex_str(dbg.ti.hwt.hwt2);
 
-        if dbg.ti.lcd.x < 10
-        then x_str := '0' & integer'image(dbg.ti.lcd.x);
-        else x_str := integer'image(dbg.ti.lcd.x);
-        end if;
-        if dbg.ti.lcd.y < 10
-        then y_str := '0' & integer'image(dbg.ti.lcd.y);
-        else y_str := integer'image(dbg.ti.lcd.y);
-        end if;
-        if dbg.ti.lcd.z < 10
-        then z_str := '0' & integer'image(dbg.ti.lcd.z);
-        else z_str := integer'image(dbg.ti.lcd.z);
-        end if;
         val_lcd_ptr := "0X,0Y,0Z";
-        val_lcd_ptr(1 to 2) := x_str;
-        val_lcd_ptr(4 to 5) := y_str;
-        val_lcd_ptr(7 to 8) := z_str;
+        val_lcd_ptr(1 to 2) := int_str(dbg.ti.lcd.x);
+        val_lcd_ptr(4 to 5) := int_str(dbg.ti.lcd.y);
+        val_lcd_ptr(7 to 8) := int_str(dbg.ti.lcd.z);
 
         val_lcd_mode := "DECX 6  ";
         if dbg.ti.lcd.up = '1' then val_lcd_mode(1 to 3) := "INC"; end if;

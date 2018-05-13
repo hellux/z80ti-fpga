@@ -83,7 +83,9 @@ package ti_comm is
     end record;
 
     type dbg_lcd_t is record 
-        x, y, z : integer;
+        x : std_logic_vector(5 downto 0);
+        y : std_logic_vector(4 downto 0);
+        z : std_logic_vector(5 downto 0);
         up, counter, active, wl : std_logic;
     end record;
 
