@@ -45,10 +45,10 @@ architecture arch of m45 is
     constant INIT_L : integer := 16#7c000#;
     constant INIT_R : integer := INIT_L+INIT_SIZE-1;
 
-    constant APP_L : integer := 16#85d49#;
+    constant APP_L : integer := 16#81d49#;
     constant APP_R : integer := APP_L+APP_SIZE-1;
 
-    constant RAM_L : integer := 16#80000#;
+    constant RAM_L : integer := 16#87000#;
     constant RAM_R : integer := RAM_L+RAM_SIZE-1;
     constant OPRAM_L : integer := 16#84478#; -- (0x8478)
     constant OPRAM_R : integer := OPRAM_L+11*6-1; -- (0x8478)
