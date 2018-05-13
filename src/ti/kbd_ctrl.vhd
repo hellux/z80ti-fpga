@@ -4,13 +4,15 @@ use ieee.numeric_std.all;
 use work.ti_comm.all;
 use work.cmp_comm.all;
 
--- MISSING
+-- MISSING / TODO
 -- does not reset keys down on 0x00 p01 write
 
 entity kbd_ctrl is port(
     keys_down : in keys_down_t;
     p01_kbd_o : in port_out_t;
-    p01_kbd_i : out port_in_t);
+    p01_kbd_i : out port_in_t;
+-- debug
+    dbg : out dbg_kbd_t);
 end kbd_ctrl;
 
 architecture arch of kbd_ctrl is
@@ -29,4 +31,6 @@ begin
         end loop;
         p01_kbd_i <= (data => result);
     end process;
+
+    dbg.grp <= grp;
 end arch;

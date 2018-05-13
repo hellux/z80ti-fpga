@@ -194,7 +194,7 @@ begin
         pages(20) := " AT:" & hex_str(dbg.z80.act & dbg.z80.tmp);
         pages(21) := val_alu_op;
 
-    -- ports
+    -- ports in
         pages(24) := " PI01:" & hex_str(dbg.ti.asic.p01_kbd);
         pages(25) := " PI02:" & hex_str(dbg.ti.asic.p02_status);
         pages(26) := " PI03:" & hex_str(dbg.ti.asic.p03_intmask);
@@ -203,7 +203,7 @@ begin
         pages(29) := " PI07:" & hex_str(dbg.ti.asic.p07_mempage_b);
         pages(30) := " PI10:" & hex_str(dbg.ti.asic.p10_lcd_status);
         pages(31) := " PI11:" & hex_str(dbg.ti.asic.p11_lcd_data);
-    
+
     -- mem map
         pages(32) := "  MODE0 ";
         pages(34) := "  ROM00 ";
@@ -217,6 +217,17 @@ begin
         pages(36)(6 to 7) := hex_str(dbg.ti.memctrl.thi_page);
         if dbg.ti.memctrl.fou_ram_rom = '1' then pages(37)(4) := 'A'; end if;
         pages(37)(6 to 7) := hex_str(dbg.ti.memctrl.fou_page);
+
+    -- ports out
+        -- kbd groups
+        if dbg.ti.kbd.grp(0) = '0' then pages(38)(8) := '0'; end if;
+        if dbg.ti.kbd.grp(1) = '0' then pages(38)(7) := '1'; end if;
+        if dbg.ti.kbd.grp(2) = '0' then pages(38)(6) := '2'; end if;
+        if dbg.ti.kbd.grp(3) = '0' then pages(38)(5) := '3'; end if;
+        if dbg.ti.kbd.grp(4) = '0' then pages(38)(4) := '4'; end if;
+        if dbg.ti.kbd.grp(5) = '0' then pages(38)(3) := '5'; end if;
+        if dbg.ti.kbd.grp(6) = '0' then pages(38)(2) := '6'; end if;
+        if dbg.ti.kbd.grp(7) = '0' then pages(38)(1) := '7'; end if;
 
         char_ch := pages(page_index)(page_col+1);
         char_int := character'pos(char_ch);

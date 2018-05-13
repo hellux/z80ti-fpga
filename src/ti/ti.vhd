@@ -72,7 +72,8 @@ architecture arch of ti is
     component kbd_ctrl port(
         keys_down : in keys_down_t;
         p01_kbd_o : in port_out_t;
-        p01_kbd_i : out port_in_t);
+        p01_kbd_i : out port_in_t;
+        dbg : out dbg_kbd_t);
     end component;
 
     component t6a04 port(
@@ -146,7 +147,8 @@ begin
     hwtim : hw_timers port map(clk, rst, ce, ports_out.p03_intmask,
                                ports_out.p04_mmap_int, hwt_fin);
 
-    kbd : kbd_ctrl port map(keys_down, ports_out.p01_kbd, ports_in.p01_kbd);
+    kbd : kbd_ctrl port map(keys_down, ports_out.p01_kbd, ports_in.p01_kbd,
+                            dbg.kbd);
 
     lcd : t6a04 port map(clk, rst, ce,
         gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd,
