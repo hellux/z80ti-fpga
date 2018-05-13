@@ -83,16 +83,16 @@ begin
     with ram_rom_a select page_a <=
         ROM_START(19)           & rom_page_a     when '0',
         RAM_START(19 downto 15) & not ram_page_a when '1',
-        (others => '0')                      when others;
+        (others => '0')                          when others;
     with ram_rom_b select page_b <=
         ROM_START(19)           & rom_page_b     when '0',
         RAM_START(19 downto 15) & not ram_page_b when '1',
-        (others => '0')                    when others;
+        (others => '0')                          when others;
 
     page0 <= ROM_START(19 downto 14);
     page1 <= page_a when mode = '0' else page_a(5 downto 1) & '0';
     page2 <= page_b when mode = '0' else page_a;
-    page3 <= RAM_START(19 downto 14) when mode = '0' else page_b;
+    page3 <= RAM_START(19 downto 15) & '1' when mode = '0' else page_b;
 
     with addr_log(15 downto 14) select page_sel <=
         page0           when "00",
