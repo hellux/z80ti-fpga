@@ -880,7 +880,6 @@ architecture arch of op_decoder is
                     f.cw.addr_op := dec;
                     f.cw.pv_src := anz_f; --addr not zero flag
                     f.cw.f_rd := '1';
-                    f.cw.f_save := '1';
                 when ldi_i|ldd_i|ldir_i|lddr_i =>
                     -- dec BC
                     f.cw.addr_op := dec;
@@ -913,8 +912,6 @@ architecture arch of op_decoder is
                     if state.cc(PO_c) then
                         f.ct.instr_end := '1';
                     end if;
-                    -- TODO test flags with new internal flags structure
-                    f.cw.f_load := '1'; -- restore flags after internal use
                 when inir_i|indr_i|otir_i|otdr_i =>
                     if state.cc(Z_c) then
                         f.ct.instr_end := '1';
