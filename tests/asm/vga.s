@@ -1,42 +1,60 @@
 start:
 di
-ld c, 0x10  ; lcd status port
-call wait_for_lcd
+
+init_lcd:
 ld a, 0x03  ; enable lcd
-out (c), a
-call wait_for_lcd
-ld a, 0x01  ; 8 bit mode
-out (c), a
+call send_command;
+ld a, 0x00  ; 8 bit mode
+call send_command;
+ld a, 0x07  ; auto inc y
+call send_command;
+
 ld d, 0x80 ; row select, 0x80 = 0
 
 row:
-call wait_for_lcd
-out (c), d ; set current row
-ld b, 0x0c  ; number of pages per row (12)
-call wait_for_lcd
-ld a, 0x07  ; auto inc y
-out (c), a
+ld a, d ; set current row
+call send_command;
+
+ld b, 0x0f  ; number of pages per row (12)
 
 byte:
-call wait_for_lcd
 ld a, d   ; page data
-out (0x11),a
+call send_data;
 dec b
 jr nz, byte
 
 next_row:
-call wait_for_lcd
 ld a, 0x20 ; set col to 0
-out (c), a
+call send_command;
+
 inc d
+; test z addr
+ld a, d
+cp 0xa0 ; middle row
+jr nz, z_skip
+ld a, 0x57
+call send_command
+z_skip:
 ld a, d
 cp 0xc0 ; last row + 1
 jr nz, row
 
 halt
 
-wait_for_lcd:
+send_data:
+push af
 in a, (0x10)
 bit 7, a
-jr nz, wait_for_lcd
+jr nz, send_data
+pop af
+out ($11), a
+ret
+
+send_command:
+push af
+in a, (0x10)
+bit 7, a
+jr nz, send_command
+pop af
+out ($10), a
 ret
