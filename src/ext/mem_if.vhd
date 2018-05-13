@@ -3,7 +3,6 @@ use ieee.std_logic_1164.all;
 
 entity mem_if is port(
 -- ti/z80 <-> interface
-    clk, rst : in std_logic;
     rd, wr : in std_logic;
     addr_phy : in std_logic_vector(19 downto 0);
     data_in : in std_logic_vector(7 downto 0);

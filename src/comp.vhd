@@ -68,7 +68,6 @@ architecture arch of comp is
     end component;
 
     component mem_if port(
-        clk, rst : in std_logic;
         rd, wr : in std_logic;
         addr_phy : in std_logic_vector(19 downto 0);
         data_in : in std_logic_vector(7 downto 0);
@@ -264,8 +263,7 @@ begin
                              gmem_vga_data, vga_gmem_x, vga_gmem_y,
                              mon_vga_data, vga_mon_x, vga_mon_y,
                              vga_red, vga_green, vga_blue, hsync, vsync);
-    mif : mem_if port map(clk, rst,
-                          mem_rd, mem_wr, addr_phy, data, data_mem,
+    mif : mem_if port map(mem_rd, mem_wr, addr_phy, data, data_mem,
                           maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                           mwe_c, mlb_c, mub_c);
     kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_data,
