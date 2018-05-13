@@ -1,5 +1,5 @@
 src/pkg/util.vhd
-src/ti/ti83p/ti_comm.vhd
+src/ti/ti_comm.vhd
 src/pkg/z80_comm.vhd
 src/pkg/cmp_comm.vhd
 src/prm/clkgen.vhd
@@ -15,11 +15,11 @@ src/ti/kbd_ctrl.vhd
 src/ti/lcd_ctrl.vhd
 src/ti/pict_mem.vhd
 src/ti/hw_timers.vhd
-src/ti/ti83p/interrupts.vhd
-src/ti/ti83p/mem_ctrl.vhd
-src/ti/ti83p/asic.vhd
-src/ti/ti83p/ti.vhd
-src/ti/ti83p/status.vhd
+src/ti/interrupts.vhd
+src/ti/mem_ctrl.vhd
+src/ti/asic.vhd
+src/ti/ti.vhd
+src/ti/status.vhd
 tests/ext/m45w8mw16.vhd
 src/ext/kbd_enc.vhd
 src/ext/vga_motor.vhd
