@@ -11,7 +11,7 @@ write() {
     dd if=$rom of=$name.bin bs=1 skip=$left count=$size
 }
 
-write 0x00028 \
+write 0x00000 \
       0x00039 bc0
 write 0x02a37 \
       0x02ab2 bc1

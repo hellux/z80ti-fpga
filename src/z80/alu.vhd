@@ -73,7 +73,8 @@ begin
         signed('0' & (not mask and op2))    when res_i,
         signed('0' & (mask or op2))         when set_i,
          op2_ext                            when bit_i,
-        -op2_ext                            when sub_i|cp_i|neg_i|cpi_i,
+        -op2_ext                            when sub_i|cp_i|neg_i|
+                                                 cpi_i|cpir_i|cpd_i|cpdr_i,
         -op2_ext - with_carry               when sbc_i,
          op2_ext + with_carry               when adc_i|add16_i2,
         '0' & op2_ext(6 downto 0) & edge    when rlc_i|rl_i|sla_i|sll_i|
@@ -101,12 +102,12 @@ begin
                                                       sub_i|sbc_i|
                                                       inc_i|dec_i|
                                                       neg_i|cp_i|daa_i|
-                                                      add16_i1|add16_i2|
-                                                      cpi_i,
+                                                      cpi_i|cpd_i|cpir_i|cpdr_i|
+                                                      add16_i1|add16_i2,
         std_logic_vector(op2sn(7 downto 0))      when others;
     with op select result <=
         not(op2)   when cpl_i,
-        op1        when cp_i|cpi_i,
+        op1        when cp_i|cpi_i|cpd_i|cpir_i|cpdr_i,
         result_buf when others;
 
     -- flags
@@ -123,7 +124,7 @@ begin
         (op1_ext(7) xnor op2_ext(7)) and (op1_ext(7) xor result_sum(7))
             when add_i|adc_i|inc_i|dec_i,
         (op1_ext(7) xor op2_ext(7)) and (op1_ext(7) xor result_sum(7))
-            when sub_i|sbc_i|cp_i|cpi_i|cpd_i,
+            when sub_i|sbc_i|cp_i,
         '-' when others;
     overflow_neg <= '1' when op2 = x"80" else '0';
     half_add <= result_buf(4) xor op1_ext(4) xor op2sn(4);
@@ -185,7 +186,8 @@ begin
 
     with op select flags_out(N_f) <=
         '1'             when sub_i|sbc_i|cp_i|neg_i|cpl_i|
-                             cpi_i|cpir_i|cpd_i|cpdr_i|dec_i,
+                             cpi_i|cpir_i|cpd_i|cpdr_i|
+                             dec_i,
         flags_in(N_f)   when daa_i|res_i|set_i,
         '0'             when ldi_i|ldir_i|ldd_i|lddr_i|add16_i1|add16_i2|
                              rlca_i|rrca_i|rla_i|rra_i|
@@ -200,7 +202,8 @@ begin
         op2(0)              when rrc_i|rr_i|sra_i|srl_i|rrca_i|rra_i,
         '1'                 when scf_i,
         not flags_in(C_f)   when ccf_i,
-        flags_in(C_f)       when ldi_i|ldir_i|ldd_i|
-                                 cpi_i|cpir_i|cpd_i|cpdr_i|unknown,
+        flags_in(C_f)       when ldi_i|ldir_i|ldd_i|lddr_i|
+                                 cpi_i|cpir_i|cpd_i|cpdr_i|
+                                 unknown,
         flags_in(C_f)       when others;
 end arch;

@@ -17,7 +17,7 @@ architecture arch of m45 is
     constant STACK_SIZE : integer := 256;
     constant RAM_SIZE : integer := 128;
 
-    constant BCALL0_L : integer := 16#00028#; -- jmp to routine
+    constant BCALL0_L : integer := 16#00000#; -- jmp to routine
     constant BCALL0_R : integer := 16#00100#;
     constant BCALL1_L : integer := 16#02a37#; -- parse bc address
     constant BCALL1_R : integer := 16#02ab2#;
