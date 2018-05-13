@@ -1,8 +1,14 @@
 org 0x0000 ; use absolute addresses
 
 aux_addr: equ 0xf000 ; jump here to setup memory mapping
-pc_high: equ 0x9d
-pc_low:  equ 0xc6
+
+; MENU START
+;pc_high: equ 0x9d
+;pc_low:  equ 0xc6
+
+; GAME START
+pc_high: equ 0xa1
+pc_low: equ 0x40
 
 im 1
 ld a, 0x40 ; page B to RAM 0
