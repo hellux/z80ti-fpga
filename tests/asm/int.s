@@ -14,6 +14,10 @@ call reti_test
 ld l, 0xcc
 
 call enable
+ld a, 0x80
+out ($03), a
+ld a, 0x0f
+out ($03), a
 halt
 
 enable:

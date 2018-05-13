@@ -194,9 +194,18 @@ begin
                port map(clk, cbi.reset, ce, cw.addr_rd, abus, addr);
 
     -- debug
+    delay_end_start : process(clk) begin
+        if rising_edge(clk) then
+            if ce = '1' then
+                dbg.instr_start <= ctrl.instr_end;
+                dbg.cycle_start <= ctrl.cycle_end;
+            end if;
+        end if;
+    end process;
+    dbg.int_start <= '1' when state.t = t1 and
+                              state.m = m1 and
+                              state.mode = int else '0';
     dbg.state <= state;
-    dbg.instr_end <= ctrl.instr_end;
-    dbg.cycle_end <= ctrl.cycle_end;
     dbg.pc <= pc_out;
     dbg.abus <= abus;
     dbg.ir <= ir_out;

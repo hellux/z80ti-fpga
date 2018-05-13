@@ -161,7 +161,8 @@ architecture arch of comp is
     -- debug
     type run_mode_t is (normal, step_i, step_m, step_t);
     signal run_mode : run_mode_t;
-    signal break : std_logic;
+    signal brk_on_addr, brk_on_int : std_logic;
+    signal disable_int : std_logic;
     signal cpu_stop, cpu_ce : std_logic;
     signal sp_s, sp_q, sp_op : std_logic;
     signal dbg : dbg_cmp_t;
@@ -201,7 +202,9 @@ begin
                     step_m when "10",
                     step_t when "11",
                     normal when others;
-    break <= sw(0);
+    disable_int <= sw(2);
+    brk_on_int <= sw(1);
+    brk_on_addr <= sw(0);
 
     -- generate clocks
     gen_1000hz : clkgen generic map(DIV_1000HZ)
@@ -220,9 +223,10 @@ begin
     sp_op <= sp_s and not sp_q;
     cpu_stop <= not sp_op and 
         (bool_sl(run_mode = step_t) or
-        (bool_sl(run_mode = step_m) and dbg.z80.cycle_end) or
-        (bool_sl(run_mode = step_i) and dbg.z80.instr_end) or
-        (bool_sl(addr = break_addr) and break and mem_rd and cbo.m1));
+        (bool_sl(run_mode = step_m) and dbg.z80.cycle_start) or
+        (bool_sl(run_mode = step_i) and dbg.z80.instr_start) or
+        (dbg.z80.int_start and brk_on_int) or
+        (bool_sl(addr = break_addr) and mem_rd and cbo.m1 and brk_on_addr));
 
     gen_z80_main : clkgen generic map(DIV_Z80)
                                port map(clk, clk_z80_main);
@@ -241,7 +245,7 @@ begin
     clk_ti_ce <= clk_ti and not cpu_stop;
 
     -- buses
-    cbi.int <= int;
+    cbi.int <= int and not disable_int;
     cbi.reset <= rst;
     -- OR data bus instead of tristate
     data <= data_z80 or data_mem or data_ti;
