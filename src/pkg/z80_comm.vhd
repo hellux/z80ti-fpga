@@ -150,6 +150,7 @@ package z80_comm is
     type dbg_z80_t is record
         regs : dbg_regs_t;
         state : state_t;
+        alu_op : instr_t;
         cycle_start, instr_start, int_start : std_logic;
         pc, abus, tmpa : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);

@@ -39,6 +39,7 @@ begin
         variable val_cb : string(1 to 8);
         variable val_asic : string(1 to 8);
         variable val_int : string(1 to 8);
+        variable val_alu_op : string(1 to 8);
         variable pages : pages_t;
         variable char_ch : character;
         variable char_int, char_int_o : integer;
@@ -104,6 +105,64 @@ begin
         when 2 => val_int(4) := '2';
         end case;
         if dbg.z80.state.iff = '1' then val_int(6 to 7) := "EI"; end if;
+        
+        case dbg.z80.alu_op is
+        when add_i    => val_alu_op := " ADD    ";
+        when adc_i    => val_alu_op := " ADC    ";
+        when sub_i    => val_alu_op := " SUB    ";
+        when sbc_i    => val_alu_op := " SBC    ";
+        when cp_i     => val_alu_op := " CP     ";
+        when inc_i    => val_alu_op := " INC    ";
+        when dec_i    => val_alu_op := " DEC    ";
+        when neg_i    => val_alu_op := " NEG    ";
+        when add16_i1 => val_alu_op := " ADD16_1";
+        when add16_i2 => val_alu_op := " ADD16_2";
+        when and_i    => val_alu_op := " AND    ";
+        when or_i     => val_alu_op := " OR     ";
+        when xor_i    => val_alu_op := " XOR    ";
+        when bit_i    => val_alu_op := " BIT    ";
+        when res_i    => val_alu_op := " RES    ";
+        when set_i    => val_alu_op := " SET    ";
+        when rlc_i    => val_alu_op := " RLC    ";
+        when rl_i     => val_alu_op := " RL     ";
+        when sla_i    => val_alu_op := " SLA    ";
+        when sll_i    => val_alu_op := " SLL    ";
+        when rrc_i    => val_alu_op := " RRC    ";
+        when rr_i     => val_alu_op := " RR     ";
+        when sra_i    => val_alu_op := " SRA    ";
+        when srl_i    => val_alu_op := " SRL    ";
+        when rlca_i   => val_alu_op := " RLCA   ";
+        when rrca_i   => val_alu_op := " RRCA   ";
+        when rla_i    => val_alu_op := " RLA    ";
+        when rra_i    => val_alu_op := " RRA    ";
+        when daa_i    => val_alu_op := " DAA    ";
+        when cpl_i    => val_alu_op := " CPL    ";
+        when scf_i    => val_alu_op := " SCF    ";
+        when ccf_i    => val_alu_op := " CCF    ";
+        when in_i     => val_alu_op := " IN     ";
+        when ld_i     => val_alu_op := " LD     ";
+        when rld_i1   => val_alu_op := " RLD_I1 ";
+        when rld_i2   => val_alu_op := " RLD_I2 ";
+        when rrd_i1   => val_alu_op := " RRD_I1 ";
+        when rrd_i2   => val_alu_op := " RRD_I2 ";
+        when ldi_i    => val_alu_op := " LDI    ";
+        when cpi_i    => val_alu_op := " CPI    ";
+        when ini_i    => val_alu_op := " INI    ";
+        when outi_i   => val_alu_op := " OUTI   ";
+        when ldd_i    => val_alu_op := " LDD    ";
+        when cpd_i    => val_alu_op := " CPD    ";
+        when ind_i    => val_alu_op := " IND    ";
+        when ldir_i   => val_alu_op := " LDIR   ";
+        when cpir_i   => val_alu_op := " CPIR   ";
+        when inir_i   => val_alu_op := " INIR   ";
+        when otir_i   => val_alu_op := " OTIR   ";
+        when outd_i   => val_alu_op := " OUTD   ";
+        when lddr_i   => val_alu_op := " LDDR   ";
+        when cpdr_i   => val_alu_op := " CPDR   ";
+        when indr_i   => val_alu_op := " INDR   ";
+        when otdr_i   => val_alu_op := " OTDR   ";
+        when unknown  => val_alu_op := " UNKNOWN";
+        end case;
 
         pages := (others => (others => ' '));
 
@@ -127,12 +186,13 @@ begin
         pages(14) := " IY:" & hex_str(dbg.z80.regs.iy);
         pages(15) := " WZ:" & hex_str(dbg.z80.regs.wz);
 
-    -- EXT
+    -- data, addr, alu
         pages(16) := " AX:" & hex_str(dbg.addr_log);
         pages(17) := " A:"  & hex_str(dbg.addr_phy);
         pages(18) := " AB:" & hex_str(dbg.z80.abus);
         pages(19) := " DT:" & hex_str(dbg.z80.dbus & dbg.data);
         pages(20) := " AT:" & hex_str(dbg.z80.act & dbg.z80.tmp);
+        pages(21) := val_alu_op;
 
     -- ports
         pages(24) := " PI01:" & hex_str(dbg.ti.asic.p01_kbd);

@@ -211,6 +211,7 @@ begin
     dbg.ir <= ir_out;
     dbg.tmp <= tmp_out;
     dbg.act <= act_out;
+    dbg.alu_op <= cw.alu_op;
     dbg.dbus <= dbus;
     dbg.tmpa <= tmpa_out;
 end arch;
