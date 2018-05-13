@@ -42,6 +42,9 @@ begin
         variable val_alu_op : string(1 to 8);
         variable val_kbd_group : string(1 to 8);
         variable val_hwt1, val_hwt2 : string(1 to 8);
+        variable val_lcd_ptr, val_lcd_mode : string(1 to 8);
+
+        variable x_str, y_str, z_str : string(1 to 2);
 
         variable pages : pages_t;
         variable char_ch : character;
@@ -182,6 +185,29 @@ begin
         val_hwt2(1 to 3) := "H2:";
         val_hwt2(4 to 8) := hex_str(dbg.ti.hwt.hwt2);
 
+        if dbg.ti.lcd.x < 10
+        then x_str := '0' & integer'image(dbg.ti.lcd.x);
+        else x_str := integer'image(dbg.ti.lcd.x);
+        end if;
+        if dbg.ti.lcd.y < 10
+        then y_str := '0' & integer'image(dbg.ti.lcd.y);
+        else y_str := integer'image(dbg.ti.lcd.y);
+        end if;
+        if dbg.ti.lcd.z < 10
+        then z_str := '0' & integer'image(dbg.ti.lcd.z);
+        else z_str := integer'image(dbg.ti.lcd.z);
+        end if;
+        val_lcd_ptr := "0X,0Y,0Z";
+        val_lcd_ptr(1 to 2) := x_str;
+        val_lcd_ptr(4 to 5) := y_str;
+        val_lcd_ptr(7 to 8) := z_str;
+
+        val_lcd_mode := "DECX 6  ";
+        if dbg.ti.lcd.up = '1' then val_lcd_mode(1 to 3) := "INC"; end if;
+        if dbg.ti.lcd.counter = '1' then val_lcd_mode(4) := 'Y'; end if;
+        if dbg.ti.lcd.wl = '1' then val_lcd_mode(6) := '8'; end if;
+        if dbg.ti.lcd.active = '1' then val_lcd_mode(8) := 'E'; end if;
+
         pages := (others => (others => ' '));
 
     -- states / int
@@ -209,8 +235,9 @@ begin
         pages(17) := " A:"  & hex_str(dbg.addr_phy);
         pages(18) := " AB:" & hex_str(dbg.z80.abus);
         pages(19) := " DT:" & hex_str(dbg.z80.dbus & dbg.data);
-        pages(20) := " AT:" & hex_str(dbg.z80.act & dbg.z80.tmp);
-        pages(21) := val_alu_op;
+        pages(20) := " DF:" & hex_str(dbg.z80.dbufo) & hex_str(dbg.z80.dbufi);
+        pages(22) := " AT:" & hex_str(dbg.z80.act & dbg.z80.tmp);
+        pages(23) := val_alu_op;
 
     -- ports in
         pages(24) := " PI01:" & hex_str(dbg.ti.asic.p01_kbd);
@@ -240,6 +267,8 @@ begin
         pages(38) := val_kbd_group;
         pages(39) := val_hwt1;
         pages(39) := val_hwt2;
+        pages(50) := val_lcd_ptr;
+        pages(51) := val_lcd_mode;
 
         char_ch := pages(page_index)(page_col+1);
         char_int := character'pos(char_ch);

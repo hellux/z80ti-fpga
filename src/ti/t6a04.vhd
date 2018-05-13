@@ -17,7 +17,8 @@ entity t6a04 is port(
     gmem_y : out std_logic_vector(4 downto 0);
     gmem_rd, gmem_wl : out std_logic;
     p10_command, p11_data_o : in port_out_t;
-    p10_status, p11_data_i : out port_in_t);
+    p10_status, p11_data_i : out port_in_t;
+    dbg : out dbg_lcd_t);
 end t6a04;
 
 architecture arch of t6a04 is
@@ -150,4 +151,13 @@ begin
          PI10_WL_8_6         => mode.wl,
          PI10_LCD_BUSY       => '0',
          others              => '0');
+
+    -- debug
+    dbg.x <= to_integer(x);
+    dbg.y <= to_integer(y);
+    dbg.z <= to_integer(unsigned(z));
+    dbg.up <= mode.up;
+    dbg.counter <= mode.counter;
+    dbg.active <= mode.active;
+    dbg.wl <= mode.wl;
 end arch;

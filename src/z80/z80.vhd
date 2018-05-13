@@ -214,4 +214,6 @@ begin
     dbg.alu_op <= cw.alu_op;
     dbg.dbus <= dbus;
     dbg.tmpa <= tmpa_out;
+    dbg.dbufo <= dbufo_out;
+    dbg.dbufi <= dbufi_out;
 end arch;

@@ -82,6 +82,11 @@ package ti_comm is
         hwt2 : std_logic_vector(19 downto 0);
     end record;
 
+    type dbg_lcd_t is record 
+        x, y, z : integer;
+        up, counter, active, wl : std_logic;
+    end record;
+
     type dbg_memctrl_t is record 
         mode : std_logic;
         sec_ram_rom : std_logic;
@@ -109,8 +114,9 @@ package ti_comm is
     type dbg_ti_t is record
         asic : dbg_asic_t;
         memctrl : dbg_memctrl_t;
-        hwt : dbg_hwt_t;
         kbd : dbg_kbd_t;
+        hwt : dbg_hwt_t;
+        lcd : dbg_lcd_t;
         int : dbg_int_t;
     end record;
 end ti_comm;

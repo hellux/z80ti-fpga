@@ -154,5 +154,6 @@ package z80_comm is
         cycle_start, instr_start, int_start : std_logic;
         pc, abus, tmpa : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
+        dbufo, dbufi : std_logic_vector(7 downto 0);
     end record;
 end z80_comm;

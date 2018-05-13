@@ -85,7 +85,8 @@ architecture arch of ti is
         gmem_y : out std_logic_vector(4 downto 0);
         gmem_rd, gmem_wl : out std_logic;
         p10_command, p11_data_o : in port_out_t;
-        p10_status, p11_data_i : out port_in_t);
+        p10_status, p11_data_i : out port_in_t;
+        dbg : out dbg_lcd_t);
     end component;
 
     component pict_mem port(
@@ -155,7 +156,8 @@ begin
         gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd,
         gmem_rd, gmem_wl,
         ports_out.p10_lcd_status, ports_out.p11_lcd_data,
-        ports_in.p10_lcd_status, ports_in.p11_lcd_data);
+        ports_in.p10_lcd_status, ports_in.p11_lcd_data,
+        dbg.lcd);
     gmem : pict_mem port map(clk,
                              gmem_rd, gmem_wl,
                              lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,
