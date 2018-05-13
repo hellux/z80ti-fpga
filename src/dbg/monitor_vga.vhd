@@ -40,6 +40,9 @@ begin
         variable val_asic : string(1 to 8);
         variable val_int : string(1 to 8);
         variable val_alu_op : string(1 to 8);
+        variable val_kbd_group : string(1 to 8);
+        variable val_hwt1, val_hwt2 : string(1 to 8);
+
         variable pages : pages_t;
         variable char_ch : character;
         variable char_int, char_int_o : integer;
@@ -164,6 +167,21 @@ begin
         when unknown  => val_alu_op := " UNKNOWN";
         end case;
 
+        val_kbd_group := (others => '0');
+        if dbg.ti.kbd.grp(0) = '0' then val_kbd_group(8) := '0'; end if;
+        if dbg.ti.kbd.grp(1) = '0' then val_kbd_group(7) := '1'; end if;
+        if dbg.ti.kbd.grp(2) = '0' then val_kbd_group(6) := '2'; end if;
+        if dbg.ti.kbd.grp(3) = '0' then val_kbd_group(5) := '3'; end if;
+        if dbg.ti.kbd.grp(4) = '0' then val_kbd_group(4) := '4'; end if;
+        if dbg.ti.kbd.grp(5) = '0' then val_kbd_group(3) := '5'; end if;
+        if dbg.ti.kbd.grp(6) = '0' then val_kbd_group(2) := '6'; end if;
+        if dbg.ti.kbd.grp(7) = '0' then val_kbd_group(1) := '7'; end if;
+
+        val_hwt1(1 to 3) := "H1:";
+        val_hwt1(4 to 8) := hex_str(dbg.ti.hwt.hwt1);
+        val_hwt2(1 to 3) := "H2:";
+        val_hwt2(4 to 8) := hex_str(dbg.ti.hwt.hwt2);
+
         pages := (others => (others => ' '));
 
     -- states / int
@@ -207,9 +225,9 @@ begin
     -- mem map
         pages(32) := "  MODE0 ";
         pages(34) := "  ROM00 ";
-        pages(35) := "  ROM ? ";
-        pages(36) := "  ROM ? ";
-        pages(37) := "  ROM ? ";
+        pages(35) := "  ROM?? ";
+        pages(36) := "  ROM?? ";
+        pages(37) := "  ROM?? ";
         if dbg.ti.memctrl.mode = '1' then pages(32)(7) := '1'; end if;
         if dbg.ti.memctrl.sec_ram_rom = '1' then pages(35)(4) := 'A'; end if;
         pages(35)(6 to 7) := hex_str(dbg.ti.memctrl.sec_page);
@@ -219,15 +237,9 @@ begin
         pages(37)(6 to 7) := hex_str(dbg.ti.memctrl.fou_page);
 
     -- ports out
-        -- kbd groups
-        if dbg.ti.kbd.grp(0) = '0' then pages(38)(8) := '0'; end if;
-        if dbg.ti.kbd.grp(1) = '0' then pages(38)(7) := '1'; end if;
-        if dbg.ti.kbd.grp(2) = '0' then pages(38)(6) := '2'; end if;
-        if dbg.ti.kbd.grp(3) = '0' then pages(38)(5) := '3'; end if;
-        if dbg.ti.kbd.grp(4) = '0' then pages(38)(4) := '4'; end if;
-        if dbg.ti.kbd.grp(5) = '0' then pages(38)(3) := '5'; end if;
-        if dbg.ti.kbd.grp(6) = '0' then pages(38)(2) := '6'; end if;
-        if dbg.ti.kbd.grp(7) = '0' then pages(38)(1) := '7'; end if;
+        pages(38) := val_kbd_group;
+        pages(39) := val_hwt1;
+        pages(39) := val_hwt2;
 
         char_ch := pages(page_index)(page_col+1);
         char_int := character'pos(char_ch);

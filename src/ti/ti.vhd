@@ -66,7 +66,8 @@ architecture arch of ti is
         clk, rst, ce : in std_logic;
         p03_intmask : port_out_t;
         p04_mmap_int : port_out_t;
-        fin : out std_logic_vector(1 to 2));
+        fin : out std_logic_vector(1 to 2);
+        dbg : out dbg_hwt_t);
     end component;
 
     component kbd_ctrl port(

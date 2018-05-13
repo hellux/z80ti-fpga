@@ -7,7 +7,8 @@ entity hw_timers is port(
     clk, rst, ce : in std_logic;
     p03_intmask : port_out_t;
     p04_mmap_int : port_out_t;
-    fin : out std_logic_vector(1 to 2));
+    fin : out std_logic_vector(1 to 2);
+    dbg : out dbg_hwt_t);
 end hw_timers;
 
 architecture arch of hw_timers is
@@ -44,4 +45,8 @@ begin
                  port map(clk, rst, ce, '1', hwt2_ld, hwt2_div, hwt2_val);
 
     fin <= hwt1_finish & hwt2_finish;
+
+    -- debug
+    dbg.hwt1 <= hwt1_val;
+    dbg.hwt2 <= hwt2_val;
 end arch;
