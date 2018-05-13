@@ -183,10 +183,10 @@ begin
         val_hwt2(1 to 3) := "H2:";
         val_hwt2(4 to 8) := hex_str(dbg.ti.hwt.hwt2);
 
-        val_lcd_ptr := "0X,0Y,0Z";
-        val_lcd_ptr(1 to 2) := int_str(dbg.ti.lcd.x);
-        val_lcd_ptr(4 to 5) := int_str(dbg.ti.lcd.y);
-        val_lcd_ptr(7 to 8) := int_str(dbg.ti.lcd.z);
+        val_lcd_ptr := "XX,YY,ZZ";
+        val_lcd_ptr(1 to 2) := hex_str(dbg.ti.lcd.x);
+        val_lcd_ptr(4 to 5) := hex_str(dbg.ti.lcd.y);
+        val_lcd_ptr(7 to 8) := hex_str(dbg.ti.lcd.z);
 
         val_lcd_mode := "DECX 6  ";
         if dbg.ti.lcd.up = '1' then val_lcd_mode(1 to 3) := "INC"; end if;
@@ -250,11 +250,11 @@ begin
         pages(37)(6 to 7) := hex_str(dbg.ti.memctrl.fou_page);
 
     -- ports out
-        pages(38) := val_kbd_group;
-        pages(39) := val_hwt1;
-        pages(39) := val_hwt2;
-        pages(50) := val_lcd_ptr;
-        pages(51) := val_lcd_mode;
+        pages(40) := val_kbd_group;
+        pages(41) := val_hwt1;
+        pages(42) := val_hwt2;
+        pages(43) := val_lcd_ptr;
+        pages(44) := val_lcd_mode;
 
         char_ch := pages(page_index)(page_col+1);
         char_int := character'pos(char_ch);
