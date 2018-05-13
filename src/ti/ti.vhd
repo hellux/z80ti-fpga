@@ -75,7 +75,7 @@ architecture arch of ti is
         p01_kbd_i : out port_in_t);
     end component;
 
-    component lcd_ctrl port(
+    component t6a04 port(
         clk, rst, ce : in std_logic;
         gmem_lcd_data : in std_logic_vector(7 downto 0);
         lcd_gmem_data : out std_logic_vector(7 downto 0);
@@ -148,7 +148,7 @@ begin
 
     kbd : kbd_ctrl port map(keys_down, ports_out.p01_kbd, ports_in.p01_kbd);
 
-    lcd : lcd_ctrl port map(clk, rst, ce,
+    lcd : t6a04 port map(clk, rst, ce,
         gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd,
         gmem_rd, gmem_wl,
         ports_out.p10_lcd_status, ports_out.p11_lcd_data,

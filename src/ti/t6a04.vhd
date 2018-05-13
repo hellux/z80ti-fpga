@@ -9,7 +9,7 @@ use work.util.all;
 --  - contrast
 --  - gmem reset
 
-entity lcd_ctrl is port(
+entity t6a04 is port(
     clk, rst, ce : in std_logic;
     gmem_lcd_data : in std_logic_vector(7 downto 0);
     lcd_gmem_data : out std_logic_vector(7 downto 0);
@@ -18,9 +18,9 @@ entity lcd_ctrl is port(
     gmem_rd, gmem_wl : out std_logic;
     p10_command, p11_data_o : in port_out_t;
     p10_status, p11_data_i : out port_in_t);
-end lcd_ctrl;
+end t6a04;
 
-architecture arch of lcd_ctrl is
+architecture arch of t6a04 is
     component reg generic(init : std_logic_vector; size : integer); port(
         clk, rst, ce : in std_logic;
         rd : in std_logic;
@@ -133,14 +133,14 @@ begin
         end if;
     end process;
 
-    -- gmem <-> lcd_ctrl
+    -- gmem <-> t6a04
     lcd_gmem_data <= p11_data_o.data;
     gmem_x <= std_logic_vector(unsigned(z) + x);
     gmem_y <= std_logic_vector(y);
     gmem_rd <= '1' when p11_data_o.wr = '1' else '0';
     gmem_wl <= mode.wl;
 
-    -- lcd_ctrl -> z80
+    -- t6a04 -> z80
     p11_data_i <= (data => gmem_lcd_data);
     p10_status.data <=
         (PI10_AUTO_INC_DEC   => mode.up,
