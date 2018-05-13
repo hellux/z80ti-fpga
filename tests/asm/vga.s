@@ -9,6 +9,9 @@ call send_command;
 ld a, 0x07  ; auto inc y
 call send_command;
 
+ld a, 0x57
+call send_command
+
 ld d, 0x80 ; row select, 0x80 = 0
 
 row:
@@ -29,12 +32,12 @@ call send_command;
 
 inc d
 ; test z addr
-ld a, d
-cp 0xa0 ; middle row
-jr nz, z_skip
-ld a, 0x57
-call send_command
-z_skip:
+;ld a, d
+;cp 0xa0 ; middle row
+;jr nz, z_skip
+;ld a, 0x57
+;call send_command
+;z_skip:
 ld a, d
 cp 0xc0 ; last row + 1
 jr nz, row
