@@ -7,6 +7,7 @@ package cmp_comm is
     constant SYS_FREQ : integer := 100*10**6;
 
     constant DIV_Z80 : integer := 17; -- SYS_FREQ/6MHz = 16.7
+    constant DIV_Z80_15MHZ : integer := 7; -- SYS_FREQ/15MHz = 6.7
     constant DIV_VGA : integer := SYS_FREQ/(25*10**6);
 
     constant DIV_1000HZ : integer := SYS_FREQ/DIV_Z80/1000;

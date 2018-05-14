@@ -137,12 +137,15 @@ architecture arch of comp is
     end component;
 
     -- clocks
+    signal clk_var_sel : std_logic_vector(1 downto 0);
+    signal overclock : std_logic; -- 0: 6MHz, 1: 15MHz
     signal clk_1000hz, clk_100khz : std_logic;
     signal clk_ce : std_logic;
     signal clk_var : std_logic;
     signal clk_z80, clk_ti, clk_vga : std_logic;
     signal clk_z80_ce, clk_ti_ce : std_logic;
     signal clk_z80_main, clk_z80_var: std_logic;
+    signal clk_z80_15mhz : std_logic;
     signal clk_ti_main, clk_ti_var : std_logic;
 
     -- control bus
@@ -192,24 +195,18 @@ architecture arch of comp is
     signal mon_crom_char : std_logic_vector(5 downto 0);
     signal crom_mon_pixel : std_logic;
 begin
-    with sw(7 downto 6) select
-        clk_var <= clk_1000hz when "01",
-                   clk_100khz when "10",
-                   '0'        when others;
+    -- switch control
+    clk_var_sel <= sw(7 downto 6);
     with sw(5 downto 4) select
         run_mode <= step_i when "01",
                     step_m when "10",
                     step_t when "11",
                     normal when others;
+    overclock <= sw(3);
     disable_int <= sw(2);
     brk_on_int <= sw(1);
     brk_on_addr <= sw(0);
 
-    -- generate clocks
-    gen_1000hz : clkgen generic map(DIV_1000HZ)
-                        port map(clk, clk_1000hz);
-    gen_100khz : clkgen generic map(DIV_100KHZ)
-                        port map(clk, clk_100khz);
     -- cpu step / break
     step_op : process(clk) begin
         if rising_edge(clk) then
@@ -227,8 +224,20 @@ begin
         (dbg.z80.int_start and brk_on_int) or
         (bool_sl(addr = break_addr) and mem_rd and cbo.m1 and brk_on_addr));
 
+    -- generate clocks
+    gen_1000hz : clkgen generic map(DIV_1000HZ)
+                        port map(clk, clk_1000hz);
+    gen_100khz : clkgen generic map(DIV_100KHZ)
+                        port map(clk, clk_100khz);
+    with clk_var_sel select
+        clk_var <= clk_1000hz when "01",
+                   clk_100khz when "10",
+                   '0'        when others;
+
     gen_z80_main : clkgen generic map(DIV_Z80)
                                port map(clk, clk_z80_main);
+    gen_z80_15mhz : clkgen generic map(DIV_Z80_15MHZ)
+                               port map(clk, clk_z80_15mhz);
     gen_z80_var  : clkgen_meta generic map(DIV_Z80)
                               port map(clk, clk_var, clk_z80_var);
     gen_ti_main : clkgen generic map(DIV_TI)
@@ -237,8 +246,10 @@ begin
                              port map(clk, clk_var, clk_ti_var);
     gen_vga : clkgen generic map(DIV_VGA) port map(clk, clk_vga);
 
-    clk_z80 <= clk_z80_main when sw(7 downto 6) = "00" else clk_z80_var;
-    clk_ti <= clk_ti_main when sw(7 downto 6) = "00" else clk_ti_var;
+    clk_z80 <= clk_z80_var when clk_var_sel /= "00" else
+               clk_z80_15mhz when overclock = '1' else
+               clk_z80_main;
+    clk_ti <= clk_ti_main when clk_var_sel = "00" else clk_ti_var;
 
     clk_z80_ce <= clk_z80 and not cpu_stop;
     clk_ti_ce <= clk_ti and not cpu_stop;
