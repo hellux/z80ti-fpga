@@ -10,6 +10,7 @@ entity state_machine is port(
     flags : in std_logic_vector(7 downto 0);
     iff : in std_logic;
     ctrl : in id_ctrl_t;
+    ir_rd : in std_logic;
     state_out : out state_t);
 end state_machine;
 
@@ -50,7 +51,7 @@ begin
                 end if;
 
                 -- set prefix
-                if ctrl.set_m1 = '1' or ctrl.instr_end = '1' then
+                if ir_rd = '1' then
                     state.prefix <= ctrl.prefix_next;
                 end if;
 
