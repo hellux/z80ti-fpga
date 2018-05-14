@@ -49,4 +49,5 @@ begin
     -- debug
     dbg.hwt1 <= hwt1_val;
     dbg.hwt2 <= hwt2_val;
+    dbg.freq <= std_logic_vector(to_unsigned(freq_ctrl, 2));
 end arch;

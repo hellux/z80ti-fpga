@@ -42,7 +42,8 @@ begin
         variable val_alu_op : string(1 to 8);
         variable val_kbd_group : string(1 to 8);
         variable val_hwt1, val_hwt2 : string(1 to 8);
-        variable val_lcd_ptr, val_lcd_mode : string(1 to 8);
+        variable val_hwt1f, val_hwt2f : string(1 to 8);
+        variable val_lcd_mode : string(1 to 8);
 
         variable pages : pages_t;
         variable char_ch : character;
@@ -182,11 +183,12 @@ begin
         val_hwt1(4 to 8) := hex_str(dbg.ti.hwt.hwt1);
         val_hwt2(1 to 3) := "H2:";
         val_hwt2(4 to 8) := hex_str(dbg.ti.hwt.hwt2);
-
-        val_lcd_ptr := "XX,YY,ZZ";
-        val_lcd_ptr(1 to 2) := hex_str(dbg.ti.lcd.x);
-        val_lcd_ptr(4 to 5) := hex_str(dbg.ti.lcd.y);
-        val_lcd_ptr(7 to 8) := hex_str(dbg.ti.lcd.z);
+        case dbg.ti.hwt.freq is
+        when "00" => val_hwt1f := "  560 HZ"; val_hwt2f := " 1120 HZ";
+        when "01" => val_hwt1f := "  248 HZ"; val_hwt2f := "  497 HZ";
+        when "10" => val_hwt1f := "  170 HZ"; val_hwt2f := "  344 HZ";
+        when "11" => val_hwt1f := "  118 HZ"; val_hwt2f := "  236 HZ";
+        when others => null; end case;
 
         val_lcd_mode := "DECX 6  ";
         if dbg.ti.lcd.up = '1' then val_lcd_mode(1 to 3) := "INC"; end if;
@@ -252,9 +254,10 @@ begin
     -- ports out
         pages(40) := val_kbd_group;
         pages(41) := val_hwt1;
-        pages(42) := val_hwt2;
-        pages(43) := val_lcd_ptr;
-        pages(44) := val_lcd_mode;
+        pages(42) := val_hwt1f;
+        pages(43) := val_hwt2;
+        pages(44) := val_hwt2f;
+        pages(45) := val_lcd_mode;
 
         char_ch := pages(page_index)(page_col+1);
         char_int := character'pos(char_ch);
