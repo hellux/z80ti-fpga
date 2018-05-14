@@ -10,7 +10,7 @@ entity board is port(
 -- input
     btns : in std_logic_vector(4 downto 0);
 -- ctrl
-    rst, step, boot_ld, boot_done : out std_logic;
+    rst, step : out std_logic;
     break_addr : out std_logic_vector(15 downto 0);
 -- segment
     seg : out std_logic_vector(7 downto 0);
@@ -26,37 +26,60 @@ architecture arch of board is
         an : out std_logic_vector(3 downto 0));
     end component;
 
--- buttons
-    constant CTRL_STEP  : integer := 0;
-    constant CTRL_RST   : integer := 1;
-    constant CTRL_EDIT  : integer := 2;
-    constant CTRL_BLLD  : integer := 3;
-    constant CTRL_BLDN  : integer := 4;
-    constant EDIT_DONE  : integer := 0;
-    constant EDIT_INC   : integer := 1;
-    constant EDIT_LEFT  : integer := 2;
-    constant EDIT_DEC   : integer := 3;
-    constant EDIT_RIGHT : integer := 4;
-    
-    signal btns_op, btns_s, btns_q : std_logic_vector(4 downto 1);
+    constant BUTTON_MIDDLE : natural := 0;
+    constant BUTTON_UP     : natural := 1;
+    constant BUTTON_LEFT   : natural := 2;
+    constant BUTTON_DOWN   : natural := 3;
+    constant BUTTON_RIGHT  : natural := 4;
 
+    constant CTRL_STEP  : natural := BUTTON_MIDDLE;
+    constant CTRL_RST   : natural := BUTTON_UP;
+    constant CTRL_EDIT  : natural := BUTTON_LEFT;
+    constant EDIT_DONE  : natural := BUTTON_MIDDLE;
+    constant EDIT_INC   : natural := BUTTON_UP;
+    constant EDIT_LEFT  : natural := BUTTON_LEFT;
+    constant EDIT_DEC   : natural := BUTTON_DOWN;
+    constant EDIT_RIGHT : natural := BUTTON_RIGHT;
+
+    constant COOLDOWN_TIME : natural := 1000; -- us
+    constant CD_INIT : natural := SYS_FREQ/10**6 * COOLDOWN_TIME;
+    
     type board_state_t is (ctrl, edit);
     type bp_addr_t is array(0 to 3) of unsigned(3 downto 0);
 
+    -- button one op / cooldown (prevent push register bursts)
+    signal btns_op : std_logic_vector(4 downto 0);
+    signal btns_down : std_logic;
+    signal btns_cd : natural := CD_INIT;
+
+    -- board state
     signal state : board_state_t := ctrl;
     signal dig_sel : unsigned(1 downto 0) := "00";
     signal bp_addr : bp_addr_t := (x"9", x"d", x"9", x"5");
-    signal bp_addr_merge : std_logic_vector(15 downto 0);
 
+    -- convertion signals
+    signal bp_addr_merge : std_logic_vector(15 downto 0);
     signal seg_dots : std_logic_vector(3 downto 0);
 begin
     process(clk) begin
         if rising_edge(clk) then
-            btns_s <= btns(4 downto 1);
-            btns_q <= btns_s;
+            case btns_down is
+            when '0' =>
+                if btns /= "00000" then
+                    btns_down <= '1';
+                    btns_cd <= CD_INIT;
+                    btns_op <= btns;
+                end if;
+            when '1' =>
+                btns_op <= (others => '0');
+                if btns_cd = 0 then
+                    btns_down <= '0';
+                else
+                    btns_cd <= btns_cd - 1;
+                end if;
+            when others => null; end case;
         end if;
     end process;
-    btns_op <= btns_s and not btns_q;
 
     process(clk)
         variable ds : integer range 0 to 3;
@@ -89,23 +112,22 @@ begin
         end if;
     end process;
 
--- ctrl input
+    -- ctrl signals
     rst       <= bool_sl(state = ctrl) and btns(CTRL_RST);
     step      <= bool_sl(state = ctrl) and btns(CTRL_STEP);
-    boot_ld   <= bool_sl(state = ctrl) and btns(CTRL_BLLD);
-    boot_done <= bool_sl(state = ctrl) and btns(CTRL_BLDN);
 
+    -- addr
     bp_addr_merge <= std_logic_vector(bp_addr(0)) &
                      std_logic_vector(bp_addr(1)) &
                      std_logic_vector(bp_addr(2)) &
                      std_logic_vector(bp_addr(3));
     break_addr <= bp_addr_merge;
 
+    -- segment display
     seg_dots <= "0000" when state /= edit else
                 "1000" when dig_sel = "00" else
                 "0100" when dig_sel = "01" else
                 "0010" when dig_sel = "10" else
                 "0001" when dig_sel = "11" else "----";
-
     smt : segment port map(clk, bp_addr_merge, seg_dots, seg, an);
 end arch;

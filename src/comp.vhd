@@ -130,7 +130,7 @@ architecture arch of comp is
     component board port(
         clk : in std_logic;
         btns : in std_logic_vector(4 downto 0);
-        rst, step, boot_ld, boot_done : out std_logic;
+        rst, step : out std_logic;
         break_addr : out std_logic_vector(15 downto 0);
         seg : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
@@ -166,13 +166,16 @@ architecture arch of comp is
     signal sp_s, sp_q, sp_op : std_logic;
     signal dbg : dbg_cmp_t;
 
-    -- board -> ctrl
-    signal step, rst, boot_ld, boot_done : std_logic;
+    -- board -> ctrl signals
+    signal step, rst : std_logic;
     signal break_addr : std_logic_vector(15 downto 0);
 
     -- ti <-> kbd
     signal keys_down : keys_down_t;
     signal on_key_down : std_logic := '0';
+
+    -- ti <-> mem controller
+    signal mem_rd, mem_wr : std_logic;
 
     -- ti <-> vga
     signal gmem_vga_data : std_logic;
@@ -188,9 +191,6 @@ architecture arch of comp is
     signal mon_crom_row, mon_crom_col : std_logic_vector(2 downto 0);
     signal mon_crom_char : std_logic_vector(5 downto 0);
     signal crom_mon_pixel : std_logic;
-
-    -- ti <-> mem controller
-    signal mem_rd, mem_wr : std_logic;
 begin
     with sw(7 downto 6) select
         clk_var <= clk_1000hz when "01",
@@ -282,7 +282,5 @@ begin
                                    mon_crom_char, mon_crom_col, mon_crom_row,
                                    crom_mon_pixel,
                                    mon_vga_data);
-    brd : board port map(clk, btns, rst, step, boot_ld, boot_done,
-                         break_addr,
-                         seg, an);
+    brd : board port map(clk, btns, rst, step, break_addr, seg, an);
 end arch;

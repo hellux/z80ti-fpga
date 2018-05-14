@@ -21,9 +21,9 @@ end op_decoder;
 -- "instr start"     |
 --       |           |
 --       v           v
---  M: |       1       |     2     |       1       |       2
---  T: | 1 | 2 | 3 | 4 | 1 | 2 | 3 | 1 | 2 | 3 | 4 | 1 | 2 | 3
--- IR:  -0x80----->|<-----0x3e-----------------|<----next instr---
+--  M: |       1       |     2     |       1       |     2     ..
+--  T: | 1 | 2 | 3 | 4 | 1 | 2 | 3 | 1 | 2 | 3 | 4 | 1 | 2 | 3 ..
+-- IR:  ---80----->|<-----------3e------------>|<--next_instr- ..
 --          /|\        |-----------|-----------|
 --           |           (pc++)->a     fetch
 --        alu->a                       phase
@@ -32,7 +32,6 @@ end op_decoder;
 --      / execute 
 --     previous instr
 --
-
 
 architecture arch of op_decoder is
     type id_frame_t is record
@@ -2265,7 +2264,7 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
-        when m1 => -- dec sp, int ack
+        when m1 => -- dec sp
             case state.t is
             when t4 =>
                 f.cw.iff_next := '0'; -- turn off interrupts
@@ -2273,7 +2272,6 @@ architecture arch of op_decoder is
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
-                f.cb.iorq := '1'; -- acknowledge interrupt
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 => -- pch -> (sph--)
