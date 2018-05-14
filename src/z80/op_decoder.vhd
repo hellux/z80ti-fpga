@@ -3,7 +3,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.z80_comm.all;
 use work.cmp_comm.all;
-use work.util.all;
 
 entity op_decoder is port(
     clk : in std_logic;
@@ -14,6 +13,27 @@ entity op_decoder is port(
     cw : out ctrlword);
 end op_decoder;
 
+-- INSTRUCTION TIMING EXAMPLE
+-- 80 = add a, b
+-- 3e = ld a, *
+--               next instr
+--                 loaded
+-- "instr start"     |
+--       |           |
+--       v           v
+--  M: |       1       |     2     |       1       |       2
+--  T: | 1 | 2 | 3 | 4 | 1 | 2 | 3 | 1 | 2 | 3 | 4 | 1 | 2 | 3
+-- IR:  -0x80----->|<-----0x3e-----------------|<----next instr---
+--          /|\        |-----------|-----------|
+--           |           (pc++)->a     fetch
+--        alu->a                       phase
+--     |-----------|
+--      fetch phase
+--      / execute 
+--     previous instr
+--
+
+
 architecture arch of op_decoder is
     type id_frame_t is record
         ct : id_ctrl_t;
@@ -22,21 +42,6 @@ architecture arch of op_decoder is
     end record;
 
     -- CYCLES --
-
-    function int_rd(state : state_t; f_in : id_frame_t)
-    return id_frame_t is variable f : id_frame_t; begin
-        f := f_in;
-        case state.t is
-        when t1 =>
-            f.cb.iorq := '1';
-        when t2 =>
-            f.cw.data_rdi := '1';
-            f.cb.iorq := '1';
-        when t3 =>
-            f.cw.dbus_src := ext_o;
-        when others => null; end case;
-        return f;
-    end int_rd;
 
     function io_rd(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
@@ -192,7 +197,8 @@ architecture arch of op_decoder is
     function noni(state : state_t; f_in : id_frame_t;
                   instr : std_logic_vector(7 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
-        report "NONI: " & " (" & vec_str(instr) & ")";
+        report "NONI: " & " (" &
+                integer'image(to_integer(unsigned(instr))) & ")";
         f := f_in;
         case state.t is
         when t4 =>
@@ -2206,7 +2212,7 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         report "UNIMPLEMENTED INSTRUCTION: " & op
-                & " (" & vec_str(instr) & ")";
+            & " (" & integer'image(to_integer(unsigned((instr)))) & ")";
         case state.t is
         when t4 => 
             f.ct.mode_next := halt;
@@ -2349,6 +2355,8 @@ architecture arch of op_decoder is
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m4 => -- i & tmp + 1 -> tmpa, (i & tmp) -> pcl
+            -- NOTE lower byte is seemingly random on ti calculators,
+            --      the current value in tmp is used here
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
@@ -2418,13 +2426,15 @@ architecture arch of op_decoder is
         q : integer range 0 to 1;
     end record;
 begin
+    -- NOTE op decoder is combinatorial, system clk is much faster 
+    -- than cpu clk
     process(clk)
         variable s : id_split_t;
         variable xy : integer range 0 to 1;
         variable f : id_frame_t;
     begin
         if rising_edge(clk) then
-        -- split for instruction
+        -- helper variables
         s.x := to_integer(unsigned(instr(7 downto 6)));
         s.y := to_integer(unsigned(instr(5 downto 3)));
         s.z := to_integer(unsigned(instr(2 downto 0)));
@@ -2432,13 +2442,11 @@ begin
         if instr(3) = '1' then s.q := 1; else s.q := 0; end if;
         if state.prefix = fd or
            state.prefix = fdcb
-        then
-            xy := 1;
-        else
-            xy := 0;
+        then xy := 1;
+        else xy := 0;
         end if;
 
-        -- set all signals to defaults (overwrite below)
+        -- set all signals to defaults (overwrite sequentially below)
         f.ct := (mode_next => state.mode,
                  im_next => state.im,
                  others => '0');
@@ -2459,16 +2467,23 @@ begin
             f.cb.m1 := '1';
         end if;
 
-        if state.mode = int then
+        case state.mode is
+        when int =>
             case state.im is
             when 0 => f := unimp(state, f, instr, "im0");
             when 1 => f := im1(state, f);
             when 2 => f := im2(state, f);
             end case;
-        else
+        when halt =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when exec =>
 
         -- fetch phase
-        if state.m = m1 and state.mode /= halt then
+        if state.m = m1 then
             f := mem_rd_instr(state, f);
         end if;
 
@@ -2780,7 +2795,8 @@ begin
                 end case;
             end case;
         end case;
-        end if;
+
+        end case;
 
         cw <= f.cw;
         cbo <= f.cb;
