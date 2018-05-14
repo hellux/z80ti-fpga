@@ -82,7 +82,7 @@ architecture arch of op_decoder is
         when t1 =>
             f.cw.addr_rd := '1';    -- read from abus to buffer
         when t2 =>
-            f.cw.data_rdi := '1';   -- store instr to data buf
+            f.cw.data_rdi := '1';   -- store data to data buf
             f.cb.mreq := '1';       -- signal addr ready on bus
             f.cb.rd := '1';         -- read
         when t3 =>
@@ -125,15 +125,9 @@ architecture arch of op_decoder is
     function mem_rd_instr(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        f := mem_rd(state, f);
-        f.cb.m1 := '1'; -- notify external of pc/instr rd
+        f := mem_rd_pc(state, f);
+        f.cb.m1 := '1'; -- notify external of pc rd
         case state.t is
-        when t1 =>
-            f.cw.abus_src := pc_o; -- write pc to abus
-        when t2 =>
-            f.cw.abus_src := pc_o; -- keep pc on abus
-            f.cw.addr_op := inc;
-            f.cw.pc_rd := '1';      -- read incremented address to pc
         when t3 =>
             f.cw.ir_rd := '1';      -- read instr from dbus to ir
         when others => null; end case;
@@ -372,6 +366,54 @@ architecture arch of op_decoder is
         return f;
     end ex;
 
+    function ex_de_hl(state : state_t; f_in : id_frame_t)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        -- NOTE takes an extra mcycle compared to actual z80
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 => -- HL -> tmpa
+                f.cw.rf_addr := regHL;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := none;
+                f.cw.tmpa_rd := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 =>
+            case state.t is
+            when t1 => -- tmpa -> WZ
+                f.cw.abus_src := tmpa_o;
+                f.cw.rf_addr := regWZ;
+                f.cw.addr_op := none;
+                f.cw.rf_rda := '1';
+            when t2 => -- DE -> tmpa
+                f.cw.rf_addr := regDE;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := none;
+                f.cw.tmpa_rd := '1';
+            when t3 => -- tmpa -> HL
+                f.cw.abus_src := tmpa_o;
+                f.cw.rf_addr := regHL;
+                f.cw.addr_op := none;
+                f.cw.rf_rda := '1';
+            when t4 => -- WZ -> tmpa
+                f.cw.rf_addr := regWZ;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := none;
+                f.cw.tmpa_rd := '1';
+            when t5 => -- tmpa -> DE
+                f.cw.abus_src := tmpa_o;
+                f.cw.rf_addr := regDE;
+                f.cw.addr_op := none;
+                f.cw.rf_rda := '1';
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end ex_de_hl;
+
     function alu_a_r(state : state_t; f_in : id_frame_t;
                      op : instr_t; reg : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
@@ -379,12 +421,6 @@ architecture arch of op_decoder is
         case state.m is
         when m1 =>
             case state.t is
-            when t2 => -- after, during overlap
-                f.cw.alu_op := op;      -- tell alu operation
-                f.cw.dbus_src := alu_o; -- place result on dbus
-                f.cw.f_rd := '1';       -- read flags from alu
-                f.cw.rf_addr := regA;   -- select the A reg
-                f.cw.rf_rdd := '1';     -- read alu output from dbus
             when t4 =>
                 f.cw.act_rd := '1';     -- read from a to tmp accumulator
                 f.cw.rf_addr := reg;    -- select reg
@@ -392,6 +428,12 @@ architecture arch of op_decoder is
                 f.cw.tmp_rd := '1';     -- read from dbus to tmp
                 f.ct.cycle_end := '1';  -- signal new cycle
                 f.ct.instr_end := '1';
+            when t2 => -- after, during overlap
+                f.cw.alu_op := op;      -- tell alu operation
+                f.cw.dbus_src := alu_o; -- place result on dbus
+                f.cw.f_rd := '1';       -- read flags from alu
+                f.cw.rf_addr := regA;   -- select the A reg
+                f.cw.rf_rdd := '1';     -- read alu output from dbus
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -404,15 +446,15 @@ architecture arch of op_decoder is
         case state.m is
         when m1 =>
             case state.t is
+            when t4 =>
+                f.cw.act_rd := '1';     -- read from a to tmp accumulator
+                f.ct.cycle_end := '1';  -- signal new cycle
             when t2 => -- after, during overlap
                 f.cw.alu_op := op;      -- tell alu operation
                 f.cw.dbus_src := alu_o; -- place result on dbus
                 f.cw.f_rd := '1';       -- read flags from alu
                 f.cw.rf_addr := regA;   -- select the A reg
                 f.cw.rf_rdd := '1';     -- read alu output from dbus
-            when t4 =>
-                f.cw.act_rd := '1';     -- read from a to tmp accumulator
-                f.ct.cycle_end := '1';  -- signal new cycle
             when others => null; end case;
         when m2 =>
             f := mem_rd_pc(state, f);
@@ -433,18 +475,18 @@ architecture arch of op_decoder is
         case state.m is
         when m1 => 
             case state.t is
-            when t2 => -- after, during overlap
-                f.cw.alu_op := op;
-                f.cw.dbus_src := alu_o;
-                f.cw.f_rd := '1';
-                f.cw.rf_addr := reg;
-                f.cw.rf_rdd := '1';
             when t4 =>
                 f.cw.rf_addr := reg;
                 f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+            when t2 => -- after, during overlap
+                f.cw.alu_op := op;
+                f.cw.dbus_src := alu_o;
+                f.cw.f_rd := '1';
+                f.cw.rf_addr := reg;
+                f.cw.rf_rdd := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -528,18 +570,18 @@ architecture arch of op_decoder is
         case state.m is
         when m1 => 
             case state.t is
-            when t2 => -- after, during overlap
-                f.cw.alu_op := op;
-                f.cw.dbus_src := alu_o;
-                f.cw.f_rd := '1';
-                f.cw.rf_addr := regA;
-                f.cw.rf_rdd := '1';
             when t4 =>
                 f.cw.rf_addr := regA;
                 f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+            when t2 => -- after, during overlap
+                f.cw.alu_op := op;
+                f.cw.dbus_src := alu_o;
+                f.cw.f_rd := '1';
+                f.cw.rf_addr := regA;
+                f.cw.rf_rdd := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -607,6 +649,12 @@ architecture arch of op_decoder is
         case state.m is 
         when m1 =>
             case state.t is
+            when t4 =>
+                f.cw.rf_addr := reg;
+                f.cw.dbus_src := rf_o;
+                f.cw.tmp_rd := '1';
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
             when t2 => -- after, during overlap
                 f.cw.alu_op := op;
                 f.cw.alu_bs := bs;
@@ -614,12 +662,6 @@ architecture arch of op_decoder is
                 f.cw.f_rd := '1';
                 f.cw.rf_addr := reg;
                 f.cw.rf_rdd := '1';
-            when t4 =>
-                f.cw.rf_addr := reg;
-                f.cw.dbus_src := rf_o;
-                f.cw.tmp_rd := '1';
-                f.ct.cycle_end := '1';
-                f.ct.instr_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -2583,7 +2625,7 @@ begin
                     when 2 => f := out_n_a(state, f);
                     when 3 => f := in_a_n(state, f);
                     when 4 => f := ex_spx_rp(state, f, regHL);
-                    when 5 => f := ex(state, f, dehl);
+                    when 5 => f := ex_de_hl(state, f);
                     when 6 => f := si(state, f, '0');
                     when 7 => f := si(state, f, '1');
                     end case;

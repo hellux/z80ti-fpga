@@ -38,7 +38,7 @@ end regfile;
 
 architecture arch of regfile is
     type rf_ram_t is array(0 to 23) of std_logic_vector(7 downto 0);
-    type rf_swap_state_t is record reg, af, dehl : std_logic; end record;
+    type rf_swap_state_t is record reg, af : std_logic; end record;
 
     function baddr(reg_addr : integer;
                    s : rf_swap_state_t)
@@ -48,9 +48,7 @@ architecture arch of regfile is
         variable hl : std_logic;
     begin
         r := std_logic_vector(to_unsigned(reg_addr, 4));
-        if r(3) = '0' and r(2 downto 1) /= "11" and s.dehl = '1' then
-            w_vec := '0' & r(1) & r(2) & s.reg;
-        elsif r(3) = '0' and r(2 downto 1) /= "11" then
+        if r(3) = '0' and r(2 downto 1) /= "11" then
             w_vec := r(3 downto 1) & s.reg;
         elsif r(3) = '0' then
             w_vec := "011" & s.af;
@@ -113,7 +111,6 @@ begin
                 when none => null;
                 when reg  => s.reg  <= not s.reg;
                 when af   => s.af   <= not s.af;
-                when dehl => s.dehl <= not s.dehl;
                 when others => null;
                 end case;
             end if;
