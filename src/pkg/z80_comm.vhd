@@ -30,7 +30,6 @@ package z80_comm is
         set_m1 : std_logic;         -- reset machine cycle to m1
         instr_end : std_logic;      -- last state of current instr
         mode_next : id_mode_t;      -- mode for next cp
-        prefix_next : id_prefix_t;  -- prefix for next cp
         im_next : integer range 0 to 2;  -- im for next cp
     end record;
 

@@ -11,6 +11,7 @@ entity state_machine is port(
     iff : in std_logic;
     ctrl : in id_ctrl_t;
     ir_rd : in std_logic;
+    instr : in std_logic_vector(7 downto 0);
     state_out : out state_t);
 end state_machine;
 
@@ -52,7 +53,30 @@ begin
 
                 -- set prefix
                 if ir_rd = '1' then
-                    state.prefix <= ctrl.prefix_next;
+                    case state.prefix is
+                    when main =>
+                        case instr is
+                        when x"ed"  => state.prefix <= ed;
+                        when x"cb"  => state.prefix <= cb;
+                        when x"dd"  => state.prefix <= dd;
+                        when x"fd"  => state.prefix <= fd;
+                        when others => state.prefix <= main;
+                        end case;
+                    when ed => state.prefix <= main;
+                    when cb => state.prefix <= main;
+                    when dd =>
+                        case instr is
+                        when x"cb"  => state.prefix <= ddcb;
+                        when others => state.prefix <= main;
+                        end case;
+                    when fd =>
+                        case instr is
+                        when x"cb"  => state.prefix <= fdcb;
+                        when others => state.prefix <= main;
+                        end case;
+                    when ddcb => state.prefix <= main;
+                    when fdcb => state.prefix <= main;
+                    end case;
                 end if;
 
                 -- set im

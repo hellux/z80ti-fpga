@@ -136,23 +136,20 @@ architecture arch of op_decoder is
         return f;
     end mem_rd_instr;
 
-    function mem_rd_multi(state : state_t; f_in : id_frame_t;
-                          prefix : id_prefix_t)
+    function mem_rd_multi(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         f := mem_rd_instr(state, f);
         case state.t is
         when t3 =>
-            f.ct.prefix_next := prefix;
-            f.ct.set_m1 := '1'; -- return to m1 / update prefix
+            f.ct.set_m1 := '1'; -- return to m1
         when t4 =>
             f.ct.cycle_end := '1';
         when others => null; end case;
         return f;
     end mem_rd_multi;
 
-    function mem_rd_xy_d(state : state_t; f_in : id_frame_t;
-                         prefix : id_prefix_t)
+    function mem_rd_xy_d(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         f := mem_rd_pc(state, f);
@@ -173,7 +170,6 @@ architecture arch of op_decoder is
             f := mem_rd_instr(state, f);
             case state.t is
             when t3 =>
-                f.ct.prefix_next := prefix;
                 f.ct.set_m1 := '1';
             when others => null; end case;
         when others => null; end case;
@@ -2391,7 +2387,6 @@ architecture arch of op_decoder is
     type xy_table_t is array(0 to 1) of integer range 0 to 15;
     type xyhl_table_t is array(0 to 1) of r_table_t;
     type im_table_t is array(0 to 7) of integer range 0 to 2;
-    type prefix_table_t is array(0 to 1) of id_prefix_t;
 
     constant bli4 : bli_row_t := (ldi_i, cpi_i, ini_i, outi_i);
     constant bli5 : bli_row_t := (ldd_i, cpd_i, ind_i, outd_i);
@@ -2413,7 +2408,6 @@ architecture arch of op_decoder is
     constant ryhl : r_table_t := (regB, regC, regD, regE,
                                   regIYh, regIYl, regF, regA);
     constant rxyhl : xyhl_table_t := (rxhl, ryhl);
-    constant pxy : prefix_table_t := (ddcb, fdcb);
 
     --     | p | |q|
     -- |1 0|0 0| |0|1 1 1|
@@ -2447,7 +2441,6 @@ begin
         -- set all signals to defaults (overwrite below)
         f.ct := (mode_next => state.mode,
                  im_next => state.im,
-                 prefix_next => main,
                  others => '0');
         f.cb := (others => '0');
         f.cw := (dbus_src => none,
@@ -2573,7 +2566,7 @@ begin
                 when 3 =>
                     case s.y is
                     when 0 => f := jp_nn(state, f);
-                    when 1 => f := mem_rd_multi(state, f, cb);
+                    when 1 => f := mem_rd_multi(state, f);
                     when 2 => f := out_n_a(state, f);
                     when 3 => f := in_a_n(state, f);
                     when 4 => f := ex_spx_rp(state, f, regHL);
@@ -2588,9 +2581,9 @@ begin
                     when 1 =>
                         case s.p is
                         when 0 => f := call_nn(state, f);
-                        when 1 => f := mem_rd_multi(state, f, dd);
-                        when 2 => f := mem_rd_multi(state, f, ed);
-                        when 3 => f := mem_rd_multi(state, f, fd);
+                        when 1 => f := mem_rd_multi(state, f);
+                        when 2 => f := mem_rd_multi(state, f);
+                        when 3 => f := mem_rd_multi(state, f);
                         end case;
                     end case;
                 when 6 => f := alu_a_n(state, f, alu(s.y));
@@ -2770,7 +2763,7 @@ begin
                     end case;
                 when 3 =>
                     case s.y is
-                    when 1 => f := mem_rd_xy_d(state, f, pxy(xy));
+                    when 1 => f := mem_rd_xy_d(state, f);
                     when 4 => f := ex_spx_rp(state, f, rxy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
