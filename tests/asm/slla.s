@@ -1,15 +1,16 @@
 org 0x9d95
 
-ld a, 0xfe
-ld ix, 0xabcd
-; and ixh
-db 0xdd
-db 0xa4
-jp p, fail
+ld hl, 0xa300
+push hl
+pop af
+; sll a
+db 0xcb
+db 0x37
+jp m, fail
 jp z, fail
 jp po, fail
-jp c, fail
-cp 0xaa
+jp nc, fail
+cp 0x47
 jp nz, fail
 
 success:
