@@ -263,3 +263,22 @@ success:
 fail:
     ld a, 0xee
     halt
+
+; ind manual example, but without match
+; before:
+;   bc: 1001
+;   hl: 0002
+;   p00: 03
+; after:
+;   0002: 
+;   hl: 0001
+;   bc: 0000
+;   Z, PE
+ind1_setup:
+    ld a, 0x52
+    ld (0x0000), a
+    ld a, 0x00
+    ld (0x0001), a
+    ld a, 0xf3
+    ld (0x0002), a
+
