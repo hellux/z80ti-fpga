@@ -415,7 +415,7 @@ architecture arch of op_decoder is
     end ex_de_hl;
 
     function alu_a_r(state : state_t; f_in : id_frame_t;
-                     op : instr_t; reg : integer range 0 to 7)
+                     op : instr_t; reg : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1049,7 +1049,7 @@ architecture arch of op_decoder is
     end ld_r_r;
 
     function ld_r_n(state : state_t; f_in : id_frame_t;
-                   reg : integer range 0 to 7)
+                   reg : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1412,6 +1412,7 @@ architecture arch of op_decoder is
         return f;
     end ld_nnx_rp;
     
+    -- ld r, (ix/iy+d)
     function ld_r_xy_d(state : state_t; f_in : id_frame_t; 
                         r : integer range 0 to 7;
                         rp : integer range 0 to 15)
