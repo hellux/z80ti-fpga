@@ -68,6 +68,8 @@ architecture arch of z80 is
         flags : in std_logic_vector(7 downto 0);
         iff : in std_logic;
         ctrl : in id_ctrl_t;
+        ir_rd : in std_logic;
+        instr : in std_logic_vector(7 downto 0);
         state_out : out state_t);
     end component;
 
@@ -109,7 +111,8 @@ begin
     ir : reg generic map(x"ff", 8)
              port map(clk, cbi.reset, ce, cw.ir_rd, dbus, ir_out);
     id : op_decoder port map(clk, state, ir_out, ctrl, cbo, cw);
-    sm : state_machine port map(clk, ce, cbi, rf_f_out, iff, ctrl, state); 
+    sm : state_machine port map(clk, ce, cbi, rf_f_out, iff,
+                                ctrl, cw.ir_rd, ir_out, state); 
 
     -- -- REGISTER SECTION -- --
     rf_f_rd <= cw.f_rd or cw.f_load;
