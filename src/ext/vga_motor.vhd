@@ -91,8 +91,8 @@ begin
              '1';
     blank <= '1' when x_vga >= VGA_VIS_X or y_vga >= VGA_VIS_Y else '0';
 
-    gmem_col <= x"ff" when gmem_data = '1' else x"48";
-    mon_col <= x"ff" when mon_data = '1' else x"00";
+    gmem_col <= x"00" when gmem_data = '1' else x"71";
+    mon_col <= x"ff" when mon_data = '1' else x"49";
 
     color <= x"00"    when blank = '1' else
              gmem_col when x_vga >= X_OFS and
@@ -103,7 +103,7 @@ begin
                            x_vga <  MON_START_X + MON_WIDTH and
                            y_vga >= MON_START_Y and
                            y_vga <  MON_START_Y + MON_HEIGHT else
-             x"00";
+             x"49";
   
     mon_x <= std_logic_vector(resize(x_vga-MON_START_X, 9));
     mon_y <= std_logic_vector(resize(y_vga-MON_START_Y, 6));
