@@ -50,14 +50,18 @@ architecture arch of m45 is
 
     constant RAM_L : integer := 16#87000#;
     constant RAM_R : integer := RAM_L+RAM_SIZE-1;
+    constant IM2_TBL_L : integer := 16#81900#; -- (9900)
+    constant IM2_TBL_R : integer := 16#819ff#;
+    constant IM2_JP_L : integer := 16#81a9a#; -- (9a9a)
+    constant IM2_JP_R : integer := 16#81a9c#;
     constant OPRAM_L : integer := 16#84478#; -- (0x8478)
-    constant OPRAM_R : integer := OPRAM_L+11*6-1; -- (0x8478)
+    constant OPRAM_R : integer := OPRAM_L+11*6-1;
     constant SSCREEN_L : integer := 16#846ec#; -- (0x86ec)
     constant SSCREEN_R : integer := SSCREEN_L+768-1;
     constant PSCREEN_L : integer := 16#85340#; -- (0x9340)
     constant PSCREEN_R : integer := PSCREEN_L+768-1;
 
-    constant STACK_R : integer := 16#83fff#;
+    constant STACK_R : integer := 16#87fff#; -- (0xffff)
     constant STACK_L : integer := STACK_R-STACK_SIZE+1;
 
     type mem_t is array(integer range <>) of std_logic_vector(7 downto 0);
@@ -110,6 +114,8 @@ architecture arch of m45 is
     end procedure;
 
     signal mem_ram : mem_t(RAM_L to RAM_R) := (others => x"00");
+    signal mem_im2_tbl : mem_t(IM2_TBL_L to IM2_TBL_R) := (others => x"9a");
+    signal mem_im2_jp : mem_t(IM2_JP_L to IM2_JP_R) := (others => x"00");
     signal mem_app : mem_t(APP_L to APP_R) := file_to_mem("a.bin", APP_SIZE);
     signal mem_stack : mem_t(STACK_L to STACK_R) := (others => x"00");
     --signal mem_sscreen : mem_t(SSCREEN_L to SSCREEN_R)
@@ -169,6 +175,8 @@ begin
                     write(mem_bc0, mub_c, mlb_c, a_lb, mdata);
                     write(mem_app, mub_c, mlb_c, a_lb, mdata);
                     write(mem_ram, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_im2_tbl, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_im2_jp, mub_c, mlb_c, a_lb, mdata);
                     write(mem_opram, mub_c, mlb_c, a_lb, mdata);
                     --write(mem_sscreen, mub_c, mlb_c, a_lb, mdata);
                     --write(mem_pscreen, mub_c, mlb_c, a_lb, mdata);
@@ -177,6 +185,8 @@ begin
                 word_out <= x"7676";
                 read(mem_app, a_lb, word_out);
                 read(mem_ram, a_lb, word_out);
+                read(mem_im2_tbl, a_lb, word_out);
+                read(mem_im2_jp, a_lb, word_out);
                 read(mem_stack, a_lb, word_out);
                 --read(mem_sscreen, a_lb, word_out);
                 --read(mem_pscreen, a_lb, word_out);
