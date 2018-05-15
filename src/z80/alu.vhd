@@ -74,10 +74,11 @@ begin
         signed('0' & (not mask and op2))        when res_i,
         signed('0' & (mask or op2))             when set_i,
          op2_ext                                when bit_i,
-        -op2_ext                                when sub_i|cp_i|neg_i|
+        -op2_ext                                when sub_i|
+                                                     cp_i|neg_i|
                                                      cpi_i|cpir_i|
                                                      cpd_i|cpdr_i,
-        -op2_ext - ("00000000" & flags_in(C_f)) when sbc_i|sbc16_i2,
+        -op2_ext - ("00000000" & flags_in(C_f)) when sbc_i|sbc16_i1|sbc16_i2,
          op2_ext + ("00000000" & flags_in(C_f)) when adc_i|add16_i2|adc16_i2,
         '0' & op2_ext(6 downto 0) & edge        when rlc_i|rl_i|sla_i|sll_i|
                                                      rlca_i|rla_i,
