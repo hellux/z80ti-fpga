@@ -47,10 +47,8 @@ architecture arch of board is
     type board_state_t is (ctrl, edit);
     type bp_addr_t is array(0 to 3) of unsigned(3 downto 0);
 
-    -- button one op / cooldown (prevent push register bursts)
-    signal btns_op : std_logic_vector(4 downto 0);
-    signal btns_down : std_logic;
-    signal btns_cd : natural := CD_INIT;
+    -- button one op
+    signal btns_op, btns_s, btns_q : std_logic_vector(4 downto 0);
 
     -- board state
     signal state : board_state_t := ctrl;
@@ -63,23 +61,11 @@ architecture arch of board is
 begin
     process(clk) begin
         if rising_edge(clk) then
-            case btns_down is
-            when '0' =>
-                if btns /= "00000" then
-                    btns_down <= '1';
-                    btns_cd <= CD_INIT;
-                    btns_op <= btns;
-                end if;
-            when '1' =>
-                btns_op <= (others => '0');
-                if btns_cd = 0 then
-                    btns_down <= '0';
-                else
-                    btns_cd <= btns_cd - 1;
-                end if;
-            when others => null; end case;
+            btns_s <= btns;
+            btns_q <= btns_s;
         end if;
     end process;
+    btns_op <= btns_s and not btns_q;
 
     process(clk)
         variable ds : integer range 0 to 3;
