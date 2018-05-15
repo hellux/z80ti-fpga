@@ -123,6 +123,10 @@ begin
         when neg_i    => val_alu_op := " NEG    ";
         when add16_i1 => val_alu_op := " ADD16_1";
         when add16_i2 => val_alu_op := " ADD16_2";
+        when adc16_i1 => val_alu_op := " ADC16_1";
+        when adc16_i2 => val_alu_op := " ADC16_2";
+        when sbc16_i1 => val_alu_op := " SBC16_1";
+        when sbc16_i2 => val_alu_op := " SBC16_2";
         when and_i    => val_alu_op := " AND    ";
         when or_i     => val_alu_op := " OR     ";
         when xor_i    => val_alu_op := " XOR    ";
