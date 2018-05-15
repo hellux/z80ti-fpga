@@ -2662,9 +2662,11 @@ begin
                 when 2 =>
                     case s.q is
                     when 0 => f :=
-                        alu_rp_rp(state, f, sbc_i, sbc_i, regHL, rp(s.p));
+                        alu_rp_rp(state, f, sbc16_i1, sbc16_i2,
+                                  regHL, rp(s.p));
                     when 1 => f :=
-                        alu_rp_rp(state, f, adc_i, adc_i, regHL, rp(s.p));
+                        alu_rp_rp(state, f, adc16_i1, adc16_i2,
+                                  regHL, rp(s.p));
                     end case;
                 when 3 =>
                     case s.q is

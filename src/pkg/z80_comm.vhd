@@ -5,6 +5,8 @@ package z80_comm is
     type instr_t is (unknown, 
                      add_i, adc_i, sub_i, sbc_i, cp_i, inc_i, dec_i, neg_i,
                      add16_i1, add16_i2,
+                     adc16_i1, adc16_i2,
+                     sbc16_i1, sbc16_i2,
                      and_i, or_i, xor_i,
                      bit_i, res_i, set_i,
                      rlc_i, rl_i, sla_i, sll_i,
