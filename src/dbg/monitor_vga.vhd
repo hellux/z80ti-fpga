@@ -58,11 +58,12 @@ begin
         when ddcb => val_prefix := "DDCB";
         when   fd => val_prefix := "  FD";
         when fdcb => val_prefix := "FDCB";
+        when int  => val_prefix := " INT";
         end case;
         case dbg.z80.state.mode is
-        when exec => val_mode := "EXE";
-        when halt => val_mode := "HLT";
-        when  int => val_mode := "INT";
+        when exec       => val_mode := "EXE";
+        when halt       => val_mode := "HLT";
+        when  interrupt => val_mode := "INT";
         end case;
         val_cycle := "M" &
             hex_str(std_logic_vector(to_unsigned(dbg.z80.state.m, 3))) &

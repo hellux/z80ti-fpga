@@ -9,7 +9,17 @@ ld hl, 38h
 ld (hl), 0xc9
 im 1
 ei
-halt
+
+loop:
+add a, 1
+add a, 2
+add a, 3
+add a, 4
+add a, 5
+add a, 6
+add a, 7
+jr loop
+
 call reti_test
 ld l, 0xcc
 

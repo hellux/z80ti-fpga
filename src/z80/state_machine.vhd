@@ -46,7 +46,7 @@ begin
                    state.iff = '1' and
                    cbi.int = '1'
                 then
-                    state.mode <= int;
+                    state.mode <= interrupt;
                 else
                     state.mode <= ctrl.mode_next;
                 end if;
@@ -76,7 +76,12 @@ begin
                         end case;
                     when ddcb => state.prefix <= main;
                     when fdcb => state.prefix <= main;
+                    when int => state.prefix <= main;
                     end case;
+
+                    if state.mode = interrupt then
+                        state.prefix <= int;
+                    end if;
                 end if;
 
                 -- set im

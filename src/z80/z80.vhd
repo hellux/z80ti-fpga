@@ -207,7 +207,7 @@ begin
     end process;
     dbg.int_start <= '1' when state.t = t1 and
                               state.m = m1 and
-                              state.mode = int else '0';
+                              state.mode = interrupt else '0';
     dbg.state <= state;
     dbg.pc <= pc_out;
     dbg.abus <= abus;

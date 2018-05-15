@@ -21,8 +21,8 @@ package z80_comm is
     type addr_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
 
-    type id_prefix_t is (main, ed, cb, dd, ddcb, fd, fdcb);
-    type id_mode_t is (exec, halt, int);
+    type id_prefix_t is (main, ed, cb, dd, ddcb, fd, fdcb, int);
+    type id_mode_t is (exec, halt, interrupt);
 
     -- control signals for id
     type id_ctrl_t is record

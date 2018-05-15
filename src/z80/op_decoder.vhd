@@ -2337,8 +2337,6 @@ architecture arch of op_decoder is
             when t1 =>
                 f.cw.rf_addr := regSP;
                 f.cw.abus_src := rf_o;
-                f.cw.dbus_src := zero_o;
-                f.cw.ir_rd := '1'; -- nop ir to prevent double exec
             when t2 =>
                 f.cw.dbus_src := pcl_o;
                 f.cw.data_rdo := '1';
@@ -2414,9 +2412,6 @@ architecture arch of op_decoder is
             case state.t is
             when t1 =>
                 f.cw.abus_src := tmpa_o;
-            when t2 => -- nop ir to prevent double execution
-                f.cw.dbus_src := zero_o;
-                f.cw.ir_rd := '1';
             when t3 =>
                 f.cw.pc_rdh := '1';
                 f.ct.mode_next := exec;
@@ -2508,27 +2503,31 @@ begin
             f.cb.m1 := '1';
         end if;
 
+        -- fetch phase
         case state.mode is
+        when exec => 
+            if state.m = m1 then
+                f := mem_rd_instr(state, f);
+            end if;
+        when interrupt =>
+            case state.m is
+            when m1 =>
+                case state.t is
+                when t3 => -- nop ir to update prefix
+                    f.cw.dbus_src := zero_o;
+                    f.cw.ir_rd := '1';
+                when others => end case;
+            when others => end case;
+        when halt => null;
+        end case;
+
+        case state.prefix is
         when int =>
             case state.im is
             when 0 => f := unimp(state, f, instr, "im0");
             when 1 => f := im1(state, f);
             when 2 => f := im2(state, f);
             end case;
-        when halt =>
-            case state.t is
-            when t4 =>
-                f.ct.cycle_end := '1';
-                f.ct.instr_end := '1';
-            when others => null; end case;
-        when exec =>
-
-        -- fetch phase
-        if state.m = m1 then
-            f := mem_rd_instr(state, f);
-        end if;
-
-        case state.prefix is
         when main =>
             case s.x is
             when 0 =>
@@ -2835,8 +2834,6 @@ begin
                 when others => f := noni(state, f, instr);
                 end case;
             end case;
-        end case;
-
         end case;
 
         cw <= f.cw;
