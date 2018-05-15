@@ -58,14 +58,8 @@ test:
     ld a, h
     cp post_a
     jp nz, fail
-    ld a, l
-    cp post_f
-    jp nz, fail
     pop hl
 ; cp c
-    ld a, post_b
-    cp b
-    jp nz, fail
     ld a, post_c
     cp c
     jp nz, fail
