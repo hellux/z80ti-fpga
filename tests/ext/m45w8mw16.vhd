@@ -12,7 +12,7 @@ entity m45 is port(
 end m45;
 
 architecture arch of m45 is
-    constant INIT_SIZE : integer := 56;
+    constant INIT_SIZE : integer := 62;
     constant APP_SIZE : integer := 700;
     constant STACK_SIZE : integer := 256;
     constant RAM_SIZE : integer := 128;

@@ -96,7 +96,7 @@ if [ "$analyze" = true ]; then
 fi
 
 if [ "$emulate" = true ]; then
-    z80e-sdl a.bin --no-rom-check
+    z80e-sdl a.bin --no-rom-check --print-state --debug
 fi
 
 if [ "$clean" = true ]; then

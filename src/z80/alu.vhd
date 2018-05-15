@@ -57,7 +57,8 @@ begin
     end process;
 
     with op select edge <=
-        '0'             when sla_i|sll_i|srl_i,
+        '0'             when sla_i|srl_i,
+        '1'             when sll_i, -- undoc odd case
         flags_in(C_f)   when rl_i|rla_i|rr_i|rra_i,
         op2(0)          when rrc_i|rrca_i,
         op2(7)          when rlc_i|rlca_i|sra_i,

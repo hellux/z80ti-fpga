@@ -1,3 +1,4 @@
+org 0x9d95
 start:
 di
 

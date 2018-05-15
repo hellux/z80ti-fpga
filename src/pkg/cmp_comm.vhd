@@ -4,13 +4,14 @@ use work.z80_comm.all;
 use work.ti_comm.all;
 
 package cmp_comm is
-    constant FREQ : integer := 100*10**6;
+    constant SYS_FREQ : integer := 100*10**6;
 
-    constant DIV_Z80 : integer := 17; -- FREQ/6MHz = 16.7
-    constant DIV_VGA : integer := FREQ/(25*10**6);
+    constant DIV_Z80 : integer := 17; -- SYS_FREQ/6MHz = 16.7
+    constant DIV_Z80_15MHZ : integer := 7; -- SYS_FREQ/15MHz = 6.7
+    constant DIV_VGA : integer := SYS_FREQ/(25*10**6);
 
-    constant DIV_1000HZ : integer := FREQ/DIV_Z80/1000;
-    constant DIV_100KHZ : integer := FREQ/DIV_Z80/(100*10**3);
+    constant DIV_1000HZ : integer := SYS_FREQ/DIV_Z80/1000;
+    constant DIV_100KHZ : integer := SYS_FREQ/DIV_Z80/(100*10**3);
 
     type ctrlbus_in is record
         -- cpu control

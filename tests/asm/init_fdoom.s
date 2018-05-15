@@ -2,11 +2,6 @@ org 0x0000 ; use absolute addresses
 
 aux_addr: equ 0xf000 ; jump here to setup memory mapping
 
-; MENU START
-;pc_high: equ 0x9d
-;pc_low:  equ 0xc6
-
-; GAME START
 pc_high: equ 0xa1
 pc_low: equ 0x4e
 
@@ -46,11 +41,16 @@ ld (hl), 0xd3
 inc hl
 ld (hl), 0x07
 inc hl
-; jp 0x9dc6
-ld (hl), 0xc3
+; call 0x9dc6
+ld (hl), 0xcd
 inc hl
 ld (hl), pc_low
 inc hl
 ld (hl), pc_high
+; jr to above call
+inc hl
+ld (hl), 0x18
+inc hl
+ld (hl), 0xfb
 
 jp aux_addr

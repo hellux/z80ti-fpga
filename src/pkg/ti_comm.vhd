@@ -80,6 +80,7 @@ package ti_comm is
     type dbg_hwt_t is record 
         hwt1 : std_logic_vector(19 downto 0);
         hwt2 : std_logic_vector(19 downto 0);
+        freq : std_logic_vector(1 downto 0);
     end record;
 
     type dbg_lcd_t is record 
