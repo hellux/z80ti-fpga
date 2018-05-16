@@ -25,6 +25,7 @@ architecture arch of alu is
     
     -- flags
     signal half_add, half_sub, half_daa : std_logic;
+    signal daa_c : std_logic;
     signal overflow, overflow_neg, parity : std_logic;
 begin
     -- preprocess
@@ -39,6 +40,7 @@ begin
     daa_logic : process(op2_ext, flags_in) is
 	    variable res, v : signed(8 downto 0);
     begin
+        daa_c <= '0';
         v := (others => '0');
         if (unsigned(op2_ext(3 downto 0)) > "1001" or flags_in(H_f) = '1') then
             v := v + "000000110";
@@ -49,6 +51,7 @@ begin
             or flags_in(C_f) = '1')
         then
             v := v + "001100000";
+            daa_c <= '1';
         end if;
         if flags_in(N_f) = '1' then
             v := -v;
@@ -207,9 +210,10 @@ begin
 
     with op select flags_out(C_f) <=
         '0'                 when and_i|or_i|xor_i,
-        result_sum(8)       when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|daa_i|
+        result_sum(8)       when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|
                                  add16_i1|add16_i2|adc16_i1|adc16_i2|
                                  sbc16_i1|sbc16_i2,
+        daa_c               when daa_i,
         op2(7)              when rlc_i|rl_i|sla_i|sll_i|rlca_i|rla_i,
         op2(0)              when rrc_i|rr_i|sra_i|srl_i|rrca_i|rra_i,
         '1'                 when scf_i,
