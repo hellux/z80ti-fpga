@@ -667,6 +667,46 @@ architecture arch of op_decoder is
         return f;
     end bit_r;
 
+    function bit_hlx(state : state_t; f_in : id_frame_t;
+                     op : instr_t; bs : integer range 0 to 7)
+    return id_frame_t is variable f : id_frame_t; begin
+        f := f_in;
+        case state.m is
+        when m1 =>
+            case state.t is
+            when t4 =>
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m2 => -- (hl) -> alu -> dbufo
+            f := mem_rd(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regHL;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.cw.tmp_rd := '1';
+            when t4 =>
+                f.cw.alu_op := op;
+                f.cw.alu_bs := bs;
+                f.cw.f_rd := '1';
+                f.cw.dbus_src := alu_o;
+                f.cw.data_rdo := '1';
+                f.ct.cycle_end := '1';
+            when others => null; end case;
+        when m3 => -- dbufo -> (hl)
+            f := mem_wr(state, f);
+            case state.t is
+            when t1 =>
+                f.cw.rf_addr := regHL;
+                f.cw.abus_src := rf_o;
+            when t3 =>
+                f.ct.cycle_end := '1';
+                f.ct.instr_end := '1';
+            when others => null; end case;
+        when others => null; end case;
+        return f;
+    end bit_hlx;
+
     function bit_xy_d(state : state_t; f_in : id_frame_t;
                       op : instr_t; bs : integer range 0 to 7;
                       reg : integer range 0 to 15)
@@ -2698,11 +2738,21 @@ begin
                 end case;
             when 0|3 => f := noni(state, f, instr); end case;
         when cb =>
-            case s.x is
-            when 0 => f := bit_r(state, f, rot(s.y), 0, s.z);
-            when 1 => f := bit_r(state, f, bit_i, s.y, s.z);
-            when 2 => f := bit_r(state, f, res_i, s.y, s.z);
-            when 3 => f := bit_r(state, f, set_i, s.y, s.z);
+            case s.z is
+            when 6 =>
+                case s.x is
+                when 0 => f := bit_hlx(state, f, rot(s.y), 0);
+                when 1 => f := bit_hlx(state, f, bit_i, s.y);
+                when 2 => f := bit_hlx(state, f, res_i, s.y);
+                when 3 => f := bit_hlx(state, f, set_i, s.y);
+                end case;
+            when others =>
+                case s.x is
+                when 0 => f := bit_r(state, f, rot(s.y), 0, s.z);
+                when 1 => f := bit_r(state, f, bit_i, s.y, s.z);
+                when 2 => f := bit_r(state, f, res_i, s.y, s.z);
+                when 3 => f := bit_r(state, f, set_i, s.y, s.z);
+                end case;
             end case;
         when ddcb|fdcb =>
             case s.x is
