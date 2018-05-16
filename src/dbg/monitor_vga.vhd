@@ -174,7 +174,7 @@ begin
         when unknown  => val_alu_op := " UNKNOWN";
         end case;
 
-        val_kbd_group := (others => '0');
+        val_kbd_group := (others => ' ');
         if dbg.ti.kbd.grp(0) = '0' then val_kbd_group(8) := '0'; end if;
         if dbg.ti.kbd.grp(1) = '0' then val_kbd_group(7) := '1'; end if;
         if dbg.ti.kbd.grp(2) = '0' then val_kbd_group(6) := '2'; end if;
