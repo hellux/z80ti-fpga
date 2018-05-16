@@ -224,7 +224,7 @@ architecture arch of op_decoder is
             when t2 =>
                 f.cw.rf_addr := regZ;
                 f.cw.dbus_src := rf_o;
-                f.cw.pc_rdl := '1';
+                f.cw.pc_rdl := '1'; -- priority above pc_rd
             when t3 =>
                 f.cw.pc_rdh := '1';
                 f.ct.cycle_end := '1';
@@ -365,54 +365,6 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end ex;
-
-    function ex_de_hl(state : state_t; f_in : id_frame_t)
-    return id_frame_t is variable f : id_frame_t; begin
-        f := f_in;
-        -- NOTE takes an extra mcycle compared to actual z80
-        case state.m is
-        when m1 =>
-            case state.t is
-            when t4 => -- HL -> tmpa
-                f.cw.rf_addr := regHL;
-                f.cw.abus_src := rf_o;
-                f.cw.addr_op := none;
-                f.cw.tmpa_rd := '1';
-                f.ct.cycle_end := '1';
-            when others => null; end case;
-        when m2 =>
-            case state.t is
-            when t1 => -- tmpa -> WZ
-                f.cw.abus_src := tmpa_o;
-                f.cw.rf_addr := regWZ;
-                f.cw.addr_op := none;
-                f.cw.rf_rda := '1';
-            when t2 => -- DE -> tmpa
-                f.cw.rf_addr := regDE;
-                f.cw.abus_src := rf_o;
-                f.cw.addr_op := none;
-                f.cw.tmpa_rd := '1';
-            when t3 => -- tmpa -> HL
-                f.cw.abus_src := tmpa_o;
-                f.cw.rf_addr := regHL;
-                f.cw.addr_op := none;
-                f.cw.rf_rda := '1';
-            when t4 => -- WZ -> tmpa
-                f.cw.rf_addr := regWZ;
-                f.cw.abus_src := rf_o;
-                f.cw.addr_op := none;
-                f.cw.tmpa_rd := '1';
-            when t5 => -- tmpa -> DE
-                f.cw.abus_src := tmpa_o;
-                f.cw.rf_addr := regDE;
-                f.cw.addr_op := none;
-                f.cw.rf_rda := '1';
-                f.ct.cycle_end := '1';
-                f.ct.instr_end := '1';
-            when others => null; end case;
-        when others => null; end case;
-        return f;
-    end ex_de_hl;
 
     function alu_a_r(state : state_t; f_in : id_frame_t;
                      op : instr_t; reg : integer range 0 to 15)
@@ -2603,7 +2555,7 @@ begin
                     when 2 => f := out_n_a(state, f);
                     when 3 => f := in_a_n(state, f);
                     when 4 => f := ex_spx_rp(state, f, regHL);
-                    when 5 => f := ex_de_hl(state, f);
+                    when 5 => f := ex(state, f, dehl);
                     when 6 => f := si(state, f, '0');
                     when 7 => f := si(state, f, '1');
                     end case;
