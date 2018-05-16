@@ -162,8 +162,9 @@ architecture arch of comp is
 
     -- debug
     type run_mode_t is (normal, step_i, step_m, step_t);
+    type break_sel_t is (br_wr, br_rd, br_ex, br_no);
     signal run_mode : run_mode_t;
-    signal brk_on_addr, brk_on_int : std_logic;
+    signal break_sel : break_sel_t;
     signal disable_int : std_logic;
     signal cpu_stop, cpu_ce : std_logic;
     signal sp_s, sp_q, sp_op : std_logic;
@@ -204,9 +205,11 @@ begin
                     normal when others;
     overclock <= sw(3);
     disable_int <= sw(2);
-    brk_on_int <= sw(1);
-    brk_on_addr <= sw(0);
-
+    with sw(1 downto 0) select
+        break_sel <= br_wr when "11",
+                     br_rd when "10",
+                     br_ex when "01",
+                     br_no when others;
     -- cpu step / break
     step_op : process(clk) begin
         if rising_edge(clk) then
@@ -221,8 +224,10 @@ begin
         (bool_sl(run_mode = step_t) or
         (bool_sl(run_mode = step_m) and dbg.z80.cycle_start) or
         (bool_sl(run_mode = step_i) and dbg.z80.instr_start) or
-        (dbg.z80.int_start and brk_on_int) or
-        (bool_sl(addr = break_addr) and mem_rd and cbo.m1 and brk_on_addr));
+        (bool_sl(addr = break_addr) and
+       ((bool_sl(break_sel = br_wr) and mem_wr) or
+        (bool_sl(break_sel = br_rd) and mem_rd and not cbo.m1) or
+        (bool_sl(break_sel = br_ex) and mem_rd and cbo.m1))));
 
     -- generate clocks
     gen_1000hz : clkgen generic map(DIV_1000HZ)
