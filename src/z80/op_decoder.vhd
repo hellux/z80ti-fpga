@@ -469,11 +469,12 @@ architecture arch of op_decoder is
     end alu_a_n;
 
     function alu_r(state : state_t; f_in : id_frame_t;
-                   op : instr_t; reg : integer range 0 to 15)
+                   op : instr_t; bs : integer range 0 to 7;
+                   reg : integer range 0 to 7)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
-        case state.m is
-        when m1 => 
+        case state.m is 
+        when m1 =>
             case state.t is
             when t4 =>
                 f.cw.rf_addr := reg;
@@ -483,6 +484,7 @@ architecture arch of op_decoder is
                 f.ct.instr_end := '1';
             when t2 => -- after, during overlap
                 f.cw.alu_op := op;
+                f.cw.alu_bs := bs;
                 f.cw.dbus_src := alu_o;
                 f.cw.f_rd := '1';
                 f.cw.rf_addr := reg;
@@ -525,7 +527,8 @@ architecture arch of op_decoder is
     end alu_a_rpx;
 
     function alu_rpx(state : state_t; f_in : id_frame_t;
-                     op : instr_t; reg : integer range 0 to 15)
+                     op : instr_t; bs : integer range 0 to 7;
+                     reg : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -544,6 +547,7 @@ architecture arch of op_decoder is
                 f.cw.tmp_rd := '1';
             when t4 =>
                 f.cw.alu_op := op;
+                f.cw.alu_bs := bs;
                 f.cw.dbus_src := alu_o;
                 f.cw.f_rd := '1';
                 f.cw.data_rdo := '1';
@@ -640,72 +644,6 @@ architecture arch of op_decoder is
         when others => null; end case;
         return f;
     end alu_rp_rp;
-
-    function bit_r(state : state_t; f_in : id_frame_t;
-                   op : instr_t; bs : integer range 0 to 7;
-                   reg : integer range 0 to 7)
-    return id_frame_t is variable f : id_frame_t; begin
-        f := f_in;
-        case state.m is 
-        when m1 =>
-            case state.t is
-            when t4 =>
-                f.cw.rf_addr := reg;
-                f.cw.dbus_src := rf_o;
-                f.cw.tmp_rd := '1';
-                f.ct.cycle_end := '1';
-                f.ct.instr_end := '1';
-            when t2 => -- after, during overlap
-                f.cw.alu_op := op;
-                f.cw.alu_bs := bs;
-                f.cw.dbus_src := alu_o;
-                f.cw.f_rd := '1';
-                f.cw.rf_addr := reg;
-                f.cw.rf_rdd := '1';
-            when others => null; end case;
-        when others => null; end case;
-        return f;
-    end bit_r;
-
-    function bit_hlx(state : state_t; f_in : id_frame_t;
-                     op : instr_t; bs : integer range 0 to 7)
-    return id_frame_t is variable f : id_frame_t; begin
-        f := f_in;
-        case state.m is
-        when m1 =>
-            case state.t is
-            when t4 =>
-                f.ct.cycle_end := '1';
-            when others => null; end case;
-        when m2 => -- (hl) -> alu -> dbufo
-            f := mem_rd(state, f);
-            case state.t is
-            when t1 =>
-                f.cw.rf_addr := regHL;
-                f.cw.abus_src := rf_o;
-            when t3 =>
-                f.cw.tmp_rd := '1';
-            when t4 =>
-                f.cw.alu_op := op;
-                f.cw.alu_bs := bs;
-                f.cw.f_rd := '1';
-                f.cw.dbus_src := alu_o;
-                f.cw.data_rdo := '1';
-                f.ct.cycle_end := '1';
-            when others => null; end case;
-        when m3 => -- dbufo -> (hl)
-            f := mem_wr(state, f);
-            case state.t is
-            when t1 =>
-                f.cw.rf_addr := regHL;
-                f.cw.abus_src := rf_o;
-            when t3 =>
-                f.ct.cycle_end := '1';
-                f.ct.instr_end := '1';
-            when others => null; end case;
-        when others => null; end case;
-        return f;
-    end bit_hlx;
 
     function bit_xy_d(state : state_t; f_in : id_frame_t;
                       op : instr_t; bs : integer range 0 to 7;
@@ -2610,13 +2548,13 @@ begin
                     end case;
                 when 4 => 
                     case s.y is
-                    when 6 => f := alu_rpx(state, f, inc_i, regHL);
-                    when others => f := alu_r(state, f, inc_i, s.y);
+                    when 6 => f := alu_rpx(state, f, inc_i, 0, regHL);
+                    when others => f := alu_r(state, f, inc_i, 0, s.y);
                     end case;
                 when 5 =>
                     case s.y is
-                    when 6 => f := alu_rpx(state, f, dec_i, regHL);
-                    when others => f := alu_r(state, f, dec_i, s.y);
+                    when 6 => f := alu_rpx(state, f, dec_i, 0, regHL);
+                    when others => f := alu_r(state, f, dec_i, 0, s.y);
                     end case;
                 when 6 =>
                     case s.y is
@@ -2741,17 +2679,17 @@ begin
             case s.z is
             when 6 =>
                 case s.x is
-                when 0 => f := bit_hlx(state, f, rot(s.y), 0);
-                when 1 => f := bit_hlx(state, f, bit_i, s.y);
-                when 2 => f := bit_hlx(state, f, res_i, s.y);
-                when 3 => f := bit_hlx(state, f, set_i, s.y);
+                when 0 => f := alu_rpx(state, f, rot(s.y), 0, regHL);
+                when 1 => f := alu_rpx(state, f, bit_i, s.y, regHL);
+                when 2 => f := alu_rpx(state, f, res_i, s.y, regHL);
+                when 3 => f := alu_rpx(state, f, set_i, s.y, regHL);
                 end case;
             when others =>
                 case s.x is
-                when 0 => f := bit_r(state, f, rot(s.y), 0, s.z);
-                when 1 => f := bit_r(state, f, bit_i, s.y, s.z);
-                when 2 => f := bit_r(state, f, res_i, s.y, s.z);
-                when 3 => f := bit_r(state, f, set_i, s.y, s.z);
+                when 0 => f := alu_r(state, f, rot(s.y), 0, s.z);
+                when 1 => f := alu_r(state, f, bit_i, s.y, s.z);
+                when 2 => f := alu_r(state, f, res_i, s.y, s.z);
+                when 3 => f := alu_r(state, f, set_i, s.y, s.z);
                 end case;
             end case;
         when ddcb|fdcb =>
@@ -2811,15 +2749,15 @@ begin
                     end case;
                 when 4 =>
                     case s.y is
-                    when 4 => f := alu_r(state, f, inc_i, rxy(xy));
-                    when 5 => f := alu_r(state, f, inc_i, rxy(xy)+1);
+                    when 4 => f := alu_r(state, f, inc_i, 0, rxy(xy));
+                    when 5 => f := alu_r(state, f, inc_i, 0, rxy(xy)+1);
                     when 6 => f := inc_dec_xy_d(state, f, inc_i, rxy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when 5 => 
                     case s.y is
-                    when 4 => f := alu_r(state, f, dec_i, rxy(xy));
-                    when 5 => f := alu_r(state, f, dec_i, rxy(xy)+1);
+                    when 4 => f := alu_r(state, f, dec_i, 0, rxy(xy));
+                    when 5 => f := alu_r(state, f, dec_i, 0, rxy(xy)+1);
                     when 6 => f := inc_dec_xy_d(state, f, dec_i, rxy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
