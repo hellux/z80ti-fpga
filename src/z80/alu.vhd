@@ -25,7 +25,8 @@ architecture arch of alu is
     
     -- flags
     signal half_add, half_sub, half_daa : std_logic;
-    signal overflow, overflow_neg, parity : std_logic;
+    signal daa_c : std_logic;
+    signal overflow, parity : std_logic;
 begin
     -- preprocess
     mask_gen : process(bit_select) is
@@ -39,16 +40,18 @@ begin
     daa_logic : process(op2_ext, flags_in) is
 	    variable res, v : signed(8 downto 0);
     begin
+        daa_c <= '0';
         v := (others => '0');
         if (unsigned(op2_ext(3 downto 0)) > "1001" or flags_in(H_f) = '1') then
-            v := v + "000000110";
+            v := v + ('0' & x"06");
         end if;
         res := op2_ext + v;
         if (unsigned(res(7 downto 4)) > "1001"
             or res(8) = '1'
             or flags_in(C_f) = '1')
         then
-            v := v + "001100000";
+            v := v + ('0' & x"60");
+            daa_c <= '1';
         end if;
         if flags_in(N_f) = '1' then
             v := -v;
@@ -56,6 +59,13 @@ begin
         daa_v <= v;
     end process;
 
+    with op select op1_ext <=
+        to_signed(1, 9)     when inc_i,
+        to_signed(-1, 9)    when dec_i,
+        to_signed(0, 9)     when neg_i,
+        daa_v               when daa_i,
+        signed('0' & op1)   when others;
+    op2_ext <= signed('0' & op2);
     with op select edge <=
         '0'             when sla_i|srl_i,
         '1'             when sll_i, -- undoc odd case
@@ -63,13 +73,6 @@ begin
         op2(0)          when rrc_i|rrca_i,
         op2(7)          when rlc_i|rlca_i|sra_i,
         '-'             when others;
-    with op select op1_ext <=
-        to_signed(1, 9)     when inc_i,
-        to_signed(-1, 9)    when dec_i,
-        to_signed(0, 9)     when neg_i,
-	    daa_v		        when daa_i,
-        signed('0' & op1)   when others;
-        op2_ext <= signed('0' & op2);
     with op select op2sn <=
         signed('0' & (not mask and op2))        when res_i,
         signed('0' & (mask or op2))             when set_i,
@@ -127,7 +130,6 @@ begin
         (op1_ext(7) xor op2_ext(7)) and (op1_ext(7) xor result_sum(7))
             when sub_i|sbc_i|cp_i|sbc16_i2,
         '-' when others;
-    overflow_neg <= '1' when op2 = x"80" else '0';
     half_add <= result_buf(4) xor op1_ext(4) xor op2sn(4);
     half_sub <= result_buf(4) xor op1_ext(4) xor op2_ext(4);
     with flags_in(N_f) select half_daa <=
@@ -182,17 +184,17 @@ begin
     flags_out(f3_f) <= result_buf(3);
 
     with op select flags_out(PV_f) <=
-        overflow        when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i|
-                             adc16_i2|sbc16_i2,
-        overflow_neg    when neg_i,
-        parity          when and_i|or_i|xor_i|bit_i|res_i|
-                             rlc_i|rl_i|sla_i|sll_i|
-                             rrc_i|rr_i|sra_i|srl_i|
-                             daa_i|in_i|rld_i2|rrd_i2,
-        flags_in(PV_f)  when add16_i1|add16_i2|
-                             rlca_i|rrca_i|rla_i|rra_i|
-                             unknown,
-        flags_in(PV_f)  when others;
+        overflow             when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i|
+                                  adc16_i2|sbc16_i2,
+        bool_sl(op2 = x"80") when neg_i,
+        parity               when and_i|or_i|xor_i|bit_i|res_i|
+                                  rlc_i|rl_i|sla_i|sll_i|
+                                  rrc_i|rr_i|sra_i|srl_i|
+                                  daa_i|in_i|rld_i2|rrd_i2,
+        flags_in(PV_f)       when add16_i1|add16_i2|
+                                  rlca_i|rrca_i|rla_i|rra_i|
+                                  unknown,
+        flags_in(PV_f)       when others;
 
     with op select flags_out(N_f) <=
         '1'             when sub_i|sbc_i|cp_i|neg_i|cpl_i|
@@ -207,9 +209,10 @@ begin
 
     with op select flags_out(C_f) <=
         '0'                 when and_i|or_i|xor_i,
-        result_sum(8)       when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|daa_i|
+        result_sum(8)       when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|
                                  add16_i1|add16_i2|adc16_i1|adc16_i2|
                                  sbc16_i1|sbc16_i2,
+        daa_c               when daa_i,
         op2(7)              when rlc_i|rl_i|sla_i|sll_i|rlca_i|rla_i,
         op2(0)              when rrc_i|rr_i|sra_i|srl_i|rrca_i|rra_i,
         '1'                 when scf_i,
