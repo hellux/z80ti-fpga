@@ -100,7 +100,6 @@ begin
         op1 and op2                              when and_i,
         op1 xor op2                              when xor_i,
         op1 or  op2                              when or_i,
-        not(op2)                                 when cpl_i,
         std_logic_vector(result_sum(7 downto 0)) when add_i|adc_i|
                                                       sub_i|sbc_i|
                                                       inc_i|dec_i|
@@ -112,6 +111,7 @@ begin
                                                       sbc16_i1|sbc16_i2,
         std_logic_vector(op2sn(7 downto 0))      when others;
     with op select result <=
+        not(op2)   when cpl_i,
         op1        when cp_i|cpi_i|cpd_i|cpir_i|cpdr_i,
         result_buf when others;
 
