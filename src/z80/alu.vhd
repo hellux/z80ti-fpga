@@ -82,7 +82,8 @@ begin
                                                      cpi_i|cpir_i|
                                                      cpd_i|cpdr_i,
         -op2_ext - ("00000000" & flags_in(C_f)) when sbc_i|sbc16_i1|sbc16_i2,
-         op2_ext + ("00000000" & flags_in(C_f)) when adc_i|add16_i2|adc16_i2,
+         op2_ext + ("00000000" & flags_in(C_f)) when adc_i|add16_i2|
+                                                     adc16_i1|adc16_i2,
         '0' & op2_ext(6 downto 0) & edge        when rlc_i|rl_i|sla_i|sll_i|
                                                      rlca_i|rla_i,
         '0' & edge & op2_ext(7 downto 1)        when rrc_i|rr_i|sra_i|srl_i|
