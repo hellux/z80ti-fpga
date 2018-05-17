@@ -664,7 +664,7 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
-        when m1 => -- store displaced addr to tmpa
+        when m1 => -- tmp + reg -> tmpa
             case state.t is
             when t4 =>
                 f.cw.rf_addr := reg;
@@ -675,7 +675,7 @@ architecture arch of op_decoder is
             when t5 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m2 => -- fetch byte to tmp, located at displaced addr
+        when m2 => -- (tmpa) -> tmp
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
@@ -685,7 +685,7 @@ architecture arch of op_decoder is
             when t4 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m3 => -- perform bit op, write res to mem
+        when m3 => -- alu -> (tmpa)
             f := mem_wr(state, f);
             case state.t is
             when t1 =>
@@ -2710,7 +2710,7 @@ begin
                 when others =>
                     f := unimp(state, f, instr, "ld r[z], rot[y] (IX/Y+d)");
                 end case;
-            when 1 => f := bit_xy_d(state, f, bit_i, 0, rxy(xy));
+            when 1 => f := bit_xy_d(state, f, bit_i, s.y, rxy(xy));
             when 2 =>
                 case s.z is
                 when 6 => f := bit_xy_d(state, f, res_i, s.y, rxy(xy));
