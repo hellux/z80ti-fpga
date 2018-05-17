@@ -19,7 +19,7 @@ begin
         end if;
     end process;
 
-    clk_out <= '1' when clk_div = 0 else '0';
+    clk_out <= '1' when clk_div = div-1 else '0';
 end arch;
 
 library ieee;
@@ -47,5 +47,5 @@ begin
         end if;
     end process;
 
-    clk_out <= '1' when clk_div = 0 and clk_in = '1' else '0';
+    clk_out <= '1' when clk_div = div-1 and clk_in = '1' else '0';
 end arch;
