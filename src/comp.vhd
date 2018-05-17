@@ -232,14 +232,14 @@ begin
         end if;
     end process;
     sp_op <= sp_s and not sp_q;
-    cpu_stop <= not stop and not sp_op and 
+    cpu_stop <= stop or (not sp_op and 
         (bool_sl(run_mode = step_t) or
         (bool_sl(run_mode = step_m) and dbg.z80.cycle_start) or
         (bool_sl(run_mode = step_i) and dbg.z80.instr_start) or
         (bool_sl(addr = break_addr) and
        ((bool_sl(break_sel = br_wr) and mem_wr) or
         (bool_sl(break_sel = br_rd) and mem_rd and not cbo.m1) or
-        (bool_sl(break_sel = br_ex) and mem_rd and cbo.m1))));
+        (bool_sl(break_sel = br_ex) and mem_rd and cbo.m1)))));
     -- control chip enable
     clk_z80_ce <= clk_z80 and not cpu_stop;
     clk_ti_ce <= clk_ti and not cpu_stop;
