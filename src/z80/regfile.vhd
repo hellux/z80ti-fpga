@@ -38,17 +38,25 @@ end regfile;
 
 architecture arch of regfile is
     type rf_ram_t is array(0 to 23) of std_logic_vector(7 downto 0);
-    type rf_swap_state_t is record reg, af : std_logic; end record;
+    type rf_swap_state_t is record
+        reg, af : std_logic;
+        dehl : std_logic_vector(1 downto 0);
+    end record;
 
     function baddr(reg_addr : integer;
                    s : rf_swap_state_t)
     return integer
     is
+        variable reg_i : integer range 0 to 1;
         variable r, w_vec : std_logic_vector(3 downto 0);
         variable hl : std_logic;
     begin
+        if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
         r := std_logic_vector(to_unsigned(reg_addr, 4));
-        if r(3) = '0' and r(2 downto 1) /= "11" then
+
+        if r(3) = '0' and r(2 downto 1) /= "11" and s.dehl(reg_i) = '1' then
+            w_vec := '0' & r(1) & r(2) & s.reg;
+        elsif r(3) = '0' and r(2 downto 1) /= "11" then
             w_vec := r(3 downto 1) & s.reg;
         elsif r(3) = '0' then
             w_vec := "011" & s.af;
@@ -91,7 +99,6 @@ architecture arch of regfile is
         elsif rda = '1' then
             new_ram(baddr(reg_addr, s)) := addr(15 downto 8);
             new_ram(baddr(reg_addr+1, s)) := addr(7 downto 0);
-            -- breaks when reg is AF (should not be used anyway)
         end if;
         if rdf = '1' then
             new_ram(baddr(regF, s)) := f;
@@ -99,18 +106,24 @@ architecture arch of regfile is
         return new_ram;
     end next_ram;
 
+    constant RF_SWAP_INIT : rf_swap_state_t := ('0', '0', "00");
     signal ram, ram_next : rf_ram_t := (others => x"ff");
-    signal s : rf_swap_state_t := (others => '0');
+    signal s : rf_swap_state_t := RF_SWAP_INIT;
 begin
-    swap_proc : process(clk) begin
+    swap_proc : process(clk)
+        variable reg_i : integer range 0 to 1;
+    begin
+        if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
+
         if rising_edge(clk) then
             if rst = '1' then
-                s <= (others => '0');
+                s <= RF_SWAP_INIT;
             elsif ce = '1' then
                 case swp is
                 when none => null;
                 when reg  => s.reg  <= not s.reg;
                 when af   => s.af   <= not s.af;
+                when dehl => s.dehl(reg_i) <= not s.dehl(reg_i);
                 when others => null;
                 end case;
             end if;
