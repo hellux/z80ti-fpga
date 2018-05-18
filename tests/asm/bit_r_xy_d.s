@@ -48,6 +48,11 @@ ld a, (0xd5)
 cp 0x0f
 jp nz, fail
 
+bit 0, (ix+0x10)
+jp z, fail
+bit 4, (ix+0x10)
+jp nz, fail
+
 success:
 ld a, 0xcc
 halt

@@ -1536,7 +1536,7 @@ architecture arch of op_decoder is
         return f;
     end ld_xy_d_n;
     
-    function inc_dec_xy_d(state : state_t; f_in : id_frame_t;
+    function alu_xy_d(state : state_t; f_in : id_frame_t;
                         op : instr_t; rp : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
@@ -1546,8 +1546,7 @@ architecture arch of op_decoder is
             when t4 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m2 =>
-            --Fetch displacement
+        when m2 => -- d -> tmp, z
             f := mem_rd_pc(state, f);
             case state.t is
             when t3 =>
@@ -1556,32 +1555,28 @@ architecture arch of op_decoder is
                 f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m3 =>
+        when m3 => -- (ix/y+tmp) -> tmp, alu -> w, z -> tmp
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
-                --Fetch value of (ix/y + d)
                 f.cw.dbus_src := tmp_o; 
                 f.cw.rf_addr := rp;
                 f.cw.abus_src := dis_o;
             when t3 =>
                 f.cw.tmp_rd := '1';
             when t4 =>
-                --Perform inc/dec
                 f.cw.alu_op := op;
                 f.cw.dbus_src := alu_o;
                 f.cw.rf_addr := regW;
                 f.cw.rf_rdd := '1';
                 f.cw.f_rd := '1';
             when t5 =>
-                --Move displacement Z => tmp
                 f.cw.rf_addr := regZ;
                 f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m4 =>
-            --Write N to IXY + d
+        when m4 => -- w -> (ix/y+tmp)
             f := mem_wr(state, f);
             case state.t is
             when t1 =>   
@@ -1603,12 +1598,11 @@ architecture arch of op_decoder is
             when others => null; end case;
         when others => null; end case;
         return f;
-    end inc_dec_xy_d;
+    end alu_xy_d;
 
     
     function alu_a_xy_d(state : state_t; f_in : id_frame_t; 
-                        op : instr_t;
-                        rp : integer range 0 to 15)
+                        op : instr_t; rp : integer range 0 to 15)
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -2734,21 +2728,29 @@ begin
                     end case;
                 when 3 =>
                     case s.q is
-                    when 0 => f := inc_dec_rp(state, f, inc, ixy(xy));
-                    when 1 => f := inc_dec_rp(state, f, dec, ixy(xy));
+                    when 0 =>
+                        case s.p is
+                        when 2 => f := inc_dec_rp(state, f, inc, ixy(xy));
+                        when others => f := noni(state, f, instr);
+                        end case;
+                    when 1 =>
+                        case s.p is
+                        when 2 => f := inc_dec_rp(state, f, dec, ixy(xy));
+                        when others => f := noni(state, f, instr);
+                        end case;
                     end case;
                 when 4 =>
                     case s.y is
                     when 4 => f := alu_r(state, f, inc_i, ixy(xy));
                     when 5 => f := alu_r(state, f, inc_i, ixy(xy)+1);
-                    when 6 => f := inc_dec_xy_d(state, f, inc_i, ixy(xy));
+                    when 6 => f := alu_xy_d(state, f, inc_i, ixy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when 5 => 
                     case s.y is
                     when 4 => f := alu_r(state, f, dec_i, ixy(xy));
                     when 5 => f := alu_r(state, f, dec_i, ixy(xy)+1);
-                    when 6 => f := inc_dec_xy_d(state, f, dec_i, ixy(xy));
+                    when 6 => f := alu_xy_d(state, f, dec_i, ixy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when 6 =>
