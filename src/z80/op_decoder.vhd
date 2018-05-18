@@ -2717,8 +2717,7 @@ begin
                         when others => f := noni(state, f, instr);
                         end case;
                     when 1 => f := alu_rp_rp(state, f, add16_i1, add16_i2,
-                                             ixy(xy), rp(s.p));
-                                             --TODO reg 2 should be ix/iy
+                                             ixy(xy), rp_xy(xy, s.p));
                     end case;
                 when 2 =>
                     case s.q is
