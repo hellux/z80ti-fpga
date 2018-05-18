@@ -160,7 +160,8 @@ architecture arch of comp is
     signal break_addr : std_logic_vector(15 downto 0);
 
     -- clocks / enables
-    signal clk_6mhz, clk_15mhz, clk_25mhz, clk_33mhz, clk_50mhz : std_logic;
+    signal clk_6mhz, clk_25mhz, clk_50mhz : std_logic;
+    signal clk_10khz, clk_1mhz, clk_15mhz : std_logic;
     signal clk_z80, clk_ti, clk_vga : std_logic;
     signal clk_z80_ce, clk_ti_ce : std_logic;
     signal cpu_stop : std_logic;
@@ -207,18 +208,19 @@ begin
                      br_no when others;
 
     -- generate clocks
+    gen_10khz : clkgen generic map(DIV_10KHZ) port map(clk, clk_10khz);
+    gen_1mhz  : clkgen generic map(DIV_1MHZ)  port map(clk, clk_1mhz);
     gen_6mhz  : clkgen generic map(DIV_6MHZ)  port map(clk, clk_6mhz);
     gen_15mhz : clkgen generic map(DIV_15MHZ) port map(clk, clk_15mhz);
     gen_25mhz : clkgen generic map(DIV_25MHZ) port map(clk, clk_25mhz);
-    gen_33mhz : clkgen generic map(DIV_33MHZ) port map(clk, clk_33mhz);
     gen_50mhz : clkgen generic map(DIV_50MHZ) port map(clk, clk_50mhz);
 
     -- map clocks
     with cpu_freq select
         clk_z80 <= clk_6mhz  when "00",
                    clk_15mhz when "01",
-                   clk_25mhz when "10",
-                   clk_33mhz when others;
+                   clk_1mhz when "10",
+                   clk_10khz when others;
     clk_ti <= clk_50mhz;
     clk_vga <= clk_25mhz;
 
@@ -232,14 +234,14 @@ begin
         end if;
     end process;
     sp_op <= sp_s and not sp_q;
-    cpu_stop <= not stop and not sp_op and 
+    cpu_stop <= stop or (not sp_op and 
         (bool_sl(run_mode = step_t) or
         (bool_sl(run_mode = step_m) and dbg.z80.cycle_start) or
         (bool_sl(run_mode = step_i) and dbg.z80.instr_start) or
         (bool_sl(addr = break_addr) and
        ((bool_sl(break_sel = br_wr) and mem_wr) or
         (bool_sl(break_sel = br_rd) and mem_rd and not cbo.m1) or
-        (bool_sl(break_sel = br_ex) and mem_rd and cbo.m1))));
+        (bool_sl(break_sel = br_ex) and mem_rd and cbo.m1)))));
     -- control chip enable
     clk_z80_ce <= clk_z80 and not cpu_stop;
     clk_ti_ce <= clk_ti and not cpu_stop;

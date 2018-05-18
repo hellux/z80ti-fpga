@@ -470,6 +470,13 @@ begin
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"00", rrd_i2, 0, "11010011", "01-0-101", x"00");
 
+        report "add16";
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"1e", x"1e", add16_i1, 0, "11010011", "11---000", x"3c");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"00", add16_i2, 0, "11010000", "11---000", x"00");
+
         assert false report "TB COMPLETE" severity failure;
+
      end process;
  end arch;

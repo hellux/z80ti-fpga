@@ -553,15 +553,15 @@ architecture arch of op_decoder is
             when others => null; end case;
         when m2 =>
             case state.t is
-            when t1 =>
+            when t1 => -- l1 -> act
                 f.cw.rf_addr := reg1 + 1;
                 f.cw.dbus_src := rf_o;
                 f.cw.act_rd_dbus := '1';
-            when t2 =>
+            when t2 => -- l2 -> tmp
                 f.cw.rf_addr := reg2 + 1;
                 f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';     
-            when t4 =>
+            when t4 => -- alu -> l1
                 f.cw.alu_op := op1;
                 f.cw.dbus_src := alu_o;
                 f.cw.rf_addr := reg1 + 1;
@@ -571,15 +571,15 @@ architecture arch of op_decoder is
             when others => null; end case;
         when m3 =>
             case state.t is
-            when t1 =>
+            when t1 => -- h1 -> act
                 f.cw.rf_addr := reg1;
                 f.cw.dbus_src := rf_o;
                 f.cw.act_rd_dbus := '1';
-            when t2 =>
+            when t2 => -- h2 -> act
                 f.cw.rf_addr := reg2;
                 f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';     
-            when t3 =>
+            when t3 => -- alu -> h1
                 f.cw.alu_op := op2;
                 f.cw.dbus_src := alu_o;
                 f.cw.rf_addr := reg1;

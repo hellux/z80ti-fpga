@@ -6,6 +6,8 @@ use work.ti_comm.all;
 package cmp_comm is
     constant SYS_FREQ : integer := 100*10**6;
 
+    constant DIV_10KHZ : integer := 10000;
+    constant DIV_1MHZ : integer := 100;
     constant DIV_6MHZ : integer := 17;
     constant DIV_15MHZ : integer := 7;
     constant DIV_25MHZ : integer := 4;
