@@ -194,6 +194,7 @@ architecture arch of op_decoder is
         f := f_in;
         case state.t is
         when t4 =>
+            f.ct.mode_next := halt;
             f.ct.cycle_end := '1';
             f.ct.instr_end := '1';
         when others => null; end case;
@@ -2414,35 +2415,36 @@ architecture arch of op_decoder is
         return f;
     end im2;
 
-    type bli_row_t is array(0 to 3) of instr_t;
-    type bli_table_t is array(4 to 7) of bli_row_t;
-    type r_table_t is array(0 to 7) of integer range 0 to 15;
-    type rp_table_t is array(0 to 3) of integer range 0 to 15;
-    type alu_table_t is array(0 to 7) of instr_t;
-    type xy_table_t is array(0 to 1) of integer range 0 to 15;
-    type xyhl_table_t is array(0 to 1) of r_table_t;
-    type im_table_t is array(0 to 7) of integer range 0 to 2;
+    type instr_tbl_t is array(integer range <>) of instr_t;
+    type instr_mtx_t is array(integer range <>, integer range <>) of instr_t;
+    type reg_tbl_t is array(integer range <>) of integer range 0 to 15;
+    type reg_mtx_t is array(integer range <>,
+                            integer range <>) of integer range 0 to 15;
+    type im_tbl_t is array(0 to 7) of integer range 0 to 2;
 
-    constant bli4 : bli_row_t := (ldi_i, cpi_i, ini_i, outi_i);
-    constant bli5 : bli_row_t := (ldd_i, cpd_i, ind_i, outd_i);
-    constant bli6 : bli_row_t := (ldir_i, cpir_i, inir_i, otir_i);
-    constant bli7 : bli_row_t := (lddr_i, cpdr_i, indr_i, otdr_i);
-    constant bli : bli_table_t := (bli4, bli5, bli6, bli7);
-    constant rp  : rp_table_t := (regBC, regDE, regHL, regSP);
-    constant rp2 : rp_table_t := (regBC, regDE, regHL, regAF);
-    constant alu : alu_table_t := (add_i, adc_i, sub_i, sbc_i,
-                                   and_i, xor_i, or_i, cp_i);
-    constant rot : alu_table_t := (rlc_i, rrc_i, rl_i, rr_i,
-                                   sla_i, sra_i, sll_i, srl_i);
-    constant afi : alu_table_t := (rlca_i, rrca_i, rla_i, rra_i,
-                                   daa_i, cpl_i, scf_i, ccf_i);
-    constant im : im_table_t := (0, 1, 1, 2, 0, 1, 1, 2);
-    constant rxy : xy_table_t := (regIX, regIY);
-    constant rxhl : r_table_t := (regB, regC, regD, regE,
-                                  regIXh, regIXl, regF, regA);
-    constant ryhl : r_table_t := (regB, regC, regD, regE,
-                                  regIYh, regIYl, regF, regA);
-    constant rxyhl : xyhl_table_t := (rxhl, ryhl);
+    constant bli : instr_mtx_t(4 to 7, 0 to 3) :=
+        ((ldi_i,  cpi_i,  ini_i,  outi_i),
+         (ldd_i,  cpd_i,  ind_i,  outd_i),
+         (ldir_i, cpir_i, inir_i, otir_i),
+         (lddr_i, cpdr_i, indr_i, otdr_i));
+    constant alu : instr_tbl_t(0 to 7) := (add_i, adc_i, sub_i, sbc_i,
+                                             and_i, xor_i, or_i, cp_i);
+    constant rot : instr_tbl_t(0 to 7) := (rlc_i, rrc_i, rl_i, rr_i,
+                                             sla_i, sra_i, sll_i, srl_i);
+    constant afi : instr_tbl_t(0 to 7) := (rlca_i, rrca_i, rla_i, rra_i,
+                                             daa_i, cpl_i, scf_i, ccf_i);
+
+    constant rp  : reg_tbl_t(0 to 3) := (regBC, regDE, regHL, regSP);
+    constant rp2 : reg_tbl_t(0 to 3) := (regBC, regDE, regHL, regAF);
+    constant ixy : reg_tbl_t(0 to 1) := (regIX, regIY);
+    constant r_xy : reg_mtx_t(0 to 1, 0 to 7) :=
+        ((regB, regC, regD, regE, regIXh, regIXl, regF, regA),
+         (regB, regC, regD, regE, regIYh, regIYl, regF, regA));
+    constant rp_xy : reg_mtx_t(0 to 1, 0 to 3) :=
+        ((regBC, regDE, regIX, regSP),
+         (regBC, regDE, regIY, regSP));
+
+    constant im : im_tbl_t := (0, 1, 1, 2, 0, 1, 1, 2);
 
     --     | p | |q|
     -- |1 0|0 0| |0|1 1 1|
@@ -2681,7 +2683,7 @@ begin
                 end case;
             when 2 =>
                 case s.y is
-                when 4|5|6|7 => f := bli_op(state, f, bli(s.y)(s.z));
+                when 4|5|6|7 => f := bli_op(state, f, bli(s.y, s.z));
                 when others => f := noni(state, f, instr);
                 end case;
             when 0|3 => f := noni(state, f, instr); end case;
@@ -2702,28 +2704,6 @@ begin
                 when 3 => f := bit_r(state, f, set_i, s.y, s.z);
                 end case;
             end case;
-        when ddcb|fdcb =>
-            case s.x is
-            when 0 =>
-                case s.z is
-                when 6 => f := bit_xy_d(state, f, rot(s.y), 0, rxy(xy));
-                when others =>
-                    f := unimp(state, f, instr, "ld r[z], rot[y] (IX/Y+d)");
-                end case;
-            when 1 => f := bit_xy_d(state, f, bit_i, s.y, rxy(xy));
-            when 2 =>
-                case s.z is
-                when 6 => f := bit_xy_d(state, f, res_i, s.y, rxy(xy));
-                when others =>
-                    f := unimp(state, f, instr, "ld r[z], res y, (IX/Y+d)");
-                end case;
-            when 3 =>
-                case s.z is
-                when 6 => f := bit_xy_d(state, f, set_i, s.y, rxy(xy));
-                when others =>
-                    f := unimp(state, f, instr, "ld r[z], set y, (IX/Y+d)");
-                end case;
-            end case;
         when dd|fd =>
             case s.x is
             when 0 =>
@@ -2733,49 +2713,50 @@ begin
                     case s.q is
                     when 0 =>
                         case s.p is
-                        when 2 => f := ld_rp_nn(state, f, rxy(xy));
+                        when 2 => f := ld_rp_nn(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     when 1 => f := alu_rp_rp(state, f, add16_i1, add16_i2,
-                                             rxy(xy), rp(s.p));
+                                             ixy(xy), rp(s.p));
+                                             --TODO reg 2 should be ix/iy
                     end case;
                 when 2 =>
                     case s.q is
                     when 0 => 
                         case s.p is
-                        when 2 => f := ld_nnx_rp(state, f, rxy(xy));
+                        when 2 => f := ld_nnx_rp(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     when 1 =>
                         case s.p is
-                        when 2 => f := ld_rp_nnx(state, f, rxy(xy));
+                        when 2 => f := ld_rp_nnx(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     end case;
                 when 3 =>
                     case s.q is
-                    when 0 => f := inc_dec_rp(state, f, inc, rxy(xy));
-                    when 1 => f := inc_dec_rp(state, f, dec, rxy(xy));
+                    when 0 => f := inc_dec_rp(state, f, inc, ixy(xy));
+                    when 1 => f := inc_dec_rp(state, f, dec, ixy(xy));
                     end case;
                 when 4 =>
                     case s.y is
-                    when 4 => f := alu_r(state, f, inc_i, rxy(xy));
-                    when 5 => f := alu_r(state, f, inc_i, rxy(xy)+1);
-                    when 6 => f := inc_dec_xy_d(state, f, inc_i, rxy(xy));
+                    when 4 => f := alu_r(state, f, inc_i, ixy(xy));
+                    when 5 => f := alu_r(state, f, inc_i, ixy(xy)+1);
+                    when 6 => f := inc_dec_xy_d(state, f, inc_i, ixy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when 5 => 
                     case s.y is
-                    when 4 => f := alu_r(state, f, dec_i, rxy(xy));
-                    when 5 => f := alu_r(state, f, dec_i, rxy(xy)+1);
-                    when 6 => f := inc_dec_xy_d(state, f, dec_i, rxy(xy));
+                    when 4 => f := alu_r(state, f, dec_i, ixy(xy));
+                    when 5 => f := alu_r(state, f, dec_i, ixy(xy)+1);
+                    when 6 => f := inc_dec_xy_d(state, f, dec_i, ixy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when 6 =>
                     case s.y is
-                    when 4 => f := ld_r_n(state, f, rxy(xy));
-                    when 5 => f := ld_r_n(state, f, rxy(xy)+1);
-                    when 6 => f := ld_xy_d_n(state, f, rxy(xy));
+                    when 4 => f := ld_r_n(state, f, ixy(xy));
+                    when 5 => f := ld_r_n(state, f, ixy(xy)+1);
+                    when 6 => f := ld_xy_d_n(state, f, ixy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when 7 => f := noni(state, f, instr);
@@ -2785,20 +2766,20 @@ begin
                 when 6 =>
                     case s.y is
                     when 6 => f := noni(state, f, instr);
-                    when others => f := ld_r_xy_d(state, f, s.y, rxy(xy));
+                    when others => f := ld_r_xy_d(state, f, s.y, ixy(xy));
                     end case;
                 when others => 
                     case s.y is
-                    when 6 => f := ld_xy_d_r(state, f, rxy(xy), s.z);
-                    when others => f := ld_r_r(state, f, rxyhl(xy)(s.y),
-                                               rxyhl(xy)(s.z));
+                    when 6 => f := ld_xy_d_r(state, f, ixy(xy), s.z);
+                    when others => f := ld_r_r(state, f, r_xy(xy, s.y),
+                                               r_xy(xy, s.z));
                     end case;
                 end case;
             when 2 => 
                 case s.z is
-                when 6 => f := alu_a_xy_d(state, f, alu(s.y), rxy(xy));
+                when 6 => f := alu_a_xy_d(state, f, alu(s.y), ixy(xy));
                 when others => f := alu_a_r(state, f, alu(s.y),
-                                            rxyhl(xy)(s.z));
+                                            r_xy(xy, s.z));
                 end case;
             when 3 =>
                 case s.z is
@@ -2806,32 +2787,54 @@ begin
                     case s.q is
                     when 0 =>
                         case s.p is
-                        when 2 => f := pop_rp(state, f, rxy(xy));
+                        when 2 => f := pop_rp(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     when 1 =>
                         case s.p is
-                        when 2 => f := jp_rp(state, f, rxy(xy));
-                        when 3 => f := ld_sp_rp(state, f, rxy(xy));
+                        when 2 => f := jp_rp(state, f, ixy(xy));
+                        when 3 => f := ld_sp_rp(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     end case;
                 when 3 =>
                     case s.y is
                     when 1 => f := mem_rd_xy_d(state, f);
-                    when 4 => f := ex_spx_rp(state, f, rxy(xy));
+                    when 4 => f := ex_spx_rp(state, f, ixy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when 5 =>
                     case s.q is
                     when 0 =>
                         case s.p is
-                        when 2 => f := push_rp(state, f, rxy(xy));
+                        when 2 => f := push_rp(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     when others => f := noni(state, f, instr);
                     end case;
                 when others => f := noni(state, f, instr);
+                end case;
+            end case;
+        when ddcb|fdcb =>
+            case s.x is
+            when 0 =>
+                case s.z is
+                when 6 => f := bit_xy_d(state, f, rot(s.y), 0, ixy(xy));
+                when others =>
+                    f := unimp(state, f, instr, "ld r[z], rot[y] (IX/Y+d)");
+                end case;
+            when 1 => f := bit_xy_d(state, f, bit_i, s.y, ixy(xy));
+            when 2 =>
+                case s.z is
+                when 6 => f := bit_xy_d(state, f, res_i, s.y, ixy(xy));
+                when others =>
+                    f := unimp(state, f, instr, "ld r[z], res y, (IX/Y+d)");
+                end case;
+            when 3 =>
+                case s.z is
+                when 6 => f := bit_xy_d(state, f, set_i, s.y, ixy(xy));
+                when others =>
+                    f := unimp(state, f, instr, "ld r[z], set y, (IX/Y+d)");
                 end case;
             end case;
         end case;
