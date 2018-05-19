@@ -286,7 +286,9 @@ begin
     dbg.cbi <= cbi;
     dbg.cbo <= cbo;
 
-    num_ce <= bool_sl(break_sel = br_ic) and dbg.z80.instr_start;
+    num_ce <= bool_sl(break_sel = br_ic) and
+              dbg.z80.instr_start and
+              clk_z80_ce;
     num_ld <= num_new or sp_op;
     num_sel_cntr : dcntr generic map(x"9d95", 16)
                          port map(clk, '0', clk_z80, num_ce,
