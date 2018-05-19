@@ -165,7 +165,7 @@ architecture arch of comp is
 
     -- break / instruction count number
     signal num_sel, num_curr : std_logic_vector(15 downto 0);
-    signal num_new, num_ce : std_logic;
+    signal num_new, num_ce, num_ld : std_logic;
 
     -- clocks / enables
     signal clk_6mhz, clk_25mhz, clk_50mhz : std_logic;
@@ -246,9 +246,9 @@ begin
         (bool_sl(run_mode = step_t) or
         (bool_sl(run_mode = step_m) and dbg.z80.cycle_start) or
         (bool_sl(run_mode = step_i) and dbg.z80.instr_start) or
+        (bool_sl(break_sel = br_ic) and bool_sl(num_curr = x"0000")) or
         (bool_sl(addr = num_sel) and
        ((bool_sl(break_sel = br_wr) and mem_wr) or
-        (bool_sl(break_sel = br_ic) and bool_sl(num_curr = x"00")) or
         (bool_sl(break_sel = br_ex) and mem_rd and cbo.m1)))));
     -- control chip enable
     clk_z80_ce <= clk_z80 and not cpu_stop;
@@ -287,9 +287,10 @@ begin
     dbg.cbo <= cbo;
 
     num_ce <= bool_sl(break_sel = br_ic) and dbg.z80.instr_start;
+    num_ld <= num_new or sp_op;
     num_sel_cntr : dcntr generic map(x"9d95", 16)
                          port map(clk, rst, clk_z80_ce, num_ce,
-                                  num_new, num_sel, num_curr);
+                                  num_ld, num_sel, num_curr);
     crom : char_rom port map(clk, mon_crom_char, mon_crom_col, mon_crom_row,
                              crom_mon_pixel);
     mon_vga : monitor_vga port map(clk, dbg, vga_mon_x, vga_mon_y,
