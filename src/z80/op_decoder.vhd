@@ -2442,26 +2442,26 @@ architecture arch of op_decoder is
 
     constant im : im_tbl_t := (0, 1, 1, 2, 0, 1, 1, 2);
 
-    --     | p | |q|
-    -- |1 0|0 0| |0|1 1 1|
-    -- | x |   y   |  z  |
-    type id_split_t is record
-        x, p : integer range 0 to 3;
-        y, z : integer range 0 to 7;
-        q : integer range 0 to 1;
-    end record;
 begin
     process(state, instr)
-        variable s : id_split_t;
+        -- instruction split
+        variable x, p : integer range 0 to 3;
+        variable y, z : integer range 0 to 7;
+        variable q : integer range 0 to 1;
+        -- ix/iy instr
         variable xy : integer range 0 to 1;
+        -- control signals frame
         variable f : id_frame_t;
     begin
         -- helper variables
-        s.x := to_integer(unsigned(instr(7 downto 6)));
-        s.y := to_integer(unsigned(instr(5 downto 3)));
-        s.z := to_integer(unsigned(instr(2 downto 0)));
-        s.p := to_integer(unsigned(instr(5 downto 4)));
-        if instr(3) = '1' then s.q := 1; else s.q := 0; end if;
+        --     | p | |q|
+        -- |1 0|0 0| |0|1 1 1|
+        -- | x |   y   |  z  |
+        x := to_integer(unsigned(instr(7 downto 6)));
+        y := to_integer(unsigned(instr(5 downto 3)));
+        z := to_integer(unsigned(instr(2 downto 0)));
+        p := to_integer(unsigned(instr(5 downto 4)));
+        if instr(3) = '1' then q := 1; else q := 0; end if;
         if state.prefix = fd or
            state.prefix = fdcb
         then xy := 1;
@@ -2485,27 +2485,21 @@ begin
                  iff_next => state.iff,
                  others => '0');
 
+        -- m1 cases
         if state.m = m1 then
             f.cb.m1 := '1';
-        end if;
-
-        -- fetch phase
-        case state.mode is
-        when exec => 
-            if state.m = m1 then
+            case state.mode is
+            when exec => -- fetch
                 f := mem_rd_instr(state, f);
-            end if;
-        when interrupt =>
-            case state.m is
-            when m1 =>
+            when interrupt =>
                 case state.t is
-                when t3 => -- nop ir to update prefix
+                when t3 => -- nop ir to update prefix to int
                     f.cw.dbus_src := zero_o;
                     f.cw.ir_rd := '1';
-                when others => end case;
-            when others => end case;
-        when halt => null;
-        end case;
+                when others => null; end case;
+            when halt => null; -- stall
+            end case;
+        end if;
 
         case state.prefix is
         when int =>
@@ -2515,34 +2509,34 @@ begin
             when 2 => f := im2(state, f);
             end case;
         when main =>
-            case s.x is
+            case x is
             when 0 =>
-                case s.z is
+                case z is
                 when 0 =>
-                    case s.y is
+                    case y is
                     when 0 => f := nop(state, f);
                     when 1 => f := ex(state, f, af);
                     when 2 => f := djnz_d(state, f);
                     when 3 => f := jr_d(state, f);
-                    when 4|5|6|7 => f := jr_cc_d(state, f, s.y-4);
+                    when 4|5|6|7 => f := jr_cc_d(state, f, y-4);
                     end case;
                 when 1 =>
-                    case s.q is
-                    when 0 => f := ld_rp_nn(state, f, rp(s.p));
+                    case q is
+                    when 0 => f := ld_rp_nn(state, f, rp(p));
                     when 1 => f := alu_rp_rp(state, f, add16_i1, add16_i2,
-                                             regHL, rp(s.p));
+                                             regHL, rp(p));
                     end case;
                 when 2 =>
-                    case s.q is
+                    case q is
                     when 0 => 
-                        case s.p is
+                        case p is
                         when 0 => f := ld_rpx_r(state, f, regBC, regA);
                         when 1 => f := ld_rpx_r(state, f, regDE, regA);
                         when 2 => f := ld_nnx_rp(state, f, regHL);
                         when 3 => f := ld_nnx_a(state, f);
                         end case;
                     when 1 => 
-                        case s.p is
+                        case p is
                         when 0 => f := ld_r_rpx(state, f, regA, regBC);
                         when 1 => f := ld_r_rpx(state, f, regA, regDE);
                         when 2 => f := ld_rp_nnx(state, f, regHL);
@@ -2550,62 +2544,62 @@ begin
                         end case;
                     end case;
                 when 3 =>
-                    case s.q is
-                    when 0 => f := inc_dec_rp(state, f, inc, rp(s.p));
-                    when 1 => f := inc_dec_rp(state, f, dec, rp(s.p));
+                    case q is
+                    when 0 => f := inc_dec_rp(state, f, inc, rp(p));
+                    when 1 => f := inc_dec_rp(state, f, dec, rp(p));
                     end case;
                 when 4 => 
-                    case s.y is
+                    case y is
                     when 6 => f := alu_rpx(state, f, inc_i, regHL);
-                    when others => f := alu_r(state, f, inc_i, s.y);
+                    when others => f := alu_r(state, f, inc_i, y);
                     end case;
                 when 5 =>
-                    case s.y is
+                    case y is
                     when 6 => f := alu_rpx(state, f, dec_i, regHL);
-                    when others => f := alu_r(state, f, dec_i, s.y);
+                    when others => f := alu_r(state, f, dec_i, y);
                     end case;
                 when 6 =>
-                    case s.y is
+                    case y is
                     when 6 => f := ld_rpx_n(state, f, regHL);
-                    when others => f := ld_r_n(state, f, s.y);
+                    when others => f := ld_r_n(state, f, y);
                     end case;
-                when 7 => f := alu_af(state, f, afi(s.y));
+                when 7 => f := alu_af(state, f, afi(y));
                 end case;
             when 1 =>
-                case s.z is
+                case z is
                 when 6 =>
-                    case s.y is
+                    case y is
                     when 6 => f := halt(state, f);
-                    when others => f := ld_r_rpx(state, f, s.y, regHL);
+                    when others => f := ld_r_rpx(state, f, y, regHL);
                     end case;
                 when others =>
-                    case s.y is
-                    when 6 => f := ld_rpx_r(state, f, regHL, s.z);
-                    when others => f := ld_r_r(state, f, s.y, s.z);
+                    case y is
+                    when 6 => f := ld_rpx_r(state, f, regHL, z);
+                    when others => f := ld_r_r(state, f, y, z);
                     end case;
                 end case;
             when 2 => 
-                case s.z is
-                when 6 => f := alu_a_rpx(state, f, alu(s.y), regHL);
-                when others => f := alu_a_r(state, f, alu(s.y), s.z);
+                case z is
+                when 6 => f := alu_a_rpx(state, f, alu(y), regHL);
+                when others => f := alu_a_r(state, f, alu(y), z);
                 end case;
             when 3 =>
-                case s.z is
-                when 0 => f := ret_cc(state, f, s.y);
+                case z is
+                when 0 => f := ret_cc(state, f, y);
                 when 1 =>
-                    case s.q is
-                    when 0 => f := pop_rp(state, f, rp2(s.p));
+                    case q is
+                    when 0 => f := pop_rp(state, f, rp2(p));
                     when 1 =>
-                        case s.p is
+                        case p is
                         when 0 => f := ret(state, f);
                         when 1 => f := ex(state, f, reg);
                         when 2 => f := jp_rp(state, f, regHL);
                         when 3 => f := ld_sp_rp(state, f, regHL);
                         end case;
                     end case;
-                when 2 => f := jp_cc_nn(state, f, s.y);
+                when 2 => f := jp_cc_nn(state, f, y);
                 when 3 =>
-                    case s.y is
+                    case y is
                     when 0 => f := jp_nn(state, f);
                     when 1 => f := mem_rd_multi(state, f);
                     when 2 => f := out_n_a(state, f);
@@ -2615,59 +2609,59 @@ begin
                     when 6 => f := si(state, f, '0');
                     when 7 => f := si(state, f, '1');
                     end case;
-                when 4 => f := call_cc_nn(state, f, s.y);
+                when 4 => f := call_cc_nn(state, f, y);
                 when 5 =>
-                    case s.q is
-                    when 0 => f := push_rp(state, f, rp2(s.p));
+                    case q is
+                    when 0 => f := push_rp(state, f, rp2(p));
                     when 1 =>
-                        case s.p is
+                        case p is
                         when 0 => f := call_nn(state, f);
                         when 1 => f := mem_rd_multi(state, f);
                         when 2 => f := mem_rd_multi(state, f);
                         when 3 => f := mem_rd_multi(state, f);
                         end case;
                     end case;
-                when 6 => f := alu_a_n(state, f, alu(s.y));
-                when 7 => f := rst(state, f, s.y);
+                when 6 => f := alu_a_n(state, f, alu(y));
+                when 7 => f := rst(state, f, y);
                 end case;
             end case;
         when ed =>
-            case s.x is 
+            case x is 
             when 1 =>
-                case s.z is
+                case z is
                 when 0 =>
-                    case s.y is
+                    case y is
                     when 6 => f := in_c(state, f);
-                    when others => f := in_r_c(state, f, s.y);
+                    when others => f := in_r_c(state, f, y);
                     end case;
                 when 1 =>
-                    case s.y is
+                    case y is
                     when 6 => f := out_c_0(state, f);
-                    when others => f := out_c_r(state, f, s.y);
+                    when others => f := out_c_r(state, f, y);
                     end case;
                 when 2 =>
-                    case s.q is
+                    case q is
                     when 0 => f :=
                         alu_rp_rp(state, f, sbc16_i1, sbc16_i2,
-                                  regHL, rp(s.p));
+                                  regHL, rp(p));
                     when 1 => f :=
                         alu_rp_rp(state, f, adc16_i1, adc16_i2,
-                                  regHL, rp(s.p));
+                                  regHL, rp(p));
                     end case;
                 when 3 =>
-                    case s.q is
-                    when 0 => f := ld_nnx_rp(state, f, rp(s.p));
-                    when 1 => f := ld_rp_nnx(state, f, rp(s.p));
+                    case q is
+                    when 0 => f := ld_nnx_rp(state, f, rp(p));
+                    when 1 => f := ld_rp_nnx(state, f, rp(p));
                     end case;
                 when 4 => f := alu_af(state, f, neg_i);
                 when 5 =>
-                    case s.y is
+                    case y is
                     when 1 => f := ret(state, f); -- RETI int ack unused
                     when others => f := ret(state, f); -- RETN nmi not impl
                     end case;
-                when 6 => f := set_im(state, f, im(s.y));
+                when 6 => f := set_im(state, f, im(y));
                 when 7 =>
-                    case s.y is
+                    case y is
                     when 0 => f := ld_i_a(state, f);
                     when 1 => f := ld_r_a(state, f);
                     when 2 => f := ld_a_i_r(state, f, i_o);
@@ -2678,85 +2672,85 @@ begin
                     end case;
                 end case;
             when 2 =>
-                case s.y is
-                when 4|5|6|7 => f := bli_op(state, f, bli(s.y, s.z));
+                case y is
+                when 4|5|6|7 => f := bli_op(state, f, bli(y, z));
                 when others => f := noni(state, f, instr);
                 end case;
             when 0|3 => f := noni(state, f, instr); end case;
         when cb =>
-            case s.z is
+            case z is
             when 6 =>
-                case s.x is
-                when 0 => f := bit_hlx(state, f, rot(s.y), 0);
-                when 1 => f := bit_hlx(state, f, bit_i, s.y);
-                when 2 => f := bit_hlx(state, f, res_i, s.y);
-                when 3 => f := bit_hlx(state, f, set_i, s.y);
+                case x is
+                when 0 => f := bit_hlx(state, f, rot(y), 0);
+                when 1 => f := bit_hlx(state, f, bit_i, y);
+                when 2 => f := bit_hlx(state, f, res_i, y);
+                when 3 => f := bit_hlx(state, f, set_i, y);
                 end case;
             when others =>
-                case s.x is
-                when 0 => f := bit_r(state, f, rot(s.y), 0, s.z);
-                when 1 => f := bit_r(state, f, bit_i, s.y, s.z);
-                when 2 => f := bit_r(state, f, res_i, s.y, s.z);
-                when 3 => f := bit_r(state, f, set_i, s.y, s.z);
+                case x is
+                when 0 => f := bit_r(state, f, rot(y), 0, z);
+                when 1 => f := bit_r(state, f, bit_i, y, z);
+                when 2 => f := bit_r(state, f, res_i, y, z);
+                when 3 => f := bit_r(state, f, set_i, y, z);
                 end case;
             end case;
         when dd|fd =>
-            case s.x is
+            case x is
             when 0 =>
-                case s.z is
+                case z is
                 when 0 => f := noni(state, f, instr);
                 when 1 =>
-                    case s.q is
+                    case q is
                     when 0 =>
-                        case s.p is
+                        case p is
                         when 2 => f := ld_rp_nn(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     when 1 => f := alu_rp_rp(state, f, add16_i1, add16_i2,
-                                             ixy(xy), rp_xy(xy, s.p));
+                                             ixy(xy), rp_xy(xy, p));
                     end case;
                 when 2 =>
-                    case s.q is
+                    case q is
                     when 0 => 
-                        case s.p is
+                        case p is
                         when 2 => f := ld_nnx_rp(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     when 1 =>
-                        case s.p is
+                        case p is
                         when 2 => f := ld_rp_nnx(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     end case;
                 when 3 =>
-                    case s.q is
+                    case q is
                     when 0 =>
-                        case s.p is
+                        case p is
                         when 2 => f := inc_dec_rp(state, f, inc, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     when 1 =>
-                        case s.p is
+                        case p is
                         when 2 => f := inc_dec_rp(state, f, dec, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     end case;
                 when 4 =>
-                    case s.y is
+                    case y is
                     when 4 => f := alu_r(state, f, inc_i, ixyh(xy));
                     when 5 => f := alu_r(state, f, inc_i, ixyl(xy));
                     when 6 => f := alu_xy_d(state, f, inc_i, ixy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when 5 => 
-                    case s.y is
+                    case y is
                     when 4 => f := alu_r(state, f, dec_i, ixyh(xy));
                     when 5 => f := alu_r(state, f, dec_i, ixyl(xy));
                     when 6 => f := alu_xy_d(state, f, dec_i, ixy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when 6 =>
-                    case s.y is
+                    case y is
                     when 4 => f := ld_r_n(state, f, ixyh(xy));
                     when 5 => f := ld_r_n(state, f, ixyl(xy));
                     when 6 => f := ld_xy_d_n(state, f, ixy(xy));
@@ -2765,68 +2759,68 @@ begin
                 when 7 => f := noni(state, f, instr);
                 end case;
             when 1 =>
-                case s.z is
+                case z is
                 when 6 =>
-                    case s.y is
+                    case y is
                     when 6 => f := noni(state, f, instr);
-                    when others => f := ld_r_xy_d(state, f, s.y, ixy(xy));
+                    when others => f := ld_r_xy_d(state, f, y, ixy(xy));
                     end case;
                 when others => 
-                    case s.y is
+                    case y is
                     when 6 =>
-                        case s.z is
+                        case z is
                         when 6 => f := noni(state, f, instr);
-                        when others => f := ld_xy_d_r(state, f, ixy(xy), s.z);
+                        when others => f := ld_xy_d_r(state, f, ixy(xy), z);
                         end case;
                     when others =>
-                        case s.y is
+                        case y is
                         when 4 => 
-                            f := ld_r_r(state, f, ixyh(xy), r_xy(xy, s.z));
+                            f := ld_r_r(state, f, ixyh(xy), r_xy(xy, z));
                         when 5 =>
-                            f := ld_r_r(state, f, ixyl(xy), r_xy(xy, s.z));
+                            f := ld_r_r(state, f, ixyl(xy), r_xy(xy, z));
                         when others =>
-                            case s.z is
+                            case z is
                             when 4 =>
-                                f := ld_r_r(state, f, r_xy(xy, s.y), ixyh(xy));
+                                f := ld_r_r(state, f, r_xy(xy, y), ixyh(xy));
                             when 5 =>
-                                f := ld_r_r(state, f, r_xy(xy, s.y), ixyl(xy));
+                                f := ld_r_r(state, f, r_xy(xy, y), ixyl(xy));
                             when others => f := noni(state, f, instr);
                             end case;
                         end case;
                     end case;
                 end case;
             when 2 => 
-                case s.z is
-                when 6 => f := alu_a_xy_d(state, f, alu(s.y), ixy(xy));
-                when others => f := alu_a_r(state, f, alu(s.y),
-                                            r_xy(xy, s.z));
+                case z is
+                when 6 => f := alu_a_xy_d(state, f, alu(y), ixy(xy));
+                when others => f := alu_a_r(state, f, alu(y),
+                                            r_xy(xy, z));
                 end case;
             when 3 =>
-                case s.z is
+                case z is
                 when 1 =>
-                    case s.q is
+                    case q is
                     when 0 =>
-                        case s.p is
+                        case p is
                         when 2 => f := pop_rp(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     when 1 =>
-                        case s.p is
+                        case p is
                         when 2 => f := jp_rp(state, f, ixy(xy));
                         when 3 => f := ld_sp_rp(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     end case;
                 when 3 =>
-                    case s.y is
+                    case y is
                     when 1 => f := mem_rd_xy_d(state, f);
                     when 4 => f := ex_spx_rp(state, f, ixy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when 5 =>
-                    case s.q is
+                    case q is
                     when 0 =>
-                        case s.p is
+                        case p is
                         when 2 => f := push_rp(state, f, ixy(xy));
                         when others => f := noni(state, f, instr);
                         end case;
@@ -2836,23 +2830,23 @@ begin
                 end case;
             end case;
         when ddcb|fdcb =>
-            case s.x is
+            case x is
             when 0 =>
-                case s.z is
-                when 6 => f := bit_xy_d(state, f, rot(s.y), 0, ixy(xy));
+                case z is
+                when 6 => f := bit_xy_d(state, f, rot(y), 0, ixy(xy));
                 when others =>
                     f := unimp(state, f, instr, "ld r[z], rot[y] (IX/Y+d)");
                 end case;
-            when 1 => f := bit_xy_d(state, f, bit_i, s.y, ixy(xy));
+            when 1 => f := bit_xy_d(state, f, bit_i, y, ixy(xy));
             when 2 =>
-                case s.z is
-                when 6 => f := bit_xy_d(state, f, res_i, s.y, ixy(xy));
+                case z is
+                when 6 => f := bit_xy_d(state, f, res_i, y, ixy(xy));
                 when others =>
                     f := unimp(state, f, instr, "ld r[z], res y, (IX/Y+d)");
                 end case;
             when 3 =>
-                case s.z is
-                when 6 => f := bit_xy_d(state, f, set_i, s.y, ixy(xy));
+                case z is
+                when 6 => f := bit_xy_d(state, f, set_i, y, ixy(xy));
                 when others =>
                     f := unimp(state, f, instr, "ld r[z], set y, (IX/Y+d)");
                 end case;
