@@ -738,6 +738,7 @@ architecture arch of op_decoder is
                 f.cw.abus_src := rf_o;
             when t2 =>
                 f.cw.alu_op := op2;
+                f.cw.f_rd := '1';
                 f.cw.dbus_src := alu_o;
                 f.cw.rf_addr := regA;  
                 f.cw.rf_rdd := '1';
