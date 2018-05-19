@@ -43,7 +43,6 @@ architecture arch of comp is
         do : out std_logic_vector(bitwidth-1 downto 0));
     end component;
 
-
     component z80 port(
         clk, ce : in std_logic;
         cbi : in ctrlbus_in;
@@ -289,7 +288,7 @@ begin
 
     num_ce <= bool_sl(break_sel = br_ic) and dbg.z80.instr_start;
     num_sel_cntr : dcntr generic map(x"9d95", 16)
-                         port map(clk, rst, '1', num_ce,
+                         port map(clk, rst, clk_z80_ce, num_ce,
                                   num_new, num_sel, num_curr);
     crom : char_rom port map(clk, mon_crom_char, mon_crom_col, mon_crom_row,
                              crom_mon_pixel);
