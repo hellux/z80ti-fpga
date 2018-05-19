@@ -2417,16 +2417,20 @@ architecture arch of op_decoder is
     type im_tbl_t is array(0 to 7) of integer range 0 to 2;
 
     constant bli : instr_mtx_t(4 to 7, 0 to 3) :=
-        ((ldi_i,  cpi_i,  ini_i,  outi_i),
-         (ldd_i,  cpd_i,  ind_i,  outd_i),
-         (ldir_i, cpir_i, inir_i, otir_i),
-         (lddr_i, cpdr_i, indr_i, otdr_i));
-    constant alu : instr_tbl_t(0 to 7) := (add_i, adc_i, sub_i, sbc_i,
-                                             and_i, xor_i, or_i, cp_i);
-    constant rot : instr_tbl_t(0 to 7) := (rlc_i, rrc_i, rl_i, rr_i,
-                                             sla_i, sra_i, sll_i, srl_i);
-    constant afi : instr_tbl_t(0 to 7) := (rlca_i, rrca_i, rla_i, rra_i,
-                                             daa_i, cpl_i, scf_i, ccf_i);
+        ((ldi_i,  cpi_i,  ini_i,  outi_i), (ldd_i,  cpd_i,  ind_i,  outd_i),
+         (ldir_i, cpir_i, inir_i, otir_i), (lddr_i, cpdr_i, indr_i, otdr_i));
+    constant alu : instr_tbl_t(0 to 7) := (add_i, adc_i,
+                                           sub_i, sbc_i,
+                                           and_i, xor_i,
+                                           or_i, cp_i);
+    constant afi : instr_tbl_t(0 to 7) := (rlca_i, rrca_i,
+                                           rla_i,  rra_i,
+                                           daa_i,  cpl_i,
+                                           scf_i,  ccf_i);
+    constant rot : instr_tbl_t(0 to 7) := (rlc_i, rrc_i,
+                                           rl_i,  rr_i,
+                                           sla_i, sra_i,
+                                           sll_i, srl_i);
 
     constant rp  : reg_tbl_t(0 to 3) := (regBC, regDE, regHL, regSP);
     constant rp2 : reg_tbl_t(0 to 3) := (regBC, regDE, regHL, regAF);
@@ -2527,21 +2531,15 @@ begin
                                              regHL, rp(p));
                     end case;
                 when 2 =>
-                    case q is
-                    when 0 => 
-                        case p is
-                        when 0 => f := ld_rpx_r(state, f, regBC, regA);
-                        when 1 => f := ld_rpx_r(state, f, regDE, regA);
-                        when 2 => f := ld_nnx_rp(state, f, regHL);
-                        when 3 => f := ld_nnx_a(state, f);
-                        end case;
-                    when 1 => 
-                        case p is
-                        when 0 => f := ld_r_rpx(state, f, regA, regBC);
-                        when 1 => f := ld_r_rpx(state, f, regA, regDE);
-                        when 2 => f := ld_rp_nnx(state, f, regHL);
-                        when 3 => f := ld_r_nnx(state, f, regA);
-                        end case;
+                    case y is
+                    when 0 => f := ld_rpx_r(state, f, regBC, regA);
+                    when 1 => f := ld_r_rpx(state, f, regA, regBC);
+                    when 2 => f := ld_rpx_r(state, f, regDE, regA);
+                    when 3 => f := ld_r_rpx(state, f, regA, regDE);
+                    when 4 => f := ld_nnx_rp(state, f, regHL);
+                    when 5 => f := ld_rp_nnx(state, f, regHL);
+                    when 6 => f := ld_nnx_a(state, f);
+                    when 7 => f := ld_r_nnx(state, f, regA);
                     end case;
                 when 3 =>
                     case q is
@@ -2616,9 +2614,7 @@ begin
                     when 1 =>
                         case p is
                         when 0 => f := call_nn(state, f);
-                        when 1 => f := mem_rd_multi(state, f);
-                        when 2 => f := mem_rd_multi(state, f);
-                        when 3 => f := mem_rd_multi(state, f);
+                        when 1|2|3 => f := mem_rd_multi(state, f);
                         end case;
                     end case;
                 when 6 => f := alu_a_n(state, f, alu(y));
@@ -2641,12 +2637,10 @@ begin
                     end case;
                 when 2 =>
                     case q is
-                    when 0 => f :=
-                        alu_rp_rp(state, f, sbc16_i1, sbc16_i2,
-                                  regHL, rp(p));
-                    when 1 => f :=
-                        alu_rp_rp(state, f, adc16_i1, adc16_i2,
-                                  regHL, rp(p));
+                    when 0 => f := alu_rp_rp(state, f, sbc16_i1, sbc16_i2,
+                                             regHL, rp(p));
+                    when 1 => f := alu_rp_rp(state, f, adc16_i1, adc16_i2,
+                                             regHL, rp(p));
                     end case;
                 when 3 =>
                     case q is
@@ -2654,11 +2648,7 @@ begin
                     when 1 => f := ld_rp_nnx(state, f, rp(p));
                     end case;
                 when 4 => f := alu_af(state, f, neg_i);
-                when 5 =>
-                    case y is
-                    when 1 => f := ret(state, f); -- RETI int ack unused
-                    when others => f := ret(state, f); -- RETN nmi not impl
-                    end case;
+                when 5 => f := ret(state, f); -- reti=retn=ret
                 when 6 => f := set_im(state, f, im(y));
                 when 7 =>
                     case y is
@@ -2673,7 +2663,11 @@ begin
                 end case;
             when 2 =>
                 case y is
-                when 4|5|6|7 => f := bli_op(state, f, bli(y, z));
+                when 4|5|6|7 =>
+                    case z is
+                    when 0|1|2|3 => f := bli_op(state, f, bli(y, z));
+                    when others => f := noni(state, f, instr);
+                    end case;
                 when others => f := noni(state, f, instr);
                 end case;
             when 0|3 => f := noni(state, f, instr); end case;
