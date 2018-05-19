@@ -2792,18 +2792,11 @@ begin
             when 3 =>
                 case z is
                 when 1 =>
-                    case q is
-                    when 0 =>
-                        case p is
-                        when 2 => f := pop_rp(state, f, ixy(xy));
-                        when others => f := noni(state, f, instr);
-                        end case;
-                    when 1 =>
-                        case p is
-                        when 2 => f := jp_rp(state, f, ixy(xy));
-                        when 3 => f := ld_sp_rp(state, f, ixy(xy));
-                        when others => f := noni(state, f, instr);
-                        end case;
+                    case y is
+                    when 4 => f := pop_rp(state, f, ixy(xy));
+                    when 5 => f := jp_rp(state, f, ixy(xy));
+                    when 7 => f := ld_sp_rp(state, f, ixy(xy));
+                    when others => f := noni(state, f, instr);
                     end case;
                 when 3 =>
                     case y is
@@ -2812,12 +2805,8 @@ begin
                     when others => f := noni(state, f, instr);
                     end case;
                 when 5 =>
-                    case q is
-                    when 0 =>
-                        case p is
-                        when 2 => f := push_rp(state, f, ixy(xy));
-                        when others => f := noni(state, f, instr);
-                        end case;
+                    case y is
+                    when 4 => f := push_rp(state, f, ixy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when others => f := noni(state, f, instr);
