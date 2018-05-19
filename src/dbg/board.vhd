@@ -9,9 +9,11 @@ entity board is port(
     clk : in std_logic;
 -- input
     btns : in std_logic_vector(4 downto 0);
+    num_disp : in std_logic_vector(15 downto 0);
 -- ctrl
     rst, step : out std_logic;
-    break_addr : out std_logic_vector(15 downto 0);
+    num_sel : out std_logic_vector(15 downto 0);
+    num_new : out std_logic;
 -- segment
     seg : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
@@ -45,7 +47,7 @@ architecture arch of board is
     constant CD_INIT : natural := SYS_FREQ/10**6 * COOLDOWN_TIME;
     
     type board_state_t is (ctrl, edit);
-    type bp_addr_t is array(0 to 3) of unsigned(3 downto 0);
+    type seg_num_t is array(0 to 3) of unsigned(3 downto 0);
 
     -- button one op
     signal btns_op, btns_s, btns_q : std_logic_vector(4 downto 0);
@@ -53,10 +55,11 @@ architecture arch of board is
     -- board state
     signal state : board_state_t := ctrl;
     signal dig_sel : unsigned(1 downto 0) := "00";
-    signal bp_addr : bp_addr_t := (x"9", x"d", x"9", x"5");
+    signal seg_num : seg_num_t := (x"9", x"d", x"9", x"5");
 
     -- convertion signals
-    signal bp_addr_merge : std_logic_vector(15 downto 0);
+    signal seg_num_merge : std_logic_vector(15 downto 0);
+    signal seg_value : std_logic_vector(15 downto 0);
     signal seg_dots : std_logic_vector(3 downto 0);
 begin
     process(clk) begin
@@ -75,18 +78,20 @@ begin
 
             case state is
             when ctrl =>
+                num_new <= '0';
                 if btns(CTRL_EDIT) = '1' then
                     state <= edit;
                 end if;
             when edit =>
                 if btns(EDIT_DONE) = '1' then
                     state <= ctrl;
+                    num_new <= '1';
                 end if;
                 if btns_op(EDIT_INC) = '1' then
-                    bp_addr(ds) <= bp_addr(ds) + 1;
+                    seg_num(ds) <= seg_num(ds) + 1;
                 end if;
                 if btns_op(EDIT_DEC) = '1' then
-                    bp_addr(ds) <= bp_addr(ds) - 1;
+                    seg_num(ds) <= seg_num(ds) - 1;
                 end if;
                 if btns_op(EDIT_LEFT) = '1' then
                     dig_sel <= dig_sel - 1;
@@ -103,11 +108,11 @@ begin
     step      <= bool_sl(state = ctrl) and btns(CTRL_STEP);
 
     -- addr
-    bp_addr_merge <= std_logic_vector(bp_addr(0)) &
-                     std_logic_vector(bp_addr(1)) &
-                     std_logic_vector(bp_addr(2)) &
-                     std_logic_vector(bp_addr(3));
-    break_addr <= bp_addr_merge;
+    seg_num_merge <= std_logic_vector(seg_num(0)) &
+                     std_logic_vector(seg_num(1)) &
+                     std_logic_vector(seg_num(2)) &
+                     std_logic_vector(seg_num(3));
+    num_sel <= seg_num_merge;
 
     -- segment display
     seg_dots <= "0000" when state /= edit else
@@ -115,5 +120,6 @@ begin
                 "0100" when dig_sel = "01" else
                 "0010" when dig_sel = "10" else
                 "0001" when dig_sel = "11" else "----";
-    smt : segment port map(clk, bp_addr_merge, seg_dots, seg, an);
+    seg_value <= seg_num_merge when state = edit else num_disp;
+    smt : segment port map(clk, seg_value, seg_dots, seg, an);
 end arch;

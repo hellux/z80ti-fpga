@@ -34,11 +34,15 @@ architecture arch of comp is
         clk_out : out std_logic);
     end component;
 
-    component clkgen_meta generic(div : natural); port(
-        clk : in std_logic;
-        clk_in : in std_logic;
-        clk_out : out std_logic);
+    component dcntr generic(init : std_logic_vector;
+                            bitwidth : integer); port(
+        clk, rst, ce : in std_logic;
+        cnten : in std_logic;
+        ld : in std_logic;
+        di : in std_logic_vector(bitwidth-1 downto 0);
+        do : out std_logic_vector(bitwidth-1 downto 0));
     end component;
+
 
     component z80 port(
         clk, ce : in std_logic;
@@ -130,8 +134,10 @@ architecture arch of comp is
     component board port(
         clk : in std_logic;
         btns : in std_logic_vector(4 downto 0);
+        num_disp : in std_logic_vector(15 downto 0);
         rst, step : out std_logic;
-        break_addr : out std_logic_vector(15 downto 0);
+        num_sel : out std_logic_vector(15 downto 0);
+        num_new : out std_logic;
         seg : out std_logic_vector(7 downto 0);
         an : out std_logic_vector(3 downto 0));
     end component;
@@ -150,14 +156,17 @@ architecture arch of comp is
 
     -- switches / btns
     type run_mode_t is (normal, step_i, step_m, step_t);
-    type break_sel_t is (br_wr, br_rd, br_ex, br_no);
+    type break_sel_t is (br_wr, br_ic, br_ex, br_no);
     signal stop : std_logic;
     signal cpu_freq : std_logic_vector(1 downto 0);
     signal run_mode : run_mode_t;
     signal disable_int : std_logic;
     signal break_sel : break_sel_t;
     signal step, rst : std_logic;
-    signal break_addr : std_logic_vector(15 downto 0);
+
+    -- break / instruction count number
+    signal num_sel, num_curr : std_logic_vector(15 downto 0);
+    signal num_new, num_ce : std_logic;
 
     -- clocks / enables
     signal clk_6mhz, clk_25mhz, clk_50mhz : std_logic;
@@ -203,7 +212,7 @@ begin
     disable_int <= sw(2);
     with sw(1 downto 0) select
         break_sel <= br_wr when "11",
-                     br_rd when "10",
+                     br_ic when "10",
                      br_ex when "01",
                      br_no when others;
 
@@ -219,7 +228,7 @@ begin
     with cpu_freq select
         clk_z80 <= clk_6mhz  when "00",
                    clk_15mhz when "01",
-                   clk_1mhz when "10",
+                   clk_1mhz  when "10",
                    clk_10khz when others;
     clk_ti <= clk_50mhz;
     clk_vga <= clk_25mhz;
@@ -238,9 +247,9 @@ begin
         (bool_sl(run_mode = step_t) or
         (bool_sl(run_mode = step_m) and dbg.z80.cycle_start) or
         (bool_sl(run_mode = step_i) and dbg.z80.instr_start) or
-        (bool_sl(addr = break_addr) and
+        (bool_sl(addr = num_sel) and
        ((bool_sl(break_sel = br_wr) and mem_wr) or
-        (bool_sl(break_sel = br_rd) and mem_rd and not cbo.m1) or
+        (bool_sl(break_sel = br_ic) and bool_sl(num_curr = x"00")) or
         (bool_sl(break_sel = br_ex) and mem_rd and cbo.m1)))));
     -- control chip enable
     clk_z80_ce <= clk_z80 and not cpu_stop;
@@ -278,11 +287,18 @@ begin
     dbg.cbi <= cbi;
     dbg.cbo <= cbo;
 
+    num_ce <= bool_sl(break_sel = br_ic) and dbg.z80.instr_start;
+    num_sel_cntr : dcntr generic map(x"9d95", 16)
+                         port map(clk, rst, '1', num_ce,
+                                  num_new, num_sel, num_curr);
     crom : char_rom port map(clk, mon_crom_char, mon_crom_col, mon_crom_row,
                              crom_mon_pixel);
     mon_vga : monitor_vga port map(clk, dbg, vga_mon_x, vga_mon_y,
                                    mon_crom_char, mon_crom_col, mon_crom_row,
                                    crom_mon_pixel,
                                    mon_vga_data);
-    brd : board port map(clk, btns, rst, step, break_addr, seg, an);
+    brd : board port map(clk,
+                         btns, num_curr,
+                         rst, step, num_sel, num_new,
+                         seg, an);
 end arch;
