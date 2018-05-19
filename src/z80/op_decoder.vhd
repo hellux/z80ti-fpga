@@ -2770,8 +2770,10 @@ begin
                         end case;
                     when others =>
                         case z is
-                        when 4 => f := ld_r_r(state, f, r_xy(xy, y), ixyh(xy));
-                        when 5 => f := ld_r_r(state, f, r_xy(xy, y), ixyl(xy));
+                        when 4 =>
+                            f := ld_r_r(state, f, r_xy(xy, y), ixyh(xy));
+                        when 5 =>
+                            f := ld_r_r(state, f, r_xy(xy, y), ixyl(xy));
                         when others => f := noni(state, f, instr);
                         end case;
                     end case;
