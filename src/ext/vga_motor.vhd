@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 use work.util.all;
 
 entity vga_motor is port ( 
-     clk, rst, ce : in std_logic;
+     clk, ce : in std_logic;
 	 gmem_data : in std_logic;
      gmem_x : out std_logic_vector(6 downto 0);
      gmem_y : out std_logic_vector(5 downto 0);
@@ -58,31 +58,31 @@ architecture Behavioral of vga_motor is
 begin
     x_ld <= bool_sl(x_vga = VGA_X-1);
     xv_cntr : cntr generic map(x_vga'length)
-                   port map(clk, rst, ce, '1', x_ld,
+                   port map(clk, '0', ce, '1', x_ld,
                             to_unsigned(0, x_vga'length), x_vga);
 
     y_ld <= bool_sl(y_vga = VGA_Y-1);
     yv_cntr : cntr generic map(y_vga'length)
-                   port map(clk, rst, ce, x_ld, y_ld,
+                   port map(clk, '0', ce, x_ld, y_ld,
                             to_unsigned(0, y_vga'length), y_vga);
     
     -- vga on lcd pixel
     xp_ld <= x_ld or bool_sl(xp = PIXEL_SIZE-1);
     xp_cntr : cntr generic map(xp'length)
-                   port map(clk, rst, ce, '1', xp_ld,
+                   port map(clk, '0', ce, '1', xp_ld,
                             to_unsigned(0, xp'length), xp);
     yp_ld <= y_ld or (bool_sl(yp = PIXEL_SIZE-1) and x_ld);
     yp_cntr : cntr generic map(yp'length)
-                   port map(clk, rst, ce, x_ld, yp_ld,
+                   port map(clk, '0', ce, x_ld, yp_ld,
                             to_unsigned(0, yp'length), yp);
     -- lcd pixels
     xl_ld <= bool_sl(x_vga = X_OFS-1) and xp_ld;
     xl_cntr : cntr generic map(x_lcd'length)
-                   port map(clk, rst, ce, xp_ld, xl_ld,
+                   port map(clk, '0', ce, xp_ld, xl_ld,
                             to_unsigned(0, x_lcd'length), x_lcd);
     yl_ld <= bool_sl(y_vga = Y_OFS-1) and yp_ld;
     yl_cntr : cntr generic map(y_lcd'length)
-                   port map(clk, rst, ce, yp_ld, yl_ld,
+                   port map(clk, '0', ce, yp_ld, yl_ld,
                             to_unsigned(0, y_lcd'length), y_lcd);
 
     Hsync <= '0' when x_vga > 656 and x_vga <= 752 else

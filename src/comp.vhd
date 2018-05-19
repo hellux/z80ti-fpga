@@ -82,7 +82,7 @@ architecture arch of comp is
     end component;
 
     component vga_motor port(
-         clk, rst, ce : in std_logic;
+         clk, ce : in std_logic;
          gmem_data : in std_logic;
          gmem_x : out std_logic_vector(6 downto 0);
          gmem_y : out std_logic_vector(5 downto 0);
@@ -269,7 +269,7 @@ begin
                           mem_rd, mem_wr, addr_phy,
                           dbg.ti);
     -- external controllers
-    vga : vga_motor port map(clk, rst, clk_vga,
+    vga : vga_motor port map(clk, clk_vga,
                              gmem_vga_data, vga_gmem_x, vga_gmem_y,
                              mon_vga_data, vga_mon_x, vga_mon_y,
                              vga_red, vga_green, vga_blue, hsync, vsync);
@@ -289,7 +289,7 @@ begin
     num_ce <= bool_sl(break_sel = br_ic) and dbg.z80.instr_start;
     num_ld <= num_new or sp_op;
     num_sel_cntr : dcntr generic map(x"9d95", 16)
-                         port map(clk, rst, clk_z80_ce, num_ce,
+                         port map(clk, '0', clk_z80, num_ce,
                                   num_ld, num_sel, num_curr);
     crom : char_rom port map(clk, mon_crom_char, mon_crom_col, mon_crom_row,
                              crom_mon_pixel);
