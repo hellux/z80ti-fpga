@@ -2767,25 +2767,18 @@ begin
                     end case;
                 when others => 
                     case y is
+                    when 4 => f := ld_r_r(state, f, ixyh(xy), r_xy(xy, z));
+                    when 5 => f := ld_r_r(state, f, ixyl(xy), r_xy(xy, z));
                     when 6 =>
                         case z is
                         when 6 => f := noni(state, f, instr);
                         when others => f := ld_xy_d_r(state, f, ixy(xy), z);
                         end case;
                     when others =>
-                        case y is
-                        when 4 => 
-                            f := ld_r_r(state, f, ixyh(xy), r_xy(xy, z));
-                        when 5 =>
-                            f := ld_r_r(state, f, ixyl(xy), r_xy(xy, z));
-                        when others =>
-                            case z is
-                            when 4 =>
-                                f := ld_r_r(state, f, r_xy(xy, y), ixyh(xy));
-                            when 5 =>
-                                f := ld_r_r(state, f, r_xy(xy, y), ixyl(xy));
-                            when others => f := noni(state, f, instr);
-                            end case;
+                        case z is
+                        when 4 => f := ld_r_r(state, f, r_xy(xy, y), ixyh(xy));
+                        when 5 => f := ld_r_r(state, f, r_xy(xy, y), ixyl(xy));
+                        when others => f := noni(state, f, instr);
                         end case;
                     end case;
                 end case;
