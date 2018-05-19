@@ -1783,7 +1783,6 @@ architecture arch of op_decoder is
                 f.cw.tmp_rd := '1';
             when t4 =>
                 f.cw.alu_op := in_i;
-                f.cw.f_rd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
             when others => null; end case;
