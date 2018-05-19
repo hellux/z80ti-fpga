@@ -2784,9 +2784,10 @@ begin
                 end case;
             when 2 => 
                 case z is
+                when 4 => f := alu_a_r(state, f, alu(y), ixyh(xy));
+                when 5 => f := alu_a_r(state, f, alu(y), ixyl(xy));
                 when 6 => f := alu_a_xy_d(state, f, alu(y), ixy(xy));
-                when others => f := alu_a_r(state, f, alu(y),
-                                            r_xy(xy, z));
+                when others => f := noni(state, f, instr);
                 end case;
             when 3 =>
                 case z is
