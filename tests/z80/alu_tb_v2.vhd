@@ -472,7 +472,7 @@ begin
 
         report "add16";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"1e", x"1e", add16_i1, 0, "11010011", "11---000", x"3c");
+             x"1e", x"1e", add16_i1, 0, "11010011", "11---0-0", x"3c");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"00", add16_i2, 0, "11010000", "11---000", x"00");
 
