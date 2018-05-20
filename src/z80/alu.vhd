@@ -25,9 +25,8 @@ architecture arch of alu is
     
     -- flags
     signal undef_res : std_logic_vector(7 downto 0); -- value for f3, f5
-    signal half_add, half_sub, half_daa : std_logic;
     signal daa_c : std_logic;
-    signal overflow, parity : std_logic;
+    signal half_carry, overflow, parity : std_logic;
 begin
     -- preprocess
     mask_gen : process(bit_select) is
@@ -88,7 +87,6 @@ begin
                                                      rlca_i|rla_i,
         '0' & edge & op2_ext(7 downto 1)        when rrc_i|rr_i|sra_i|srl_i|
                                                      rrca_i|rra_i,
-         op2_ext                                when bit_i,
         op2_ext                                 when others;
 
     result_sum <= op1_ext + op2sn;
@@ -119,6 +117,7 @@ begin
         result_buf when others;
 
     -- flags
+    half_carry <= result_buf(4) xor op1_ext(4) xor op2_ext(4);
     calc_parity : process(result_buf)
         variable p : std_logic;
     begin
@@ -134,12 +133,6 @@ begin
         (op1_ext(7) xor op2_ext(7)) and (op1_ext(7) xor result_sum(7))
             when sub_i|sbc_i|cp_i|sbc16_i2,
         '-' when others;
-    half_add <= result_buf(4) xor op1_ext(4) xor op2sn(4);
-    half_sub <= result_buf(4) xor op1_ext(4) xor op2_ext(4);
-    with flags_in(N_f) select half_daa <=
-        half_add when '0',
-        half_sub when '1',
-        '-'      when others;
     with op select undef_res <=
         op2         when cp_i,
         result_buf  when others;
@@ -204,13 +197,12 @@ begin
         '1'             when and_i|
                              cpl_i|
                              bit_i,
-        half_add        when add_i|adc_i|inc_i|dec_i| -- dec uses (-1) + op2
-                             add16_i2|adc16_i2, -- TODO check 16b
-        half_sub        when cpi_i|cpir_i|cpd_i|cpdr_i|
-                             sub_i|sbc_i|cp_i|
-                             neg_i|
+        half_carry      when cpi_i|cpir_i|cpd_i|cpdr_i|
+                             add_i|adc_i|sub_i|sbc_i|
+                             cp_i|inc_i|dec_i|
+                             daa_i|neg_i|
+                             add16_i2|adc16_i2| -- TODO check 16b
                              sbc16_i2,
-        half_daa        when daa_i,
         flags_in(C_f)   when ccf_i,
         '-'             when others;
 
