@@ -416,7 +416,7 @@ begin
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"CC", daa_i, 0, "00000000", "00-1-001", x"32");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"00", x"00", daa_i, 0, "00000001", "00-0-100", x"60");
+             x"00", x"00", daa_i, 0, "00000001", "00-0-101", x"60");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"00", daa_i, 0, "00010000", "00-0-100", x"06");
         
