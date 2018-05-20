@@ -72,7 +72,7 @@ architecture arch of comp is
 
     component mem_if port(
         rd, wr : in std_logic;
-        addr_phy : in std_logic_vector(19 downto 0);
+        addr_phy : in std_logic_vector(23 downto 0);
         data_in : in std_logic_vector(7 downto 0);
         data_out : out std_logic_vector(7 downto 0);
         maddr : out std_logic_vector(25 downto 0);
@@ -102,14 +102,6 @@ architecture arch of comp is
         PS2KeyboardData	: in std_logic;
         keys_down : out keys_down_t;
         on_key_down : out std_logic);
-    end component;
-
-    component memory port(
-        clk, rst : in std_logic;
-        cbo : in ctrlbus_out;
-        addr : in std_logic_vector(15 downto 0);
-        data_in : in std_logic_vector(7 downto 0);
-        data_out : out std_logic_vector(7 downto 0));
     end component;
 
     component char_rom port(
@@ -183,7 +175,8 @@ architecture arch of comp is
     signal on_key_down : std_logic := '0';
 
     -- ti <-> mem controller
-    signal mem_rd, mem_wr : std_logic;
+    signal cpu_rd, cpu_wr : std_logic;
+    signal mem_addr : std_logic_vector(23 downto 0);
 
     -- ti <-> vga
     signal gmem_vga_data : std_logic;
@@ -200,21 +193,6 @@ architecture arch of comp is
     signal mon_crom_char : std_logic_vector(5 downto 0);
     signal crom_mon_pixel : std_logic;
 begin
-    -- switch control
-    stop <= sw(7);
-    cpu_freq <= sw(6 downto 5);
-    with sw(4 downto 3) select
-        run_mode <= step_m when "01",
-                    step_i when "10",
-                    step_t when "11",
-                    normal when others;
-    disable_int <= sw(2);
-    with sw(1 downto 0) select
-        break_sel <= br_wr when "11",
-                     br_ic when "10",
-                     br_ex when "01",
-                     br_no when others;
-
     -- generate clocks
     gen_10khz : clkgen generic map(DIV_10KHZ) port map(clk, clk_10khz);
     gen_1mhz  : clkgen generic map(DIV_1MHZ)  port map(clk, clk_1mhz);
@@ -232,6 +210,54 @@ begin
     clk_ti <= clk_50mhz;
     clk_vga <= clk_25mhz;
 
+    -- buses
+    cbi.int <= int and not disable_int;
+    cbi.reset <= rst;
+    data <= data_z80 or data_mem or data_ti;
+    mem_addr <= x"0" & addr_phy;
+
+    -- components
+    cpu : z80 port map(clk, clk_z80_ce, cbi, cbo, addr, data, data_z80,
+                       dbg.z80);
+    ti_comp : ti port map(clk, rst, clk_ti_ce,
+                          int, cbo, addr, data, data_ti,
+                          keys_down, on_key_down,
+                          vga_gmem_x, vga_gmem_y, gmem_vga_data,
+                          cpu_rd, cpu_wr, addr_phy,
+                          dbg.ti);
+    -- external controllers
+    vga : vga_motor port map(clk, clk_vga,
+                             gmem_vga_data, vga_gmem_x, vga_gmem_y,
+                             mon_vga_data, vga_mon_x, vga_mon_y,
+                             vga_red, vga_green, vga_blue, hsync, vsync);
+    mif : mem_if port map(cpu_rd, cpu_wr, mem_addr, data, data_mem,
+                          maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
+                          mwe_c, mlb_c, mub_c);
+    kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_data,
+                           keys_down, on_key_down);
+
+    --- DEBUG ---
+    dbg.data <= data;
+    dbg.addr_log <= addr;
+    dbg.addr_phy <= addr_phy;
+    dbg.cbi <= cbi;
+    dbg.cbo <= cbo;
+
+    -- switch control
+    stop <= sw(7);
+    cpu_freq <= sw(6 downto 5);
+    with sw(4 downto 3) select
+        run_mode <= step_m when "01",
+                    step_i when "10",
+                    step_t when "11",
+                    normal when others;
+    disable_int <= sw(2);
+    with sw(1 downto 0) select
+        break_sel <= br_wr when "11",
+                     br_ic when "10",
+                     br_ex when "01",
+                     br_no when others;
+
     -- step / break
     step_op : process(clk) begin
         if rising_edge(clk) then
@@ -248,43 +274,11 @@ begin
         (bool_sl(run_mode = step_i) and dbg.z80.instr_start) or
         (bool_sl(break_sel = br_ic) and bool_sl(num_curr = x"0000")) or
         (bool_sl(addr = num_sel) and
-       ((bool_sl(break_sel = br_wr) and mem_wr) or
-        (bool_sl(break_sel = br_ex) and mem_rd and cbo.m1)))));
-    -- control chip enable
+       ((bool_sl(break_sel = br_wr) and cpu_wr) or
+        (bool_sl(break_sel = br_ex) and cpu_rd and cbo.m1)))));
+    -- chip enables
     clk_z80_ce <= clk_z80 and not cpu_stop;
     clk_ti_ce <= clk_ti and not cpu_stop;
-
-    -- buses
-    cbi.int <= int and not disable_int;
-    cbi.reset <= rst;
-    data <= data_z80 or data_mem or data_ti;
-
-    -- components
-    cpu : z80 port map(clk, clk_z80_ce, cbi, cbo, addr, data, data_z80,
-                       dbg.z80);
-    ti_comp : ti port map(clk, rst, clk_ti_ce,
-                          int, cbo, addr, data, data_ti,
-                          keys_down, on_key_down,
-                          vga_gmem_x, vga_gmem_y, gmem_vga_data,
-                          mem_rd, mem_wr, addr_phy,
-                          dbg.ti);
-    -- external controllers
-    vga : vga_motor port map(clk, clk_vga,
-                             gmem_vga_data, vga_gmem_x, vga_gmem_y,
-                             mon_vga_data, vga_mon_x, vga_mon_y,
-                             vga_red, vga_green, vga_blue, hsync, vsync);
-    mif : mem_if port map(mem_rd, mem_wr, addr_phy, data, data_mem,
-                          maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
-                          mwe_c, mlb_c, mub_c);
-    kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_data,
-                           keys_down, on_key_down);
-
-    -- debug 
-    dbg.data <= data;
-    dbg.addr_log <= addr;
-    dbg.addr_phy <= addr_phy;
-    dbg.cbi <= cbi;
-    dbg.cbo <= cbo;
 
     num_ce <= bool_sl(break_sel = br_ic) and
               dbg.z80.instr_start and

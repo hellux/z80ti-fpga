@@ -9,7 +9,9 @@ entity op_decoder is port(
     instr : in std_logic_vector(7 downto 0);
     ctrl : out id_ctrl_t;
     cbo : out ctrlbus_out;
-    cw : out ctrlword);
+    cw : out ctrlword;
+-- debug
+    dbg : out dbg_id_t);
 end op_decoder;
 
 architecture arch of op_decoder is
@@ -17,6 +19,7 @@ architecture arch of op_decoder is
         ct : id_ctrl_t;
         cb : ctrlbus_out;
         cw : ctrlword;
+        db : dbg_id_t;
     end record;
 
     -- MACHINE CYCLES --
@@ -189,6 +192,7 @@ architecture arch of op_decoder is
             case state.t is
             when t4 =>
                 f.ct.cycle_end := '1';
+                f.db.jump_beg := '1';
             when others => null; end case;
         when m2 => -- first byte -> z
             f := mem_rd_pc(state, f);
@@ -209,6 +213,7 @@ architecture arch of op_decoder is
                 f.cw.pc_rdh := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+                f.db.jump_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -259,6 +264,8 @@ architecture arch of op_decoder is
                 f.cw.pc_rd := '1'; -- store addr in pc
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+                f.db.jump_beg := '1';
+                f.db.jump_end := '1';
             when others => end case;
         when others => end case;
         return f;
@@ -272,6 +279,7 @@ architecture arch of op_decoder is
             case state.t is
             when t4 =>
                 f.ct.cycle_end := '1';
+                f.db.jump_beg := '1';
             when others => null; end case;
         when m2 => -- load displacement to tmp, pc->wz
             f := mem_rd(state, f);
@@ -289,17 +297,18 @@ architecture arch of op_decoder is
         when m3 => -- wz+d+1->pc
             case state.t is
             when t1 =>
+            when t2 =>
+            when t3 =>
+            when t4 =>
+            when t5 =>
                 f.cw.dbus_src := tmp_o;
                 f.cw.rf_addr := regWZ;
                 f.cw.abus_src := dis_o;
                 f.cw.addr_op := inc;
                 f.cw.pc_rd := '1';
-            when t2 =>
-            when t3 =>
-            when t4 =>
-            when t5 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+                f.db.jump_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -1956,6 +1965,7 @@ architecture arch of op_decoder is
             case state.t is
             when t4 =>
                 f.ct.cycle_end := '1';
+                f.db.jump_beg := '1';
             when others => null; end case;
         when m2 => -- fetch low to z
             f := mem_rd_pc(state, f);
@@ -2008,6 +2018,7 @@ architecture arch of op_decoder is
                 f.cw.pc_rd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+                f.db.jump_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -2056,6 +2067,7 @@ architecture arch of op_decoder is
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
+                f.db.jump_beg := '1';
             when t5 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
@@ -2089,6 +2101,7 @@ architecture arch of op_decoder is
                 f.cw.pc_rd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+                f.db.jump_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -2102,6 +2115,7 @@ architecture arch of op_decoder is
             case state.t is
             when t4 =>
                 f.ct.cycle_end := '1';
+                f.db.jump_beg := '1';
             when others => null; end case;
         when m2 => -- read to low pc, inc sp
             f := mem_rd(state, f);
@@ -2127,6 +2141,7 @@ architecture arch of op_decoder is
                 f.cw.pc_rdh := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+                f.db.jump_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -2161,6 +2176,7 @@ architecture arch of op_decoder is
                 f.cw.rf_addr := regB;
                 f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';
+                f.db.jump_beg := '1';
             when t5 =>
                 f.cw.alu_op := dec_i;
                 f.cw.dbus_src := alu_o;
@@ -2188,15 +2204,16 @@ architecture arch of op_decoder is
                 f.cw.rf_addr := regWZ;
                 f.cw.addr_op := none;
                 f.cw.rf_rda := '1';
-            when t2 => -- wz + d -> pc
+            when t2 =>
+            when t3 => -- wz + d -> pc
                 f.cw.rf_addr := regWZ;
                 f.cw.dbus_src := tmp_o;
                 f.cw.abus_src := dis_o;
                 f.cw.addr_op := none;
                 f.cw.pc_rd := '1';
-            when t3 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+                f.db.jump_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -2269,6 +2286,7 @@ architecture arch of op_decoder is
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
                 f.ct.cycle_end := '1';
+                f.db.jump_beg := '1';
             when others => null; end case;
         when m2 => -- pch -> (sph--)
             f := mem_wr(state, f);
@@ -2301,6 +2319,7 @@ architecture arch of op_decoder is
                 f.ct.mode_next := exec;
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+                f.db.jump_end := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -2356,6 +2375,7 @@ architecture arch of op_decoder is
                 f.cw.abus_src := int_o;
                 f.cw.addr_op := inc;
                 f.cw.tmpa_rd := '1';
+                f.db.jump_beg := '1';
             when t3 =>
                 f.cw.pc_rdl := '1';
                 f.ct.cycle_end := '1';
@@ -2370,6 +2390,7 @@ architecture arch of op_decoder is
                 f.ct.mode_next := exec;
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+                f.db.jump_end := '1';
             when others => null; end case;
         when others => null; end case;
             f := mem_rd(state, f);
@@ -2802,5 +2823,6 @@ begin
         cw <= f.cw;
         cbo <= f.cb;
         ctrl <= f.ct;
+        dbg <= f.db;
     end process;
  end arch;

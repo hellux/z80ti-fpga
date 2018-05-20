@@ -39,11 +39,11 @@ package z80_comm is
     type state_t is record
         mode : id_mode_t;
         prefix : id_prefix_t;
-        im : integer range 0 to 2;
+        im : natural range 0 to 2;
         iff : std_logic;
         cc : cond_t;
-        m : integer range 1 to 6;
-        t : integer range 1 to 6;
+        m : natural range 1 to 6;
+        t : natural range 1 to 6;
     end record;
 
     type dbus_src_t is (none, zero_o,
@@ -145,12 +145,16 @@ package z80_comm is
     constant regIYh : integer := 14;
     constant regIYl : integer := 15;
 
+    type dbg_id_t is record
+        jump_beg, jump_end : std_logic;
+    end record;
     type dbg_regs_t is record
         BC, DE, HL, AF, WZ, SP, IX, IY : std_logic_vector(15 downto 0);
     end record;
     type dbg_z80_t is record
         regs : dbg_regs_t;
         state : state_t;
+        id : dbg_id_t;
         alu_op : instr_t;
         cycle_start, instr_start, int_start : std_logic;
         pc, abus, tmpa : std_logic_vector(15 downto 0);

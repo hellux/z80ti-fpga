@@ -58,7 +58,8 @@ architecture arch of z80 is
         instr : in std_logic_vector(7 downto 0);
         ctrl : out id_ctrl_t;
         cbo : out ctrlbus_out;
-        cw : out ctrlword);
+        cw : out ctrlword;
+        dbg : out dbg_id_t);
     end component;
 
     component state_machine port(
@@ -109,7 +110,7 @@ begin
     -- -- CONTROL SECTION -- --
     ir : reg generic map(x"ff", 8)
              port map(clk, cbi.reset, ce, cw.ir_rd, dbus, ir_out);
-    id : op_decoder port map(state, ir_out, ctrl, cbo, cw);
+    id : op_decoder port map(state, ir_out, ctrl, cbo, cw, dbg.id);
     sm : state_machine port map(clk, ce, cbi, rf_f_out, iff,
                                 ctrl, cw.ir_rd, ir_out, state); 
 
