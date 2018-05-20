@@ -13,7 +13,7 @@ end m45;
 
 architecture arch of m45 is
     constant INIT_SIZE : integer := 62;
-    constant APP_SIZE : integer := 700;
+    constant APP_SIZE : integer := 2048;
     constant STACK_SIZE : integer := 256;
     constant RAM_SIZE : integer := 128;
 
