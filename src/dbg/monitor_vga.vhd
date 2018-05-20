@@ -73,9 +73,9 @@ begin
         val_flags := (others => ' ');
         if dbg.z80.regs.af(7) = '1' then val_flags(1) := 'S'; end if;
         if dbg.z80.regs.af(6) = '1' then val_flags(2) := 'Z'; end if;
-        if dbg.z80.regs.af(5) = '1' then val_flags(3) := 'X'; end if;
+        if dbg.z80.regs.af(5) = '1' then val_flags(3) := 'Y'; end if;
         if dbg.z80.regs.af(4) = '1' then val_flags(4) := 'H'; end if;
-        if dbg.z80.regs.af(3) = '1' then val_flags(5) := 'Y'; end if;
+        if dbg.z80.regs.af(3) = '1' then val_flags(5) := 'X'; end if;
         if dbg.z80.regs.af(2) = '1' then val_flags(6) := 'P'; end if;
         if dbg.z80.regs.af(1) = '1' then val_flags(7) := 'N'; end if;
         if dbg.z80.regs.af(0) = '1' then val_flags(8) := 'C'; end if;

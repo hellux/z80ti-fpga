@@ -12,7 +12,8 @@ entity dcntr is generic(init : std_logic_vector;
 end dcntr;
 
 architecture arch of dcntr is
-    signal count, count_next : unsigned(bitwidth-1 downto 0);
+    signal count : unsigned(bitwidth-1 downto 0) := unsigned(init);
+    signal count_next : unsigned(bitwidth-1 downto 0);
 begin
     process(clk) begin
         if rising_edge(clk) then

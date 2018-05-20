@@ -146,7 +146,8 @@ begin
                            unknown,
         result_buf(7) when cpi_i|cpir_i|cpd_i|cpdr_i|
                            adc16_i2|sbc16_i2|
-                           rlc_i,
+                           rlc_i|
+                           rrd_i2|rld_i2,
         result_buf(7) when others;
 
     with op select flags_out(Z_f) <=
@@ -191,7 +192,8 @@ begin
         parity               when and_i|or_i|xor_i|bit_i|res_i|
                                   rlc_i|rl_i|sla_i|sll_i|
                                   rrc_i|rr_i|sra_i|srl_i|
-                                  daa_i|in_i|rld_i2|rrd_i2,
+                                  daa_i|in_i|
+                                  rrd_i2|rld_i2,
         flags_in(PV_f)       when add16_i1|add16_i2|
                                   rlca_i|rrca_i|rla_i|rra_i|
                                   unknown,
@@ -220,6 +222,7 @@ begin
         not flags_in(C_f)   when ccf_i,
         flags_in(C_f)       when ldi_i|ldir_i|ldd_i|lddr_i|
                                  cpi_i|cpir_i|cpd_i|cpdr_i|
+                                 rrd_i1|rrd_i2|rld_i1|rld_i2|
                                  unknown,
         flags_in(C_f)       when others;
 end arch;
