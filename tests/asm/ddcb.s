@@ -113,6 +113,9 @@ org 0x9d95
     jp z, fail
     bit 7, (ix+3)           ; y7
     jp z, fail
+    ld a, (ix+3)
+    cp 11000110b
+    jp nz, fail
 
 ; x2
 ; z6
