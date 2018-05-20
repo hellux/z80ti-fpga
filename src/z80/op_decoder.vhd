@@ -12,26 +12,6 @@ entity op_decoder is port(
     cw : out ctrlword);
 end op_decoder;
 
--- INSTRUCTION TIMING EXAMPLE
--- 80 = add a, b
--- 3e = ld a, *
---               next instr
---                 loaded
--- "instr start"     |
---       |           |
---       v           v
---  M: |       1       |     2     |       1       |     2     ..
---  T: | 1 | 2 | 3 | 4 | 1 | 2 | 3 | 1 | 2 | 3 | 4 | 1 | 2 | 3 ..
--- IR:  ---80----->|<-----------3e------------>|<--next_instr- ..
---          /|\        |-----------|-----------|
---           |           (pc++)->a     fetch
---        alu->a                       phase
---     |-----------|
---      fetch phase
---      / execute 
---     previous instr
---
-
 architecture arch of op_decoder is
     type id_frame_t is record
         ct : id_ctrl_t;
@@ -39,7 +19,7 @@ architecture arch of op_decoder is
         cw : ctrlword;
     end record;
 
-    -- CYCLES --
+    -- MACHINE CYCLES --
 
     function io_rd(state : state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
