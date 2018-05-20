@@ -237,15 +237,24 @@ begin
         '-'                  when others;
 
     with op select flags_out(N_f) <=
-        '1'             when sub_i|sbc_i|cp_i|neg_i|cpl_i|
-                             cpi_i|cpir_i|cpd_i|cpdr_i|
-                             dec_i|sbc16_i2,
         flags_in(N_f)   when daa_i|
                              set_i|res_i,
-        '0'             when ldi_i|ldir_i|ldd_i|lddr_i|
-                             rlca_i|rrca_i|rla_i|rra_i|
-                             add16_i2|adc16_i2|bit_i|ld_i,
-        '0'             when others;
+        '0'             when ld_i|
+                             ldi_i|ldir_i|ldd_i|lddr_i|
+                             add_i|adc_i|and_i|or_i|xor_i|inc_i|
+                             ccf_i|scf_i|
+                             add16_i2|adc16_i2|
+                             rlca_i|rla_i|rrca_i|rra_i|
+                             rlc_i|rl_i|rrc_i|rr_i|
+                             sla_i|sra_i|sll_i|srl_i|
+                             rld_i2|rrd_i2|
+                             bit_i|
+                             in_i,
+        '1'             when cpi_i|cpir_i|cpd_i|cpdr_i|
+                             sub_i|sbc_i|cp_i|dec_i|
+                             cpl_i|neg_i|
+                             sbc16_i2,
+        '-'             when others;
 
     with op select flags_out(C_f) <=
         '0'                 when and_i|or_i|xor_i,
