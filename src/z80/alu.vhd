@@ -165,25 +165,25 @@ begin
         '-' when others;
 
     with op select flags_out(Z_f) <=
-        flags_in(Z_f)                     when ldi_i|ldir_i|ldd_i|lddr_i|
-                                               cpl_i|ccf_i|scf_i|
-                                               add16_i1|add16_i2|
-                                               rlca_i|rla_i|rrca_i|rra_i|
-                                               set_i|res_i,
-        bool_sl(unsigned(result_buf) = 0) when ld_i|
-                                               cpi_i|cpir_i|cpd_i|cpdr_i|
-                                               add_i|adc_i|sub_i|sbc_i|
-                                               and_i|or_i|xor_i|cp_i|
-                                               inc_i|dec_i|
-                                               daa_i|neg_i|
-                                               adc16_i1|sbc16_i1|
-                                               rlc_i|rl_i|rrc_i|rr_i|
-                                               sla_i|sra_i|srl_i|sll_i|
-                                               rld_i2|rrd_i2|
-                                               bit_i|
-                                               in_i,
+        flags_in(Z_f)               when ldi_i|ldir_i|ldd_i|lddr_i|
+                                         cpl_i|ccf_i|scf_i|
+                                         add16_i1|add16_i2|
+                                         rlca_i|rla_i|rrca_i|rra_i|
+                                         set_i|res_i,
+        bool_sl(result_buf = x"00") when ld_i|
+                                         cpi_i|cpir_i|cpd_i|cpdr_i|
+                                         add_i|adc_i|sub_i|sbc_i|
+                                         and_i|or_i|xor_i|cp_i|
+                                         inc_i|dec_i|
+                                         daa_i|neg_i|
+                                         adc16_i1|sbc16_i1|
+                                         rlc_i|rl_i|rrc_i|rr_i|
+                                         sla_i|sra_i|srl_i|sll_i|
+                                         rld_i2|rrd_i2|
+                                         bit_i|
+                                         in_i,
         flags_in(Z_f) and
-        bool_sl(unsigned(result_buf) = 0) when adc16_i2|sbc16_i2,
+        bool_sl(result_buf = x"00") when adc16_i2|sbc16_i2,
         '-' when others;
 
     with op select flags_out(f5_f) <=
@@ -257,19 +257,22 @@ begin
         '-'             when others;
 
     with op select flags_out(C_f) <=
-        '0'                 when and_i|or_i|xor_i,
-        result_sum(8)       when add_i|adc_i|sub_i|sbc_i|cp_i|neg_i|
-                                 add16_i1|add16_i2|adc16_i1|adc16_i2|
-                                 sbc16_i1|sbc16_i2,
-        daa_c               when daa_i,
-        op2(7)              when rlc_i|rl_i|sla_i|sll_i|rlca_i|rla_i,
-        op2(0)              when rrc_i|rr_i|sra_i|srl_i|rrca_i|rra_i,
-        '1'                 when scf_i,
-        not flags_in(C_f)   when ccf_i,
-        flags_in(C_f)       when ldi_i|ldir_i|ldd_i|lddr_i|
-                                 cpi_i|cpir_i|cpd_i|cpdr_i|
-                                 rrd_i1|rrd_i2|rld_i1|rld_i2|
-                                 cpl_i|ld_i|
-                                 set_i|res_i,
-        flags_in(C_f)       when others;
+        flags_in(C_f)         when ld_i|
+                                   ldi_i|ldir_i|ldd_i|lddr_i|
+                                   cpi_i|cpir_i|cpd_i|cpdr_i|
+                                   inc_i|dec_i|
+                                   cpl_i|
+                                   rld_i1|rld_i2|rrd_i1|rrd_i2|
+                                   bit_i|set_i|res_i,
+        not flags_in(C_f)     when ccf_i,
+        '0'                   when and_i|or_i|xor_i,
+        '1'                   when scf_i,
+        op2(0)                when rrca_i|rra_i|rrc_i|rr_i|sra_i|srl_i,
+        op2(7)                when rlca_i|rla_i|rlc_i|rl_i|sla_i|sll_i,
+        result_sum(8)         when add_i|adc_i|sub_i|sbc_i|cp_i|
+                                   add16_i1|add16_i2|adc16_i1|adc16_i2|
+                                   sbc16_i1|sbc16_i2,
+        bool_sl(op2 /= x"00") when neg_i,
+        daa_c                 when daa_i,
+        '-'                   when others;
 end arch;
