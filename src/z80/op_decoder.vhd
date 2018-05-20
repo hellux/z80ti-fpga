@@ -761,7 +761,7 @@ architecture arch of op_decoder is
             when t4 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m2 =>
+        when m2 => -- fetch mem (hl) / port (c)
             case op is
             when ldi_i|cpi_i|ldd_i|cpd_i|outi_i|outd_i|
                  ldir_i|lddr_i|cpir_i|cpdr_i|otir_i|otdr_i => 
@@ -774,8 +774,7 @@ architecture arch of op_decoder is
             when t1 =>
                 case op is
                 when ldi_i|ldd_i|cpi_i|cpd_i|outi_i|outd_i|
-                     ldir_i|lddr_i|cpir_i|cpdr_i|otir_i|otdr_i => 
-                    -- Load (HL)
+                     ldir_i|lddr_i|cpir_i|cpdr_i|otir_i|otdr_i =>
                     f.cw.rf_addr := regHL;
                     f.cw.abus_src := rf_o;
                 when ini_i|ind_i|inir_i|indr_i =>
@@ -830,8 +829,7 @@ architecture arch of op_decoder is
             when others => null; end case;
         when m4 =>
             case state.t is
-            when t1 =>
-                -- inc HL
+            when t1 => -- inc/dec HL
                 f.cw.rf_addr := regHL;
                 f.cw.abus_src := rf_o;
                 case op is
@@ -839,24 +837,16 @@ architecture arch of op_decoder is
                     f.cw.addr_op := inc;
                 when ldd_i|cpd_i|ind_i|outd_i|lddr_i|cpdr_i|indr_i|otdr_i =>
                     f.cw.addr_op := dec;
-                when others =>
-                    f.cw.addr_op := none;
-                end case;
-                f.cw.pv_src := anz_f;
+                when others => null; end case;
                 f.cw.rf_rda := '1';
-            when t2 =>
-                -- inc DE
+            when t2 => -- inc/dec/leave DE
                 f.cw.rf_addr := regDE;
                 f.cw.abus_src := rf_o;
                 case op is
-                when ldi_i|ldir_i =>
-                    f.cw.addr_op := inc;
-                when ldd_i|lddr_i =>
-                    f.cw.addr_op := dec;
-                when others =>
-                    f.cw.addr_op := none;
+                when ldi_i|ldir_i => f.cw.addr_op := inc;
+                when ldd_i|lddr_i => f.cw.addr_op := dec;
+                when others       => f.cw.addr_op := none;
                 end case;
-                f.cw.pv_src := anz_f;
                 f.cw.rf_rda := '1';
             when t3 =>
                 case op is
@@ -876,7 +866,7 @@ architecture arch of op_decoder is
                     f.cw.tmp_rd := '1';
                 when others => null; end case;
             when t4 =>
-                case op is -- dec B
+                case op is -- dec tmp -> b
                 when ini_i|outi_i|ind_i|outd_i|
                      inir_i|otir_i|indr_i|otdr_i =>
                     f.cw.alu_op := dec_i;
@@ -904,21 +894,18 @@ architecture arch of op_decoder is
                 when others => null; end case;
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m5 =>
+        when m5 => -- pc-2 -> pc
             case state.t is
             when t1 =>
-                f.cw.pc_rd := '1';
                 f.cw.abus_src := pc_o;
                 f.cw.addr_op := dec;
+                f.cw.pc_rd := '1';
             when t2 =>
-                f.cw.pc_rd := '1';
                 f.cw.abus_src := pc_o;
                 f.cw.addr_op := dec;
+                f.cw.pc_rd := '1';
             when t3 =>
-                f.cw.addr_op := none;
             when t4 =>
-                f.cw.alu_op := op;
-                f.cw.f_rd := '1'; 
             when t5 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
