@@ -52,14 +52,12 @@ architecture arch of alu_tb_v2 is
             "index      76543210" & lf &
             "op1        " & vec_str(op1) & " " & hex_str(op1) & lf &
             "op2        " & vec_str(op2) & " " & hex_str(op2) & lf & lf &
-            "res_actu:  " & vec_str(result_s) & " " &
-                integer'image(to_integer(unsigned(result_s))) & lf &
-            "res_want:  " & vec_str(result) & " " &
-                integer'image(to_integer(unsigned(result))) & lf & lf &
+            "res_actu:  " & vec_str(result_s) & " " & hex_str(result_s) & lf &
+            "res_want:  " & vec_str(result) & " " & hex_str(result) & lf & lf &
             "flags      SZ-H-PNC" & lf &
-            "flags_in   " & vec_str(flags_in) & lf &
-            "flags_actu " & vec_str(flags_out_s) & lf &
-            "flags_want " & vec_str(flags_out) & lf;
+            "flags_in   " & vec_str(flags_in) & " " & hex_str(flags_in) &  lf &
+            "flags_actu " & vec_str(flags_out_s) & " " & hex_str(flags_in) & lf &
+            "flags_want " & vec_str(flags_out) & " " & hex_str(flags_in) & lf;
         wait for 5 ns;
     end procedure;
 
@@ -128,13 +126,12 @@ begin
              x"01", x"01", adc_i, 0, "11111111", "00-0-000", x"03");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"01", x"7f", adc_i, 0, "00000000", "10-1-100", x"80");
-        -- should below have no half carry?
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"00", x"7f", adc_i, 0, "00000001", "10-0-100", x"80");
+             x"00", x"7f", adc_i, 0, "00000001", "10010100", x"80");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"00", x"ff", adc_i, 0, "00000001", "01-0-001", x"00");
+             x"00", x"ff", adc_i, 0, "00000001", "01010001", x"00");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"7f", x"7f", adc_i, 0, "00000001", "10-0-100", x"ff");
+             x"7f", x"7f", adc_i, 0, "00000001", "10111100", x"ff");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"80", x"80", adc_i, 0, "00000001", "00-0-101", x"01");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
