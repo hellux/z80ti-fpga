@@ -2,10 +2,11 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 entity mem_if is port(
--- ti/z80 <-> interface
+-- comp <-> interface
     rd, wr : in std_logic;
-    addr_phy : in std_logic_vector(23 downto 0);
-    data_in : in std_logic_vector(7 downto 0);
+    mode : in std_logic; -- 0: 16-bit, 1: 8-bit
+    addr : in std_logic_vector(23 downto 0);
+    data_in : in std_logic_vector(15 downto 0);
     data_out : out std_logic_vector(7 downto 0);
 -- external memory <-> interface
     maddr : out std_logic_vector(25 downto 0);
@@ -44,27 +45,28 @@ end mem_if;
 -- memory: Micron M45W8MW16
 
 architecture arch of mem_if is
-    constant MEM_1MB_PAGE : std_logic_vector(3 downto 0) := "0000";
-
-    signal addr_word : std_logic_vector(18 downto 0);
-    signal byte_sel : std_logic;
+    signal byte_sel : std_logic; -- byte of word for 8-bit mode
 begin
-    data_out <= x"00" when rd = '0' else
-                mdata(7 downto 0)  when byte_sel = '0' else
-                mdata(15 downto 8) when byte_sel = '1' else x"00";
+    byte_sel <= addr(0);
 
-    mdata <= data_in & data_in when wr = '1' else (others => 'Z');
+    -- internal output
+    data_out <= x"00" when rd = '0' else
+                mdata(7 downto 0) when byte_sel = '0' else
+                mdata(15 downto 8);
+
+    -- external output
+
+    mdata <= (others => 'Z') when wr = '0' else
+             data_in when mode = '0' else
+             data_in(7 downto 0) & data_in(7 downto 0);
+    maddr <= "000" & addr(23 downto 1);
 
     mce_c <= not (rd or wr);
     moe_c <= not rd; 
     mwe_c <= not wr; 
 
-    mub_c <= not byte_sel;
-    mlb_c <= byte_sel;
-
-    addr_word <= addr_phy(19 downto 1);
-    byte_sel <= addr_phy(0);
-    maddr <= "000" & MEM_1MB_PAGE & addr_word;
+    mub_c <= mode and not byte_sel;
+    mlb_c <= mode and byte_sel;
 
     mclk <= '0';
     madv_c <= '0';

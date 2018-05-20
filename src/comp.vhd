@@ -34,15 +34,6 @@ architecture arch of comp is
         clk_out : out std_logic);
     end component;
 
-    component dcntr generic(init : std_logic_vector;
-                            bitwidth : integer); port(
-        clk, rst, ce : in std_logic;
-        cnten : in std_logic;
-        ld : in std_logic;
-        di : in std_logic_vector(bitwidth-1 downto 0);
-        do : out std_logic_vector(bitwidth-1 downto 0));
-    end component;
-
     component z80 port(
         clk, ce : in std_logic;
         cbi : in ctrlbus_in;
@@ -72,8 +63,9 @@ architecture arch of comp is
 
     component mem_if port(
         rd, wr : in std_logic;
-        addr_phy : in std_logic_vector(23 downto 0);
-        data_in : in std_logic_vector(7 downto 0);
+        mode : in std_logic;
+        addr : in std_logic_vector(23 downto 0);
+        data_in : in std_logic_vector(15 downto 0);
         data_out : out std_logic_vector(7 downto 0);
         maddr : out std_logic_vector(25 downto 0);
         mdata : inout std_logic_vector(15 downto 0);
@@ -133,17 +125,35 @@ architecture arch of comp is
         an : out std_logic_vector(3 downto 0));
     end component;
 
-    -- control bus
-    signal cbo : ctrlbus_out;
-    signal cbi : ctrlbus_in;
-    signal int : std_logic;
+    component dcntr generic(init : std_logic_vector;
+                            bitwidth : integer); port(
+        clk, rst, ce : in std_logic;
+        cnten : in std_logic;
+        ld : in std_logic;
+        di : in std_logic_vector(bitwidth-1 downto 0);
+        do : out std_logic_vector(bitwidth-1 downto 0));
+    end component;
 
-    -- data bus / addr bus
+    component trace port(
+        clk, rst, ce : in std_logic;
+        jump_beg, jump_end : in std_logic;
+        pc : in std_logic_vector(15 downto 0);
+        t : in natural range 1 to 6;
+        wr : out std_logic;
+        addr : out std_logic_vector(23 downto 0);
+        data : out std_logic_vector(15 downto 0));
+    end component;
+
+    -- cpu bus
     signal addr : std_logic_vector(15 downto 0);
     signal addr_phy, addr_bl, addr_ti : std_logic_vector(19 downto 0);
     signal data : std_logic_vector(7 downto 0);
     signal data_z80, data_mem : std_logic_vector(7 downto 0);
     signal data_ti, data_bl : std_logic_vector(7 downto 0);
+    signal cpu_rd, cpu_wr : std_logic;
+    signal cbo : ctrlbus_out;
+    signal cbi : ctrlbus_in;
+    signal int : std_logic;
 
     -- switches / btns
     type run_mode_t is (normal, step_i, step_m, step_t);
@@ -167,21 +177,27 @@ architecture arch of comp is
     signal cpu_stop : std_logic;
     signal sp_s, sp_q, sp_op : std_logic;
 
-    -- components <-> debug monitor
-    signal dbg : dbg_cmp_t;
+    -- mem input ctrl
+    signal mem_rd, mem_wr, mem_mode : std_logic;
+    signal mem_addr : std_logic_vector(23 downto 0);
+    signal mem_data : std_logic_vector(15 downto 0);
 
-    -- ti <-> kbd
+    -- kbd -> ti
     signal keys_down : keys_down_t;
     signal on_key_down : std_logic := '0';
-
-    -- ti <-> mem controller
-    signal cpu_rd, cpu_wr : std_logic;
-    signal mem_addr : std_logic_vector(23 downto 0);
 
     -- ti <-> vga
     signal gmem_vga_data : std_logic;
     signal vga_gmem_x : std_logic_vector(6 downto 0);
     signal vga_gmem_y : std_logic_vector(5 downto 0);
+
+    -- trc -> mem if
+    signal trc_wr : std_logic;
+    signal trc_addr : std_logic_vector(23 downto 0);
+    signal trc_data : std_logic_vector(15 downto 0);
+
+    -- components -> mon
+    signal dbg : dbg_cmp_t;
 
     -- mon <-> vga
     signal mon_vga_data : std_logic;
@@ -214,7 +230,14 @@ begin
     cbi.int <= int and not disable_int;
     cbi.reset <= rst;
     data <= data_z80 or data_mem or data_ti;
-    mem_addr <= x"0" & addr_phy;
+    
+    -- memory input ctrl (cpu priority, but should not collide)
+    mem_rd <= cpu_rd;
+    mem_wr <= cpu_wr or trc_wr;
+    mem_addr <= x"0" & addr_phy when cpu_wr = '1' or cpu_rd = '1' else
+                trc_addr;
+    mem_data <= data & data when cpu_wr = '1' else trc_data;
+    mem_mode <= cpu_wr;
 
     -- components
     cpu : z80 port map(clk, clk_z80_ce, cbi, cbo, addr, data, data_z80,
@@ -230,7 +253,8 @@ begin
                              gmem_vga_data, vga_gmem_x, vga_gmem_y,
                              mon_vga_data, vga_mon_x, vga_mon_y,
                              vga_red, vga_green, vga_blue, hsync, vsync);
-    mif : mem_if port map(cpu_rd, cpu_wr, mem_addr, data, data_mem,
+    mif : mem_if port map(cpu_rd, mem_wr, mem_mode,
+                          mem_addr, mem_data, data_mem,
                           maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                           mwe_c, mlb_c, mub_c);
     kbd : kbd_enc port map(clk, rst, ps2_kbd_clk, ps2_kbd_data,
@@ -297,4 +321,8 @@ begin
                          btns, num_curr,
                          rst, step, num_sel, num_new,
                          seg, an);
+    trc : trace port map(clk, rst, clk_z80_ce,
+                         dbg.z80.id.jump_beg, dbg.z80.id.jump_end,
+                         dbg.z80.pc, dbg.z80.state.t,
+                         trc_wr, trc_addr, trc_data);
 end arch;

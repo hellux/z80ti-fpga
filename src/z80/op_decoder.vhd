@@ -2433,7 +2433,6 @@ architecture arch of op_decoder is
          (regBC, regDE, regIY, regSP));
 
     constant im : im_tbl_t := (0, 1, 1, 2, 0, 1, 1, 2);
-
 begin
     process(state, instr)
         -- instruction split
@@ -2476,6 +2475,7 @@ begin
                  pv_src => alu_f,
                  iff_next => state.iff,
                  others => '0');
+        f.db := (others => '0');
 
         -- m1 cases
         if state.m = m1 then

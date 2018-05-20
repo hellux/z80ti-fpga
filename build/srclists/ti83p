@@ -27,6 +27,7 @@ src/ext/mem_if.vhd
 src/dbg/chars.vhd
 src/dbg/board.vhd
 src/dbg/monitor_vga.vhd
+src/dbg/trace.vhd
 src/ext/segment.vhd
 src/comp.vhd
 tests/comp_tb.vhd

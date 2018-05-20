@@ -16,6 +16,7 @@ architecture arch of m45 is
     constant APP_SIZE : integer := 2048;
     constant STACK_SIZE : integer := 256;
     constant RAM_SIZE : integer := 128;
+    constant TRACE_SIZE : integer := 256;
 
     constant BCALL0_L : integer := 16#00000#; -- jmp to routine
     constant BCALL0_R : integer := 16#00100#;
@@ -63,6 +64,9 @@ architecture arch of m45 is
 
     constant STACK_R : integer := 16#87fff#; -- (0xffff)
     constant STACK_L : integer := STACK_R-STACK_SIZE+1;
+
+    constant TRACE_L : integer := 16#088000#;
+    constant TRACE_R : integer := TRACE_L+TRACE_SIZE-1;
 
     type mem_t is array(integer range <>) of std_logic_vector(7 downto 0);
 
@@ -118,6 +122,7 @@ architecture arch of m45 is
     signal mem_im2_jp : mem_t(IM2_JP_L to IM2_JP_R) := (others => x"00");
     signal mem_app : mem_t(APP_L to APP_R) := file_to_mem("a.bin", APP_SIZE);
     signal mem_stack : mem_t(STACK_L to STACK_R) := (others => x"00");
+    signal mem_trace : mem_t(TRACE_L to TRACE_R) := (others => x"00");
     --signal mem_sscreen : mem_t(SSCREEN_L to SSCREEN_R)
     --    := file_to_mem("gbuf.bin", 768);
     signal mem_pscreen : mem_t(PSCREEN_L to PSCREEN_R) := (others => x"00");
@@ -181,6 +186,7 @@ begin
                     --write(mem_sscreen, mub_c, mlb_c, a_lb, mdata);
                     --write(mem_pscreen, mub_c, mlb_c, a_lb, mdata);
                     write(mem_stack, mub_c, mlb_c, a_lb, mdata);
+                    write(mem_trace, mub_c, mlb_c, a_lb, mdata);
                 end if;
                 word_out <= x"7676";
                 read(mem_app, a_lb, word_out);
