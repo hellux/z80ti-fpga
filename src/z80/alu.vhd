@@ -24,6 +24,7 @@ architecture arch of alu is
     signal result_buf : std_logic_vector(7 downto 0);
     
     -- flags
+    signal undef_res : std_logic_vector(7 downto 0); -- value for f3, f5
     signal half_add, half_sub, half_daa : std_logic;
     signal daa_c : std_logic;
     signal overflow, parity : std_logic;
@@ -137,6 +138,9 @@ begin
         half_add when '0',
         half_sub when '1',
         '-'      when others;
+    with op select undef_res <=
+        op2         when cp_i,
+        result_buf  when others;
 
     with op select flags_out(S_f) <= 
         flags_in(S_f) when scf_i|ccf_i|cpl_i|res_i|set_i|
@@ -164,7 +168,7 @@ begin
                                                rlc_i,
         bool_sl(unsigned(result_buf) = 0) when others;
 
-    flags_out(f5_f) <= result_buf(5);
+    flags_out(f5_f) <= undef_res(5);
 
     with op select flags_out(H_f) <=
         half_add        when add_i|adc_i|inc_i|dec_i|
@@ -183,7 +187,7 @@ begin
         flags_in(H_f)   when res_i|set_i,
         '1'             when others;
 
-    flags_out(f3_f) <= result_buf(3);
+    flags_out(f3_f) <= undef_res(3);
 
     with op select flags_out(PV_f) <=
         overflow             when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i|
