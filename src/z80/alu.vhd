@@ -77,7 +77,6 @@ begin
     with op select op2sn <=
         signed('0' & (not mask and op2))        when res_i,
         signed('0' & (mask or op2))             when set_i,
-         op2_ext                                when bit_i,
         -op2_ext                                when sub_i|
                                                      cp_i|neg_i|
                                                      cpi_i|cpir_i|
@@ -89,6 +88,7 @@ begin
                                                      rlca_i|rla_i,
         '0' & edge & op2_ext(7 downto 1)        when rrc_i|rr_i|sra_i|srl_i|
                                                      rrca_i|rra_i,
+         op2_ext                                when bit_i,
         op2_ext                                 when others;
 
     result_sum <= op1_ext + op2sn;
@@ -110,10 +110,12 @@ begin
                                                       add16_i1|add16_i2|
                                                       adc16_i1|adc16_i2|
                                                       sbc16_i1|sbc16_i2,
+        op2 and mask                             when bit_i,
         std_logic_vector(op2sn(7 downto 0))      when others;
     with op select result <=
         not(op2)   when cpl_i,
         op1        when cp_i|cpi_i|cpd_i|cpir_i|cpdr_i,
+        op2        when bit_i,
         result_buf when others;
 
     -- flags
@@ -143,30 +145,48 @@ begin
         result_buf  when others;
 
     with op select flags_out(S_f) <= 
-        flags_in(S_f) when scf_i|ccf_i|cpl_i|res_i|set_i|
-                           ldi_i|ldir_i|ldd_i|lddr_i|
+        flags_in(S_f) when ldi_i|ldir_i|ldd_i|lddr_i|
+                           cpl_i|ccf_i|scf_i|
                            add16_i1|add16_i2|
-                           rlca_i|rrca_i|rla_i|rra_i|
+                           rlca_i|rla_i|rrca_i|rra_i|
+                           set_i|res_i|
                            unknown,
-        result_buf(7) when cpi_i|cpir_i|cpd_i|cpdr_i|
+        result_buf(7) when ld_i|
+                           cpi_i|cpir_i|cpd_i|cpdr_i|
+                           add_i|adc_i|sub_i|sbc_i|
+                           and_i|or_i|xor_i|cp_i|
+                           inc_i|dec_i|
+                           daa_i|neg_i|
                            adc16_i2|sbc16_i2|
-                           rlc_i|
-                           rrd_i2|rld_i2,
-        result_buf(7) when others;
+                           rlc_i|rl_i|rrc_i|rr_i|
+                           sla_i|sra_i|srl_i|sll_i|
+                           rld_i2|rrd_i2|
+                           bit_i|
+                           in_i,
+        '-' when others;
 
     with op select flags_out(Z_f) <=
-        not result_buf(bit_select)        when bit_i,
-        flags_in(Z_f)                     when scf_i|ccf_i|cpl_i|res_i|set_i|
-                                               ldi_i|ldir_i|ldd_i|lddr_i|
+        flags_in(Z_f)                     when ldi_i|ldir_i|ldd_i|lddr_i|
+                                               cpl_i|ccf_i|scf_i|
                                                add16_i1|add16_i2|
-                                               rlca_i|rrca_i|rla_i|rra_i|
+                                               rlca_i|rla_i|rrca_i|rra_i|
+                                               set_i|res_i|
                                                unknown,
-        flags_in(Z_f) and bool_sl(unsigned(result_buf) = 0)
-                                          when adc16_i2|sbc16_i2,
-        bool_sl(unsigned(result_buf) = 0) when cpi_i|cpir_i|cpd_i|cpdr_i|
+        bool_sl(unsigned(result_buf) = 0) when ld_i|
+                                               cpi_i|cpir_i|cpd_i|cpdr_i|
+                                               add_i|adc_i|sub_i|sbc_i|
+                                               and_i|or_i|xor_i|cp_i|
+                                               inc_i|dec_i|
+                                               daa_i|neg_i|
                                                adc16_i1|sbc16_i1|
-                                               rlc_i,
-        bool_sl(unsigned(result_buf) = 0) when others;
+                                               rlc_i|rl_i|rrc_i|rr_i|
+                                               sla_i|sra_i|srl_i|sll_i|
+                                               rld_i2|rrd_i2|
+                                               bit_i|
+                                               in_i,
+        flags_in(Z_f) and
+        bool_sl(unsigned(result_buf) = 0) when adc16_i2|sbc16_i2,
+        '-' when others;
 
     flags_out(f5_f) <= undef_res(5);
 
@@ -190,17 +210,18 @@ begin
     flags_out(f3_f) <= undef_res(3);
 
     with op select flags_out(PV_f) <=
-        overflow             when add_i|adc_i|sub_i|sbc_i|cp_i|inc_i|dec_i|
+        overflow             when add_i|adc_i|sub_i|sbc_i|cp_i|
                                   adc16_i2|sbc16_i2,
-        bool_sl(op2 = x"80") when neg_i,
         parity               when and_i|or_i|xor_i|bit_i|res_i|
                                   rlc_i|rl_i|sla_i|sll_i|
                                   rrc_i|rr_i|sra_i|srl_i|
                                   daa_i|in_i|
                                   rrd_i2|rld_i2,
+        bool_sl(op2 = x"80") when dec_i|neg_i,
+        bool_sl(op2 = x"7f") when inc_i,
         flags_in(PV_f)       when add16_i1|add16_i2|
                                   rlca_i|rrca_i|rla_i|rra_i|
-                                  unknown,
+                                  cpl_i|unknown,
         flags_in(PV_f)       when others;
 
     with op select flags_out(N_f) <=
@@ -210,7 +231,7 @@ begin
         flags_in(N_f)   when daa_i|res_i|set_i,
         '0'             when ldi_i|ldir_i|ldd_i|lddr_i|
                              rlca_i|rrca_i|rla_i|rra_i|
-                             add16_i2|adc16_i2|
+                             add16_i2|adc16_i2|bit_i|ld_i|
                              unknown,
         '0'             when others;
 
@@ -227,6 +248,6 @@ begin
         flags_in(C_f)       when ldi_i|ldir_i|ldd_i|lddr_i|
                                  cpi_i|cpir_i|cpd_i|cpdr_i|
                                  rrd_i1|rrd_i2|rld_i1|rld_i2|
-                                 unknown,
+                                 cpl_i|ld_i|unknown,
         flags_in(C_f)       when others;
 end arch;
