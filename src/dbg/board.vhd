@@ -11,7 +11,7 @@ entity board is port(
     btns : in std_logic_vector(4 downto 0);
     num_disp : in std_logic_vector(15 downto 0);
 -- ctrl
-    rst, step : out std_logic;
+    rst, step, trc_en, trc_di : out std_logic;
     num_sel : out std_logic_vector(15 downto 0);
     num_new : out std_logic;
 -- segment
@@ -34,14 +34,16 @@ architecture arch of board is
     constant BUTTON_DOWN   : natural := 3;
     constant BUTTON_RIGHT  : natural := 4;
 
-    constant CTRL_STEP  : natural := BUTTON_MIDDLE;
-    constant CTRL_RST   : natural := BUTTON_UP;
-    constant CTRL_EDIT  : natural := BUTTON_LEFT;
-    constant EDIT_DONE  : natural := BUTTON_MIDDLE;
-    constant EDIT_INC   : natural := BUTTON_UP;
-    constant EDIT_LEFT  : natural := BUTTON_LEFT;
-    constant EDIT_DEC   : natural := BUTTON_DOWN;
-    constant EDIT_RIGHT : natural := BUTTON_RIGHT;
+    constant CTRL_STEP     : natural := BUTTON_MIDDLE;
+    constant CTRL_RST      : natural := BUTTON_UP;
+    constant CTRL_EDIT     : natural := BUTTON_LEFT;
+    constant CTRL_TRC_EN   : natural := BUTTON_RIGHT;
+    constant CTRL_TRC_DI   : natural := BUTTON_DOWN;
+    constant EDIT_DONE     : natural := BUTTON_MIDDLE;
+    constant EDIT_INC      : natural := BUTTON_UP;
+    constant EDIT_LEFT     : natural := BUTTON_LEFT;
+    constant EDIT_DEC      : natural := BUTTON_DOWN;
+    constant EDIT_RIGHT    : natural := BUTTON_RIGHT;
 
     constant COOLDOWN_TIME : natural := 1000; -- us
     constant CD_INIT : natural := SYS_FREQ/10**6 * COOLDOWN_TIME;
@@ -104,8 +106,10 @@ begin
     end process;
 
     -- ctrl signals
-    rst       <= bool_sl(state = ctrl) and btns(CTRL_RST);
-    step      <= bool_sl(state = ctrl) and btns(CTRL_STEP);
+    rst    <= bool_sl(state = ctrl) and btns(CTRL_RST);
+    step   <= bool_sl(state = ctrl) and btns(CTRL_STEP);
+    trc_en <= bool_sl(state = ctrl) and btns(CTRL_TRC_EN);
+    trc_di <= bool_sl(state = ctrl) and btns(CTRL_TRC_DI);
 
     -- addr
     seg_num_merge <= std_logic_vector(seg_num(0)) &

@@ -55,9 +55,9 @@ architecture arch of comp_tb is
 
     procedure press(signal button : out std_logic) is begin
         button <= '1';
-        wait for 213 ns;
+        wait for 2000 ns;
         button <= '0';
-        wait for 124 ns;
+        wait for 2343 ns;
     end procedure;
 begin
     c : comp port map(clk, btns, sw,
@@ -77,12 +77,11 @@ begin
     end process;
 
     process begin
-        sw(7 downto 6) <= "00";
-        sw(5 downto 4) <= "00";
-        sw(0) <= '0'; -- do not break on addr
+        sw(1 downto 0) <= "10";
         btns <= (others => '0');
 
         press(btns(1)); -- reset
+        press(btns(4));
 
         -- wait
         wait for 1000 ms;

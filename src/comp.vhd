@@ -118,7 +118,7 @@ architecture arch of comp is
         clk : in std_logic;
         btns : in std_logic_vector(4 downto 0);
         num_disp : in std_logic_vector(15 downto 0);
-        rst, step : out std_logic;
+        rst, step, trc_en, trc_di : out std_logic;
         num_sel : out std_logic_vector(15 downto 0);
         num_new : out std_logic;
         seg : out std_logic_vector(7 downto 0);
@@ -136,12 +136,14 @@ architecture arch of comp is
 
     component trace port(
         clk, rst, ce : in std_logic;
+        enable, disable : in std_logic;
         jump_beg, jump_end : in std_logic;
         pc : in std_logic_vector(15 downto 0);
-        t : in natural range 1 to 6;
+        cpu_block : out std_logic;
         wr : out std_logic;
         addr : out std_logic_vector(23 downto 0);
-        data : out std_logic_vector(15 downto 0));
+        data : out std_logic_vector(15 downto 0);
+        dbg : out dbg_trace_t);
     end component;
 
     -- cpu bus
@@ -163,7 +165,7 @@ architecture arch of comp is
     signal run_mode : run_mode_t;
     signal disable_int : std_logic;
     signal break_sel : break_sel_t;
-    signal step, rst : std_logic;
+    signal step, rst, trc_en, trc_di : std_logic;
 
     -- break / instruction count number
     signal num_sel, num_curr : std_logic_vector(15 downto 0);
@@ -174,7 +176,8 @@ architecture arch of comp is
     signal clk_10khz, clk_1mhz, clk_15mhz : std_logic;
     signal clk_z80, clk_ti, clk_vga : std_logic;
     signal clk_z80_ce, clk_ti_ce : std_logic;
-    signal cpu_stop : std_logic;
+    signal clk_z80_cpu_ce : std_logic;
+    signal cpu_stop, cpu_block : std_logic;
     signal sp_s, sp_q, sp_op : std_logic;
 
     -- mem input ctrl
@@ -231,16 +234,15 @@ begin
     cbi.reset <= rst;
     data <= data_z80 or data_mem or data_ti;
     
-    -- memory input ctrl (cpu priority, but should not collide)
+    -- memory input ctrl
     mem_rd <= cpu_rd;
     mem_wr <= cpu_wr or trc_wr;
-    mem_addr <= x"0" & addr_phy when cpu_wr = '1' or cpu_rd = '1' else
-                trc_addr;
-    mem_data <= data & data when cpu_wr = '1' else trc_data;
-    mem_mode <= cpu_wr;
+    mem_addr <= trc_addr when trc_wr = '1' else x"0" & addr_phy;
+    mem_data <= trc_data when trc_wr = '1' else data & data;
+    mem_mode <= not trc_wr;
 
     -- components
-    cpu : z80 port map(clk, clk_z80_ce, cbi, cbo, addr, data, data_z80,
+    cpu : z80 port map(clk, clk_z80_cpu_ce, cbi, cbo, addr, data, data_z80,
                        dbg.z80);
     ti_comp : ti port map(clk, rst, clk_ti_ce,
                           int, cbo, addr, data, data_ti,
@@ -264,6 +266,7 @@ begin
     dbg.data <= data;
     dbg.addr_log <= addr;
     dbg.addr_phy <= addr_phy;
+    dbg.trc_ptr <= std_logic_vector(trc_addr);
     dbg.cbi <= cbi;
     dbg.cbo <= cbo;
 
@@ -302,6 +305,7 @@ begin
         (bool_sl(break_sel = br_ex) and cpu_rd and cbo.m1)))));
     -- chip enables
     clk_z80_ce <= clk_z80 and not cpu_stop;
+    clk_z80_cpu_ce <= clk_z80_ce and not cpu_block;
     clk_ti_ce <= clk_ti and not cpu_stop;
 
     num_ce <= bool_sl(break_sel = br_ic) and
@@ -319,10 +323,13 @@ begin
                                    mon_vga_data);
     brd : board port map(clk,
                          btns, num_curr,
-                         rst, step, num_sel, num_new,
+                         rst, step, trc_en, trc_di,
+                         num_sel, num_new,
                          seg, an);
     trc : trace port map(clk, rst, clk_z80_ce,
+                         trc_en, trc_di,
                          dbg.z80.id.jump_beg, dbg.z80.id.jump_end,
-                         dbg.z80.pc, dbg.z80.state.t,
-                         trc_wr, trc_addr, trc_data);
+                         dbg.z80.pc, 
+                         cpu_block, trc_wr, trc_addr, trc_data,
+                         dbg.trace);
 end arch;
