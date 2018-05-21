@@ -15,7 +15,7 @@ architecture arch of alu is
     -- preprocess
     signal mask : std_logic_vector(7 downto 0); -- mask for bit, set, res
     signal edge : std_logic; -- lsb or msb when shifting
-    signal arithl, arithr, c_in : signed(8 downto 0);
+    signal arithl, arithr, c_in : signed(8 downto 0); -- arith ops, carry in
 
     -- calculation
     signal daa_v : signed(8 downto 0);
