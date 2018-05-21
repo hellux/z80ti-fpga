@@ -13,14 +13,13 @@ end alu;
 
 architecture arch of alu is
     -- preprocess
-    signal mask : std_logic_vector(7 downto 0); -- mask for bit set/reset
+    signal mask : std_logic_vector(7 downto 0); -- mask for bit, set, res
     signal edge : std_logic; -- lsb or msb when shifting
-    signal op1_ext, op2_ext : signed(8 downto 0);
-    signal op2sn : signed(8 downto 0); -- shift/neg result
+    signal arithl, arithr, c_in : signed(8 downto 0);
 
     -- calculation
     signal daa_v : signed(8 downto 0);
-    signal result_sum : signed(8 downto 0);
+    signal arith_res : signed(8 downto 0);
     signal result_buf : std_logic_vector(7 downto 0);
     
     -- flags
@@ -37,15 +36,15 @@ begin
         mask <= m;
     end process;
 
-    daa_logic : process(op2_ext, flags_in) is
+    daa_logic : process(arithr, flags_in) is
 	    variable res, v : signed(8 downto 0);
     begin
         daa_c <= '0';
         v := (others => '0');
-        if (unsigned(op2_ext(3 downto 0)) > "1001" or flags_in(H_f) = '1') then
+        if (unsigned(arithr(3 downto 0)) > "1001" or flags_in(H_f) = '1') then
             v := v + ('0' & x"06");
         end if;
-        res := op2_ext + v;
+        res := arithr + v;
         if (unsigned(res(7 downto 4)) > "1001"
             or res(8) = '1'
             or flags_in(C_f) = '1')
@@ -59,13 +58,27 @@ begin
         daa_v <= v;
     end process;
 
-    with op select op1_ext <=
+    with op select arithl <=
+        signed('0' & op1)   when add_i|add16_i1|adc_i|add16_i2|
+                                 adc16_i1|adc16_i2|sub_i|cp_i|
+                                 cpi_i|cpir_i|cpd_i|cpdr_i|
+                                 sbc_i|sbc16_i1|sbc16_i2,
+        daa_v               when daa_i,
         to_signed(1, 9)     when inc_i,
         to_signed(-1, 9)    when dec_i,
         to_signed(0, 9)     when neg_i,
-        daa_v               when daa_i,
-        signed('0' & op1)   when others;
-    op2_ext <= signed('0' & op2);
+        (others => '-')     when others;
+    arithr <= signed('0' & op2);
+
+    c_in <= x"00" & flags_in(C_f);
+    with op select arith_res <=
+        arithl + arithr         when add_i|add16_i1|inc_i|dec_i|daa_i,
+        arithl + arithr + c_in  when adc_i|add16_i2|adc16_i1|adc16_i2,
+        arithl - arithr         when sub_i|cp_i|neg_i|
+                                     cpi_i|cpir_i|cpd_i|cpdr_i,
+        arithl - arithr - c_in  when sbc_i|sbc16_i1|sbc16_i2,
+        (others => '0')         when others;
+
     with op select edge <=
         '0'             when sla_i|srl_i,
         '1'             when sll_i, -- undoc odd case
@@ -73,51 +86,33 @@ begin
         op2(0)          when rrc_i|rrca_i,
         op2(7)          when rlc_i|rlca_i|sra_i,
         '-'             when others;
-    with op select op2sn <=
-        signed('0' & (not mask and op2))        when res_i,
-        signed('0' & (mask or op2))             when set_i,
-        -op2_ext                                when sub_i|
-                                                     cp_i|neg_i|
-                                                     cpi_i|cpir_i|
-                                                     cpd_i|cpdr_i,
-        -op2_ext - ("00000000" & flags_in(C_f)) when sbc_i|sbc16_i1|sbc16_i2,
-         op2_ext + ("00000000" & flags_in(C_f)) when adc_i|add16_i2|
-                                                     adc16_i1|adc16_i2,
-        '0' & op2_ext(6 downto 0) & edge        when rlc_i|rl_i|sla_i|sll_i|
-                                                     rlca_i|rla_i,
-        '0' & edge & op2_ext(7 downto 1)        when rrc_i|rr_i|sra_i|srl_i|
-                                                     rrca_i|rra_i,
-        op2_ext                                 when others;
 
-    result_sum <= op1_ext + op2sn;
-    
     with op select result_buf <=
+        op1 and op2                              when and_i,
+        op1 or  op2                              when or_i,
+        op1 xor op2                              when xor_i,
         op2(3 downto 0) & op1(3 downto 0)        when rld_i1,
         op1(7 downto 4) & op2(7 downto 4)        when rld_i2,
         op1(3 downto 0) & op2(7 downto 4)        when rrd_i1,
         op1(7 downto 4) & op2(3 downto 0)        when rrd_i2,
-        op1 and op2                              when and_i,
-        op1 xor op2                              when xor_i,
-        op1 or  op2                              when or_i,
-        std_logic_vector(result_sum(7 downto 0)) when add_i|adc_i|
-                                                      sub_i|sbc_i|
-                                                      inc_i|dec_i|
-                                                      neg_i|cp_i|daa_i|
-                                                      cpi_i|cpd_i|
-                                                      cpir_i|cpdr_i|
-                                                      add16_i1|add16_i2|
-                                                      adc16_i1|adc16_i2|
-                                                      sbc16_i1|sbc16_i2,
+        not(op2)                                 when cpl_i,
+        not mask and op2                         when res_i,
+        mask or op2                              when set_i,
         op2 and mask                             when bit_i,
-        std_logic_vector(op2sn(7 downto 0))      when others;
+        op2(6 downto 0) & edge                   when rlc_i|rl_i|sla_i|sll_i|
+                                                      rlca_i|rla_i,
+        edge & op2(7 downto 1)                   when rrc_i|rr_i|sra_i|srl_i|
+                                                      rrca_i|rra_i,
+        op2                                      when ccf_i|scf_i,
+        std_logic_vector(arith_res(7 downto 0))  when others;
+
     with op select result <=
-        not(op2)   when cpl_i,
         op1        when cp_i|cpi_i|cpd_i|cpir_i|cpdr_i,
         op2        when bit_i,
         result_buf when others;
 
     -- flags
-    half_carry <= result_buf(4) xor op1_ext(4) xor op2_ext(4);
+    half_carry <= result_buf(4) xor arithl(4) xor arithr(4);
     calc_parity : process(result_buf)
         variable p : std_logic;
     begin
@@ -128,9 +123,9 @@ begin
         parity <= not p;
     end process;
     with op select overflow <=
-        (op1_ext(7) xnor op2_ext(7)) and (op1_ext(7) xor result_sum(7))
+        (arithl(7) xnor arithr(7)) and (arithl(7) xor arith_res(7))
             when add_i|adc_i|inc_i|dec_i|add16_i2|adc16_i2,
-        (op1_ext(7) xor op2_ext(7)) and (op1_ext(7) xor result_sum(7))
+        (arithl(7) xor arithr(7)) and (arithl(7) xor arith_res(7))
             when sub_i|sbc_i|cp_i|sbc16_i2,
         '-' when others;
     with op select undef_res <=
@@ -261,7 +256,7 @@ begin
         '1'                   when scf_i,
         op2(0)                when rrca_i|rra_i|rrc_i|rr_i|sra_i|srl_i,
         op2(7)                when rlca_i|rla_i|rlc_i|rl_i|sla_i|sll_i,
-        result_sum(8)         when add_i|adc_i|sub_i|sbc_i|cp_i|
+        arith_res(8)          when add_i|adc_i|sub_i|sbc_i|cp_i|
                                    add16_i1|add16_i2|adc16_i1|adc16_i2|
                                    sbc16_i1|sbc16_i2,
         bool_sl(op2 /= x"00") when neg_i,
