@@ -32,7 +32,7 @@ entity trace is port(
     clk, rst, ce : in std_logic;
     jump_beg, jump_end : in std_logic;
     pc : in std_logic_vector(15 downto 0);
-    t : in natural range 1 to 6;
+    cpu_block : out std_logic;
     wr : out std_logic;
     addr : out std_logic_vector(23 downto 0);
     data : out std_logic_vector(15 downto 0));
@@ -48,6 +48,9 @@ architecture arch of trace is
     end component;
 
     constant LIST_BOTTOM : unsigned(23 downto 0) := x"088000";
+    constant WR_CYCLE1 : natural := 2;
+    constant WR_CYCLE2 : natural := 6;
+    constant CYCLES : natural := 8;
 
     type trace_state_t is (idle, store);
 
@@ -55,6 +58,7 @@ architecture arch of trace is
     signal list_ptr : unsigned(23 downto 0) := LIST_BOTTOM;
     signal to_rd : std_logic;
     signal state : trace_state_t := idle;
+    signal store_cycle : integer range 1 to 8;
 begin
     save_from : reg generic map(x"0000", 16)
                     port map(clk, rst, ce, jump_beg, pc, from_addr);
@@ -72,14 +76,17 @@ begin
                 when idle =>
                     if jump_end = '1' then
                         state <= store;
+                        store_cycle <= 1;
                         to_rd <= '1';
                     end if;
                 when store =>
-                    case t is
-                    when 1 =>
+                    if store_cycle /= CYCLES then
+                        store_cycle <= store_cycle + 1;
+                    end if;
+                    case store_cycle is
+                    when WR_CYCLE1|WR_CYCLE2 =>
                         list_ptr <= list_ptr + 2;
-                    when 3 =>
-                        list_ptr <= list_ptr + 2;
+                    when CYCLES =>
                         state <= idle;
                     when others => null; end case;
                 end case;
@@ -88,9 +95,12 @@ begin
     end process;
 
     data <= (others => '0') when state = idle else
-            from_addr       when t = 1 else 
-            to_addr         when t = 3 else
+            from_addr       when store_cycle = WR_CYCLE1 else 
+            to_addr         when store_cycle = WR_CYCLE2 else
             (others => '0');
     addr <= std_logic_vector(list_ptr);
-    wr <= '1' when state = store and (t = 1 or t = 3) else '0';
+    wr <= '1' when state = store and
+        (store_cycle = WR_CYCLE1 or store_cycle = WR_CYCLE2) else
+          '0';
+    cpu_block <= '1' when state = store else '0';
 end arch;

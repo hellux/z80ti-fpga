@@ -77,12 +77,13 @@ begin
     end process;
 
     process begin
-        sw(7 downto 6) <= "00";
-        sw(5 downto 4) <= "00";
-        sw(0) <= '0'; -- do not break on addr
+        sw(1 downto 0) <= "10";
         btns <= (others => '0');
 
         press(btns(1)); -- reset
+
+        wait for 50 us;
+        press(btns(0)); -- step
 
         -- wait
         wait for 1000 ms;

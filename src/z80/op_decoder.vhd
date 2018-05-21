@@ -96,8 +96,6 @@ architecture arch of op_decoder is
         case state.t is
         when t1 =>
             f.cw.abus_src := pc_o;
-        when t2 =>
-            f.cw.abus_src := pc_o;
             f.cw.addr_op := inc;
             f.cw.pc_rd := '1';
         when others => null; end case;
