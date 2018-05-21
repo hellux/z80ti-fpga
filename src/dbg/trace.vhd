@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.cmp_comm.all;
 
 -- write jump addresses to memory for debugging
 --
@@ -38,7 +39,7 @@ entity trace is port(
     addr : out std_logic_vector(23 downto 0);
     data : out std_logic_vector(15 downto 0);
 -- debug
-    from_jump, to_jump : out std_logic_vector(15 downto 0));
+    dbg : out dbg_trace_t);
 end trace;
 
 architecture arch of trace is
@@ -112,6 +113,7 @@ begin
           '0';
     cpu_block <= '1' when state = store else '0';
 
-    from_jump <= from_addr;
-    to_jump <= to_addr;
+    dbg.enabled <= '0' when state = disabled else '1';
+    dbg.from_jump <= from_addr;
+    dbg.to_jump <= to_addr;
 end arch;
