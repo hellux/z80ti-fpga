@@ -23,10 +23,10 @@ use ieee.numeric_std.all;
 --                 |____|
 --                 |____|
 -- running
---      hexdump -e '1/2 "%04x" " -> " 1/2 "%04x" "\n"' memdump.bin
+--      hexdump -e '"%06.6_ax: " 1/2 "%04x" " -> " 1/2 "%04x" "\n"' trace.bin
 -- outputs
---      8003 -> f000
---      f0d0 -> 9d95
+--      000000: 8003 -> f000
+--      000004: f0d0 -> 9d95
 
 entity trace is port(
     clk, rst, ce : in std_logic;
@@ -57,14 +57,15 @@ architecture arch of trace is
 
     type trace_state_t is (disabled, idle, store);
 
-    signal from_addr, to_addr : std_logic_vector(15 downto 0);
+    signal from_addr, to_addr, pc_from_corr : std_logic_vector(15 downto 0);
     signal list_ptr : unsigned(23 downto 0) := LIST_BOTTOM;
     signal to_rd : std_logic;
-    signal state : trace_state_t := idle;
+    signal state : trace_state_t := disabled;
     signal store_cycle : integer range 1 to 8;
 begin
+    pc_from_corr <= std_logic_vector(unsigned(pc) - 1);
     save_from : reg generic map(x"0000", 16)
-                    port map(clk, rst, ce, jump_beg, pc, from_addr);
+                    port map(clk, rst, ce, jump_beg, pc_from_corr, from_addr);
     save_to : reg generic map(x"0000", 16)
                   port map(clk, rst, ce, to_rd, pc, to_addr);
 

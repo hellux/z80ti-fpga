@@ -81,11 +81,7 @@ begin
         btns <= (others => '0');
 
         press(btns(1)); -- reset
-        press(btns(4)); -- enable trc
-
-        wait for 70 us;
-        press(btns(3)); -- disable trc
-        press(btns(4)); -- enable trc
+        press(btns(4));
 
         -- wait
         wait for 1000 ms;
