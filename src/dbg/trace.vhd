@@ -30,12 +30,15 @@ use ieee.numeric_std.all;
 
 entity trace is port(
     clk, rst, ce : in std_logic;
+    enable, disable : in std_logic;
     jump_beg, jump_end : in std_logic;
     pc : in std_logic_vector(15 downto 0);
     cpu_block : out std_logic;
     wr : out std_logic;
     addr : out std_logic_vector(23 downto 0);
-    data : out std_logic_vector(15 downto 0));
+    data : out std_logic_vector(15 downto 0);
+-- debug
+    from_jump, to_jump : out std_logic_vector(15 downto 0));
 end trace;
 
 architecture arch of trace is
@@ -52,7 +55,7 @@ architecture arch of trace is
     constant WR_CYCLE2 : natural := 6;
     constant CYCLES : natural := 8;
 
-    type trace_state_t is (idle, store);
+    type trace_state_t is (disabled, idle, store);
 
     signal from_addr, to_addr : std_logic_vector(15 downto 0);
     signal list_ptr : unsigned(23 downto 0) := LIST_BOTTOM;
@@ -67,12 +70,16 @@ begin
 
     process(clk) begin
         if rising_edge(clk) then
-            if rst = '1' then
+            if rst = '1' or disable = '1' then
                 list_ptr <= LIST_BOTTOM;
-                state <= idle;
+                state <= disabled;
             elsif ce = '1' then
                 to_rd <= '0';
                 case state is
+                when disabled =>
+                    if enable = '1' then
+                        state <= idle;
+                    end if;
                 when idle =>
                     if jump_end = '1' then
                         state <= store;
@@ -103,4 +110,7 @@ begin
         (store_cycle = WR_CYCLE1 or store_cycle = WR_CYCLE2) else
           '0';
     cpu_block <= '1' when state = store else '0';
+
+    from_jump <= from_addr;
+    to_jump <= to_addr;
 end arch;

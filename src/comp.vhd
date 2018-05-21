@@ -118,7 +118,7 @@ architecture arch of comp is
         clk : in std_logic;
         btns : in std_logic_vector(4 downto 0);
         num_disp : in std_logic_vector(15 downto 0);
-        rst, step, reset_trace : out std_logic;
+        rst, step, trc_en, trc_di : out std_logic;
         num_sel : out std_logic_vector(15 downto 0);
         num_new : out std_logic;
         seg : out std_logic_vector(7 downto 0);
@@ -136,12 +136,14 @@ architecture arch of comp is
 
     component trace port(
         clk, rst, ce : in std_logic;
+        enable, disable : in std_logic;
         jump_beg, jump_end : in std_logic;
         pc : in std_logic_vector(15 downto 0);
         cpu_block : out std_logic;
         wr : out std_logic;
         addr : out std_logic_vector(23 downto 0);
-        data : out std_logic_vector(15 downto 0));
+        data : out std_logic_vector(15 downto 0);
+        from_jump, to_jump : out std_logic_vector(15 downto 0));
     end component;
 
     -- cpu bus
@@ -163,8 +165,7 @@ architecture arch of comp is
     signal run_mode : run_mode_t;
     signal disable_int : std_logic;
     signal break_sel : break_sel_t;
-    signal step, rst : std_logic;
-    signal reset_trace : std_logic;
+    signal step, rst, trc_en, trc_di : std_logic;
 
     -- break / instruction count number
     signal num_sel, num_curr : std_logic_vector(15 downto 0);
@@ -265,6 +266,7 @@ begin
     dbg.data <= data;
     dbg.addr_log <= addr;
     dbg.addr_phy <= addr_phy;
+    dbg.trc_ptr <= std_logic_vector(trc_addr);
     dbg.cbi <= cbi;
     dbg.cbo <= cbo;
 
@@ -321,11 +323,13 @@ begin
                                    mon_vga_data);
     brd : board port map(clk,
                          btns, num_curr,
-                         rst, step, reset_trace,
+                         rst, step, trc_en, trc_di,
                          num_sel, num_new,
                          seg, an);
-    trc : trace port map(clk, reset_trace, clk_z80_ce,
+    trc : trace port map(clk, rst, clk_z80_ce,
+                         trc_en, trc_di,
                          dbg.z80.id.jump_beg, dbg.z80.id.jump_end,
                          dbg.z80.pc, 
-                         cpu_block, trc_wr, trc_addr, trc_data);
+                         cpu_block, trc_wr, trc_addr, trc_data,
+                         dbg.from_jump, dbg.to_jump);
 end arch;

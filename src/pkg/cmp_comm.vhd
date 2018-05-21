@@ -36,5 +36,7 @@ package cmp_comm is
         addr_phy : std_logic_vector(19 downto 0);
         cbi : ctrlbus_in;
         cbo : ctrlbus_out;
+        from_jump, to_jump : std_logic_vector(15 downto 0);
+        trc_ptr : std_logic_vector(23 downto 0);
     end record;
 end cmp_comm;
