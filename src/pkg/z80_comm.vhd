@@ -42,7 +42,7 @@ package z80_comm is
         im : natural range 0 to 2;
         iff : std_logic;
         cc : cond_t;
-        m : natural range 1 to 6;
+        m : natural range 1 to 5;
         t : natural range 1 to 6;
     end record;
 
