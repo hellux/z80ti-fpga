@@ -143,7 +143,7 @@ architecture arch of comp is
         wr : out std_logic;
         addr : out std_logic_vector(23 downto 0);
         data : out std_logic_vector(15 downto 0);
-        from_jump, to_jump : out std_logic_vector(15 downto 0));
+        dbg : out dbg_trace_t);
     end component;
 
     -- cpu bus
@@ -331,5 +331,5 @@ begin
                          dbg.z80.id.jump_beg, dbg.z80.id.jump_end,
                          dbg.z80.pc, 
                          cpu_block, trc_wr, trc_addr, trc_data,
-                         dbg.from_jump, dbg.to_jump);
+                         dbg.trace);
 end arch;

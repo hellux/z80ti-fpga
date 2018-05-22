@@ -28,6 +28,11 @@ package cmp_comm is
 
     type keys_down_t is array(0 to 6) of std_logic_vector(7 downto 0);
 
+    type dbg_trace_t is record
+        enabled : std_logic;
+        from_jump, to_jump : std_logic_vector(15 downto 0);
+    end record;
+
     type dbg_cmp_t is record
         z80 : dbg_z80_t;
         ti : dbg_ti_t;
@@ -36,7 +41,7 @@ package cmp_comm is
         addr_phy : std_logic_vector(19 downto 0);
         cbi : ctrlbus_in;
         cbo : ctrlbus_out;
-        from_jump, to_jump : std_logic_vector(15 downto 0);
         trc_ptr : std_logic_vector(23 downto 0);
+        trace : dbg_trace_t;
     end record;
 end cmp_comm;

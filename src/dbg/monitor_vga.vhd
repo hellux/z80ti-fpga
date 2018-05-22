@@ -265,9 +265,10 @@ begin
         pages(45) := val_lcd_mode;
 
     -- trace jumps
-        pages(48) := " " & hex_str(dbg.trc_ptr) & " ";
-        pages(49) := " FR:" & hex_str(dbg.from_jump);
-        pages(50) := " TO:" & hex_str(dbg.to_jump);
+        pages(48) := ' ' & hex_str(dbg.trc_ptr) & 'D';
+        if dbg.trace.enabled = '1' then pages(48)(8) := 'E'; end if;
+        pages(49) := " FR:" & hex_str(dbg.trace.from_jump);
+        pages(50) := " TO:" & hex_str(dbg.trace.to_jump);
 
         char_ch := pages(page_index)(page_col+1);
         char_int := character'pos(char_ch);

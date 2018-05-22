@@ -19,7 +19,7 @@ package z80_comm is
                      ldd_i, cpd_i, ind_i, outd_i,
                      ldir_i, cpir_i, inir_i, otir_i,
                      lddr_i, cpdr_i, indr_i, otdr_i);
-    type rf_swap_t is (none, af, reg, dehl);
+    type rf_swap_t is (none, af, reg, dehl, fz);
     type addr_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
 
@@ -61,7 +61,6 @@ package z80_comm is
         rf_rdd, rf_rda : std_logic;      -- rd to regfile from dbus/abus
         rf_swp : rf_swap_t;              -- swap regs in regfile
         f_rd : std_logic;                -- alu -> F
-        f_save, f_load : std_logic;      -- F -> fsav, fsav -> F
         pv_src : pv_src_t;               -- signal to use for pv flag
         i_rd, r_rd : std_logic;          -- dbus -> I, dbus -> R
         ir_rd : std_logic;               -- dbus -> IR
