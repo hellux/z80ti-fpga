@@ -44,6 +44,7 @@ begin
         variable val_hwt1, val_hwt2 : string(1 to 8);
         variable val_hwt1f, val_hwt2f : string(1 to 8);
         variable val_lcd_mode : string(1 to 8);
+        variable val_lcd_ptr : string(1 to 8);
 
         variable pages : pages_t;
         variable char_ch : character;
@@ -201,6 +202,11 @@ begin
         if dbg.ti.lcd.wl = '1' then val_lcd_mode(6) := '8'; end if;
         if dbg.ti.lcd.active = '1' then val_lcd_mode(8) := 'E'; end if;
 
+        val_lcd_mode := "XX:YY:ZZ";
+        val_lcd_mode(1 to 2) := hex_str(dbg.ti.lcd.x);
+        val_lcd_mode(4 to 5) := hex_str(dbg.ti.lcd.y);
+        val_lcd_mode(7 to 8) := hex_str(dbg.ti.lcd.z);
+
         pages := (others => (others => ' '));
 
     -- states / int
@@ -263,6 +269,7 @@ begin
         pages(43) := val_hwt2;
         pages(44) := val_hwt2f;
         pages(45) := val_lcd_mode;
+        pages(46) := val_lcd_ptr;
 
     -- trace jumps
         pages(48) := ' ' & hex_str(dbg.trc_ptr) & 'D';
