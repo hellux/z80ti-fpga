@@ -254,7 +254,7 @@ begin
                              gmem_vga_data, vga_gmem_x, vga_gmem_y,
                              mon_vga_data, vga_mon_x, vga_mon_y,
                              vga_red, vga_green, vga_blue, hsync, vsync);
-    mif : mem_if port map(cpu_rd, mem_wr, mem_mode,
+    mif : mem_if port map(mem_rd, mem_wr, mem_mode,
                           mem_addr, mem_data, data_mem,
                           maddr, mdata, mclk, madv_c, mcre, mce_c, moe_c,
                           mwe_c, mlb_c, mub_c);
