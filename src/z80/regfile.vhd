@@ -120,9 +120,8 @@ begin
     swap_proc : process(clk)
         variable reg_i : integer range 0 to 1;
     begin
-        if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
-
         if rising_edge(clk) then
+            if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
             if rst = '1' then
                 s <= RF_SWAP_INIT;
             elsif ce = '1' then
