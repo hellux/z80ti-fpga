@@ -772,31 +772,33 @@ architecture arch of op_decoder is
             when others => null; end case;
         when m2 => -- fetch mem (hl) / port (c)
             case op is
-            when ldi_i|cpi_i|ldd_i|cpd_i|outi_i|outd_i|
-                 ldir_i|lddr_i|cpir_i|cpdr_i|otir_i|otdr_i => 
+            when ldi_i|ldir_i|ldd_i|lddr_i|
+                 cpi_i|cpir_i|cpd_i|cpdr_i|
+                 outi_i|otir_i|outd_i|otdr_i => 
                 f := mem_rd(state, f);
-            when ini_i|ind_i|inir_i|indr_i =>
+            when ini_i|inir_i|ind_i|indr_i =>
                 f := io_rd(state, f);
             when others => null; end case;
      
             case state.t is
             when t1 =>
                 case op is
-                when ldi_i|ldd_i|cpi_i|cpd_i|outi_i|outd_i|
-                     ldir_i|lddr_i|cpir_i|cpdr_i|otir_i|otdr_i =>
+                when ldi_i|ldir_i|ldd_i|lddr_i|
+                     cpi_i|cpir_i|cpd_i|cpdr_i|
+                     outi_i|outd_i|otir_i|otdr_i =>
                     f.cw.rf_addr := regHL;
                     f.cw.abus_src := rf_o;
-                when ini_i|ind_i|inir_i|indr_i =>
+                when ini_i|inir_i|ind_i|indr_i =>
                     f.cw.rf_addr := regBC;
                     f.cw.abus_src := rf_o;
                 when others => null; end case;
-            when t3 =>
+            when t3 => -- dbufi -> dbus -> dbufo
                 case op is
-                when ldi_i|ldd_i|ini_i|ind_i|outi_i|outd_i|
-                     ldir_i|lddr_i|inir_i|indr_i|otir_i|otdr_i => 
-                    f.cw.rf_addr := regZ;
-                    f.cw.rf_rdd := '1';
-                when cpi_i|cpd_i|cpir_i|cpdr_i  => 
+                when ldi_i|ldir_i|ldd_i|lddr_i|
+                     ini_i|inir_i|ind_i|indr_i|
+                     outi_i|otir_i|outd_i|otdr_i =>
+                    f.cw.data_rdo := '1';
+                when cpi_i|cpir_i|cpd_i|cpdr_i  => 
                     f.cw.tmp_rd := '1';
                     f.cw.act_rd := '1';
                 when others => null; end case;
@@ -805,33 +807,25 @@ architecture arch of op_decoder is
             when others => null; end case;
         when m3 =>
             case op is
-            when ldi_i|cpi_i|ldd_i|cpd_i|ini_i|ind_i|
-                 ldir_i|cpir_i|lddr_i|cpdr_i|inir_i|indr_i =>
+            when ldi_i|ldir_i|ldd_i|lddr_i|
+                 ini_i|inir_i|ind_i|indr_i =>
                 f := mem_wr(state, f);
-            when outi_i|outd_i|otir_i|otdr_i =>
+            when outi_i|otir_i|outd_i|otdr_i =>
                 f := io_wr(state, f);
             when others => null; end case;
             
             case state.t is
             when t1 =>
                 case op is
-                when ldi_i|ldd_i|ldir_i|lddr_i => 
+                when ldi_i|ldir_i|ldd_i|lddr_i =>
                     f.cw.rf_addr := regDE;
                     f.cw.abus_src := rf_o;
-                when ini_i|ind_i|inir_i|indr_i =>
+                when ini_i|inir_i|ind_i|indr_i =>
                     f.cw.rf_addr := regHL;
                     f.cw.abus_src := rf_o;
                 when outi_i|outd_i|otir_i|otdr_i => 
                     f.cw.rf_addr := regBC;
                     f.cw.abus_src := rf_o;
-                when others => null; end case;
-            when t2 =>
-                case op is
-                when ldi_i|ldd_i|ini_i|ind_i|outi_i|outd_i|
-                     ldir_i|lddr_i|inir_i|indr_i|otir_i|otdr_i => 
-                    f.cw.rf_addr := regZ;
-                    f.cw.dbus_src := rf_o;
-                    f.cw.data_rdo := '1';    
                 when others => null; end case;
             when t3 =>
                 f.ct.cycle_end := '1';
@@ -842,9 +836,15 @@ architecture arch of op_decoder is
                 f.cw.rf_addr := regHL;
                 f.cw.abus_src := rf_o;
                 case op is
-                when ldi_i|cpi_i|ini_i|outi_i|ldir_i|cpir_i|inir_i|otir_i =>
+                when ldi_i|ldir_i|
+                     cpi_i|cpir_i|
+                     ini_i|inir_i|
+                     outi_i|otir_i =>
                     f.cw.addr_op := inc;
-                when ldd_i|cpd_i|ind_i|outd_i|lddr_i|cpdr_i|indr_i|otdr_i =>
+                when ldd_i|lddr_i|
+                     cpd_i|cpdr_i|
+                     ind_i|indr_i|
+                     outd_i|otdr_i =>
                     f.cw.addr_op := dec;
                 when others => null; end case;
                 f.cw.rf_rda := '1';
@@ -859,8 +859,8 @@ architecture arch of op_decoder is
                 f.cw.rf_rda := '1';
             when t3 =>
                 case op is
-                when cpi_i|cpd_i|cpir_i|cpdr_i|
-                     ldi_i|ldd_i|ldir_i|lddr_i => -- dec BC
+                when ldi_i|ldir_i|ldd_i|lddr_i|
+                     cpi_i|cpir_i|cpd_i|cpdr_i => -- dec BC
                     f.cw.rf_addr := regBC;
                     f.cw.abus_src := rf_o;
                     f.cw.addr_op := dec;
@@ -868,16 +868,16 @@ architecture arch of op_decoder is
                     f.cw.pv_src := anz_f;
                     f.cw.alu_op := op;
                     f.cw.f_rd := '1';
-                when ini_i|outi_i|ind_i|outd_i|
-                     inir_i|otir_i|indr_i|otdr_i => -- b -> tmp
+                when ini_i|inir_i|ind_i|indr_i|
+                     outi_i|otir_i|outd_i|otdr_i => -- b -> tmp
                     f.cw.rf_addr := regB;
                     f.cw.dbus_src := rf_o;
                     f.cw.tmp_rd := '1';
                 when others => null; end case;
             when t4 =>
-                case op is -- dec tmp -> b
-                when ini_i|outi_i|ind_i|outd_i|
-                     inir_i|otir_i|indr_i|otdr_i =>
+                case op is
+                when ini_i|inir_i|ind_i|indr_i|
+                     outi_i|otir_i|outd_i|otdr_i => -- dec tmp -> b
                     f.cw.alu_op := dec_i;
                     f.cw.dbus_src := alu_o;
                     f.cw.rf_addr := regB;
@@ -886,7 +886,8 @@ architecture arch of op_decoder is
                 when others => null; end case; 
             when t5 =>
                 case op is
-                when ldi_i|ldd_i|cpi_i|cpd_i|ini_i|ind_i|outi_i|outd_i =>
+                when ldi_i|ldd_i|cpi_i|cpd_i|
+                     ini_i|ind_i|outi_i|outd_i =>
                     f.ct.instr_end := '1';
                 when ldir_i|lddr_i => -- end if bc=0
                     if state.cc(PO_c) then
