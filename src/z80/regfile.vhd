@@ -41,12 +41,12 @@ architecture arch of regfile is
     type rf_swap_state_t is record
         reg, af : std_logic;
         dehl : std_logic_vector(1 downto 0);
+        fz : std_logic;
     end record;
 
     function baddr(reg_addr : integer;
                    s : rf_swap_state_t)
-    return integer
-    is
+    return integer is
         variable reg_i : integer range 0 to 1;
         variable r, w_vec : std_logic_vector(3 downto 0);
         variable hl : std_logic;
@@ -54,7 +54,12 @@ architecture arch of regfile is
         if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
         r := std_logic_vector(to_unsigned(reg_addr, 4));
 
-        if r(3) = '0' and r(2 downto 1) /= "11" and s.dehl(reg_i) = '1' then
+        -- select word
+        if s.fz = '1' and reg_addr = regF then -- f -> z
+            w_vec := "1000";
+        elsif s.fz = '1' and reg_addr = regZ then -- z -> f
+            w_vec := "011" & s.reg;
+        elsif r(3) = '0' and r(2 downto 1) /= "11" and s.dehl(reg_i) = '1' then
             w_vec := '0' & r(1) & r(2) & s.reg;
         elsif r(3) = '0' and r(2 downto 1) /= "11" then
             w_vec := r(3 downto 1) & s.reg;
@@ -65,6 +70,7 @@ architecture arch of regfile is
         else
             w_vec := "----";
         end if;
+        -- select byte
         if r(3 downto 1) = "011" then -- flip FA to AF
             hl := not r(0);
         else
@@ -77,11 +83,12 @@ architecture arch of regfile is
                       signal ram : rf_ram_t;
                       signal s : rf_swap_state_t)
     return std_logic_vector is
-        variable b, w : integer;
+        variable b, bh, bl : integer;
     begin
-        b := baddr(reg, s);
-        w := b - (b mod 2);
-        return ram(w) & ram(w + 1);
+        bh := reg - (reg mod 2);
+        bl := bh + 1;
+        if bh = regAF then bh := regA; bl := regF; end if;
+        return ram(baddr(bh, s)) & ram(baddr(bl, s));
     end get_word;
 
     function next_ram(signal ram : in rf_ram_t;
@@ -106,24 +113,24 @@ architecture arch of regfile is
         return new_ram;
     end next_ram;
 
-    constant RF_SWAP_INIT : rf_swap_state_t := ('0', '0', "00");
+    constant RF_SWAP_INIT : rf_swap_state_t := ('0', '0', "00", '0');
     signal ram, ram_next : rf_ram_t := (others => x"ff");
     signal s : rf_swap_state_t := RF_SWAP_INIT;
 begin
     swap_proc : process(clk)
         variable reg_i : integer range 0 to 1;
     begin
-        if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
-
         if rising_edge(clk) then
+            if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
             if rst = '1' then
                 s <= RF_SWAP_INIT;
             elsif ce = '1' then
                 case swp is
                 when none => null;
-                when reg  => s.reg  <= not s.reg;
-                when af   => s.af   <= not s.af;
+                when reg  => s.reg         <= not s.reg;
+                when af   => s.af          <= not s.af;
                 when dehl => s.dehl(reg_i) <= not s.dehl(reg_i);
+                when fz   => s.fz          <= not s.fz;
                 when others => null;
                 end case;
             end if;

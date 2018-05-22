@@ -89,14 +89,11 @@ architecture arch of z80 is
     signal acc, act_in, act_out : std_logic_vector(7 downto 0);
 
     -- flags
-    signal rf_f_rd : std_logic;
-    signal rf_f_in, rf_f_out, alu_f_out : std_logic_vector(7 downto 0);
+    signal rf_f_out, alu_f_out : std_logic_vector(7 downto 0);
     signal flags : std_logic_vector(7 downto 0);
     -- pv source
     signal f_pv : std_logic;
     signal pv_src : pv_src_t;
-    -- internal flag swap reg
-    signal fsav_out : std_logic_vector(7 downto 0);
 
     -- dbus/abus src
     signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_res_out, i_out, r_out
@@ -115,14 +112,10 @@ begin
                                 ctrl, cw.ir_rd, ir_out, state); 
 
     -- -- REGISTER SECTION -- --
-    rf_f_rd <= cw.f_rd or cw.f_load;
-    rf_f_in <= fsav_out when cw.f_load = '1' else flags;
     rf : regfile port map(clk, cbi.reset, ce,
-        cw.rf_addr, cw.rf_rdd, cw.rf_rda, rf_f_rd, cw.rf_swp,
-        dbus, addr_in, rf_f_in, rf_do, rf_ao, rf_dis, acc, rf_f_out,
+        cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_swp,
+        dbus, addr_in, flags, rf_do, rf_ao, rf_dis, acc, rf_f_out,
         dbg.regs);
-    fsav : reg generic map(x"ff", 8)
-               port map(clk, cbi.reset, ce, cw.f_save, rf_f_out, fsav_out);
     i : reg generic map(x"ff", 8)
             port map(clk, cbi.reset, ce, cw.i_rd, dbus, i_out);
     r : reg generic map(x"ff", 8)
