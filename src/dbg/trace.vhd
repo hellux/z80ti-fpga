@@ -70,13 +70,22 @@ begin
     save_to : reg generic map(x"0000", 16)
                   port map(clk, rst, ce, to_rd, pc, to_addr);
 
+    delay_rd : process(clk) begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                to_rd <= '0';
+            elsif ce = '1' then
+                to_rd <= jump_end;
+            end if;
+        end if;
+    end process;
+
     process(clk) begin
         if rising_edge(clk) then
             if rst = '1' or disable = '1' then
                 list_ptr <= LIST_BOTTOM;
                 state <= disabled;
             elsif ce = '1' then
-                to_rd <= '0';
                 case state is
                 when disabled =>
                     if enable = '1' then
@@ -86,7 +95,6 @@ begin
                     if jump_end = '1' then
                         state <= store;
                         store_cycle <= 1;
-                        to_rd <= '1';
                     end if;
                 when store =>
                     if store_cycle /= CYCLES then
