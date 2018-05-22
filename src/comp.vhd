@@ -173,7 +173,7 @@ architecture arch of comp is
 
     -- clocks / enables
     signal clk_6mhz, clk_25mhz, clk_50mhz : std_logic;
-    signal clk_10khz, clk_1mhz, clk_15mhz : std_logic;
+    signal clk_10khz, clk_1mhz, clk_14mhz : std_logic;
     signal clk_z80, clk_ti, clk_vga : std_logic;
     signal clk_z80_ce, clk_ti_ce : std_logic;
     signal clk_z80_cpu_ce : std_logic;
@@ -216,17 +216,16 @@ begin
     gen_10khz : clkgen generic map(DIV_10KHZ) port map(clk, clk_10khz);
     gen_1mhz  : clkgen generic map(DIV_1MHZ)  port map(clk, clk_1mhz);
     gen_6mhz  : clkgen generic map(DIV_6MHZ)  port map(clk, clk_6mhz);
-    gen_15mhz : clkgen generic map(DIV_15MHZ) port map(clk, clk_15mhz);
+    gen_14mhz : clkgen generic map(DIV_14MHZ) port map(clk, clk_14mhz);
     gen_25mhz : clkgen generic map(DIV_25MHZ) port map(clk, clk_25mhz);
-    gen_50mhz : clkgen generic map(DIV_50MHZ) port map(clk, clk_50mhz);
 
     -- map clocks
     with cpu_freq select
         clk_z80 <= clk_6mhz  when "00",
-                   clk_15mhz when "01",
+                   clk_14mhz when "01",
                    clk_1mhz  when "10",
                    clk_10khz when others;
-    clk_ti <= clk_50mhz;
+    clk_ti <= clk_14mhz;
     clk_vga <= clk_25mhz;
 
     -- buses

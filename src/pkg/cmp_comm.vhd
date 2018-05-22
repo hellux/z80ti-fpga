@@ -9,10 +9,9 @@ package cmp_comm is
     constant DIV_10KHZ : integer := 10000;
     constant DIV_1MHZ : integer := 100;
     constant DIV_6MHZ : integer := 17;
-    constant DIV_15MHZ : integer := 7;
+    constant DIV_14MHZ : integer := 7;
     constant DIV_25MHZ : integer := 4;
     constant DIV_33MHZ : integer := 3;
-    constant DIV_50MHZ : integer := 2;
 
     type ctrlbus_in is record
         -- cpu control
