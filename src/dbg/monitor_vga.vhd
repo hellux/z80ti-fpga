@@ -45,6 +45,7 @@ begin
         variable val_hwt1f, val_hwt2f : string(1 to 8);
         variable val_lcd_mode : string(1 to 8);
         variable val_lcd_ptr : string(1 to 8);
+        variable val_trc_ptr : string(1 to 8);
 
         variable pages : pages_t;
         variable char_ch : character;
@@ -207,6 +208,10 @@ begin
         val_lcd_mode(4 to 5) := hex_str(dbg.ti.lcd.y);
         val_lcd_mode(7 to 8) := hex_str(dbg.ti.lcd.z);
 
+        val_trc_ptr := ' ' &
+            hex_str(std_logic_vector(unsigned(dbg.trc_ptr) - x"088000")) & 'D';
+        if dbg.trace.enabled = '1' then val_trc_ptr(8) := 'E'; end if;
+
         pages := (others => (others => ' '));
 
     -- states / int
@@ -272,8 +277,7 @@ begin
         pages(46) := val_lcd_ptr;
 
     -- trace jumps
-        pages(48) := ' ' & hex_str(dbg.trc_ptr) & 'D';
-        if dbg.trace.enabled = '1' then pages(48)(8) := 'E'; end if;
+        pages(48) := val_trc_ptr;
         pages(49) := " FR:" & hex_str(dbg.trace.from_jump);
         pages(50) := " TO:" & hex_str(dbg.trace.to_jump);
 
