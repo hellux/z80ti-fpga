@@ -71,7 +71,9 @@ begin
     end process;
 
     gmem_we_lcd <= '1' when state = load else '0';
-    gmem_di_lcd(0) <= page_buf(7-bit_sel);
+    gmem_di_lcd(0) <= page_buf(7-bit_sel) when wl = '1' else
+                      page_buf(5-bit_sel) when bit_sel < 6 else
+                      '-';
     do_vga <= gmem_do_vga(0);
 
     lcd : process(clk) begin
