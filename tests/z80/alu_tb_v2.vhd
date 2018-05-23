@@ -171,6 +171,8 @@ begin
              x"3c", x"c2", cp_i, 0, "00000000", "00-0-011", x"3c");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"10", x"0d", cp_i, 0, "00000000", "00-1-010", x"10");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"03", x"03", cp_i, 0, "00000000", "01-0-010", x"03");
 
         report "inc";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
@@ -186,13 +188,15 @@ begin
 
         report "dec";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"ff", x"01", dec_i, 0, "00000000", "01-1-010", x"00");
+             x"ff", x"01", dec_i, 0, "00000000", "01-0-010", x"00");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"ff", x"00", dec_i, 0, "00000000", "10-0-010", x"ff");
+             x"ff", x"00", dec_i, 0, "00000000", "10-1-010", x"ff");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"ff", x"00", dec_i, 0, "11111111", "10-0-011", x"ff");
+             x"ff", x"00", dec_i, 0, "11111111", "10-1-011", x"ff");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
-             x"82", x"82", dec_i, 0, "11111111", "10-1-011", x"81");
+             x"82", x"82", dec_i, 0, "11111111", "10-0-011", x"81");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"fe", x"04", dec_i, 0, "11111111", "00-0-011", x"03");
 
         report "neg";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
@@ -242,6 +246,8 @@ begin
              x"05", x"02", xor_i, 0, x"18", x"00", x"07");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"80", x"80", xor_i, 0, x"90", x"44", x"00");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"00", xor_i, 0, x"ff", x"44", x"00");
 
         report "or";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
