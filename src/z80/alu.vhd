@@ -59,22 +59,19 @@ begin
     end process;
 
     with op select arithl <=
-        signed('0' & op1)   when add_i|add16_i1|adc_i|add16_i2|
-                                 adc16_i1|adc16_i2|sub_i|cp_i|
-                                 cpi_i|cpir_i|cpd_i|cpdr_i|
-                                 sbc_i|sbc16_i1|sbc16_i2,
         daa_v               when daa_i,
-        to_signed(1, 9)     when inc_i,
-        to_signed(-1, 9)    when dec_i,
+        signed('0' & op2)   when inc_i|dec_i,
         to_signed(0, 9)     when neg_i,
-        (others => '-')     when others;
-    arithr <= signed('0' & op2);
+        signed('0' & op1)   when others;
+    with op select arithr <=
+        to_signed(1, 9)     when inc_i|dec_i,
+        signed('0' & op2)   when others;
 
     c_in <= x"00" & flags_in(C_f);
     with op select arith_res <=
-        arithl + arithr         when add_i|add16_i1|inc_i|dec_i|daa_i,
+        arithl + arithr         when add_i|add16_i1|inc_i|daa_i,
         arithl + arithr + c_in  when adc_i|add16_i2|adc16_i1|adc16_i2,
-        arithl - arithr         when sub_i|cp_i|neg_i|
+        arithl - arithr         when sub_i|cp_i|dec_i|neg_i|
                                      cpi_i|cpir_i|cpd_i|cpdr_i,
         arithl - arithr - c_in  when sbc_i|sbc16_i1|sbc16_i2,
         (others => '0')         when others;
