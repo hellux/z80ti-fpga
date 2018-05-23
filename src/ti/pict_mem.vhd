@@ -48,7 +48,7 @@ begin
                  gmem_di_lcd, "0", 
                  gmem_do_lcd, gmem_do_vga);
 
-    lcd_addr : process(x_buf, y_buf, wl, bit_sel)
+    lcd_addr : process(x_buf, y_buf, word_length, bit_sel)
         variable xl, yl : integer;
     begin
         xl := to_integer(unsigned(x_buf));
@@ -75,9 +75,6 @@ begin
     --> vga
     do_vga <= gmem_do_vga(0);
 
-    --> lcd
-    do_lcd(bit_sel) <= gmem_do_lcd(0);
-
     lcd : process(clk) begin
         if rising_edge(clk) then
             if bit_sel >= word_length-1
@@ -91,6 +88,7 @@ begin
                     state <= idle;
                 end if;
             when idle =>
+                do_lcd(bit_sel) <= gmem_do_lcd(0); -- ld bit output
                 x_buf <= x_lcd;
                 y_buf <= y_lcd;
                 if rd = '1' then
