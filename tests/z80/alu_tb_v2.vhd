@@ -422,6 +422,10 @@ begin
              x"00", x"00", daa_i, 0, "00000001", "00-0-101", x"60");
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
              x"00", x"00", daa_i, 0, "00010000", "00-0-100", x"06");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"81", daa_i, 0, "10000011", "00-0-111", x"21");
+        test(op1, op2, op, bit_select, flags_in, flags_out, result,
+             x"00", x"20", daa_i, 0, "00100011", "10-0-111", x"c0");
         
         report "scf";
         test(op1, op2, op, bit_select, flags_in, flags_out, result,
