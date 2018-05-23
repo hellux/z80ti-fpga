@@ -83,6 +83,7 @@ architecture arch of ti is
         lcd_gmem_data : out std_logic_vector(7 downto 0);
         gmem_x : out std_logic_vector(5 downto 0);
         gmem_y : out std_logic_vector(4 downto 0);
+        gmem_z : out std_logic_vector(5 downto 0);
         gmem_rd, gmem_wl : out std_logic;
         p10_command, p11_data_o : in port_out_t;
         p10_status, p11_data_i : out port_in_t;
@@ -93,10 +94,11 @@ architecture arch of ti is
         clk : in std_logic;
         rd, wl : in std_logic;
         page_in : in std_logic_vector(7 downto 0);
-        x_lcd : in std_logic_vector(5 downto 0); -- row
-        y_lcd : in std_logic_vector(4 downto 0); -- column page
-        x_vga : in std_logic_vector(6 downto 0); -- column
-        y_vga : in std_logic_vector(5 downto 0); -- row
+        x_lcd : in std_logic_vector(5 downto 0);
+        y_lcd : in std_logic_vector(4 downto 0);
+        z_lcd : in std_logic_vector(5 downto 0);
+        x_vga : in std_logic_vector(6 downto 0);
+        y_vga : in std_logic_vector(5 downto 0);
         do_vga: out std_logic;
         do_lcd: out std_logic_vector(7 downto 0));
     end component;
@@ -107,6 +109,7 @@ architecture arch of ti is
     -- lcd ctrl <-> pict mem
     signal x_lcd : std_logic_vector(5 downto 0);
     signal y_lcd : std_logic_vector(4 downto 0);
+    signal z_lcd : std_logic_vector(5 downto 0);
     signal gmem_lcd_data, lcd_gmem_data : std_logic_vector(7 downto 0);
     signal gmem_rd, gmem_wl : std_logic;
 
@@ -153,13 +156,13 @@ begin
                             dbg.kbd);
 
     lcd : t6a04 port map(clk, rst, ce,
-        gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd,
+        gmem_lcd_data, lcd_gmem_data, x_lcd, y_lcd, z_lcd,
         gmem_rd, gmem_wl,
         ports_out.p10_lcd_status, ports_out.p11_lcd_data,
         ports_in.p10_lcd_status, ports_in.p11_lcd_data,
         dbg.lcd);
     gmem : pict_mem port map(clk,
                              gmem_rd, gmem_wl,
-                             lcd_gmem_data, x_lcd, y_lcd, x_vga, y_vga,
+                             lcd_gmem_data, x_lcd, y_lcd, z_lcd, x_vga, y_vga,
                              data_vga, gmem_lcd_data);
 end arch;
