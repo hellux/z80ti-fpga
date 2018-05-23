@@ -15,6 +15,7 @@ entity t6a04 is port(
     lcd_gmem_data : out std_logic_vector(7 downto 0);
     gmem_x : out std_logic_vector(5 downto 0);
     gmem_y : out std_logic_vector(4 downto 0);
+    gmem_z : out std_logic_vector(5 downto 0);
     gmem_rd, gmem_wl : out std_logic;
     p10_command, p11_data_o : in port_out_t;
     p10_status, p11_data_i : out port_in_t;
@@ -134,15 +135,19 @@ begin
         end if;
     end process;
 
+
     -- gmem <-> t6a04
     lcd_gmem_data <= p11_data_o.data;
-    gmem_x <= std_logic_vector(unsigned(z) + x);
+    gmem_x <= std_logic_vector(x);
     gmem_y <= std_logic_vector(y);
+    gmem_z <= z;
     gmem_rd <= '1' when p11_data_o.wr = '1' else '0';
     gmem_wl <= mode.wl;
 
     -- t6a04 -> z80
-    p11_data_i <= (data => gmem_lcd_data);
+    out_reg : reg generic map(x"00", 8)
+                  port map(clk, rst, ce,
+                           p11_data_o.rd, gmem_lcd_data, p11_data_i.data);
     p10_status.data <=
         (PI10_AUTO_INC_DEC   => mode.up,
          PI10_AUTO_Y_X       => mode.counter,

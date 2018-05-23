@@ -10,6 +10,7 @@ entity pict_mem is port (
     page_in : in std_logic_vector(7 downto 0);
     x_lcd : in std_logic_vector(5 downto 0); -- row
     y_lcd : in std_logic_vector(4 downto 0); -- column page
+    z_lcd : in std_logic_vector(5 downto 0); -- row stride
     -- vga -> gmem
     x_vga : in std_logic_vector(6 downto 0); -- column
     y_vga : in std_logic_vector(5 downto 0); -- row
@@ -48,22 +49,28 @@ begin
                  gmem_di_lcd, "0", 
                  gmem_do_lcd, gmem_do_vga);
 
-    lcd_addr : process(x_buf, y_buf, word_length, bit_sel)
-        variable xl, yl : integer;
+    lcd_addr : process(x_buf, y_buf, z_lcd, word_length, bit_sel)
+        variable xl, yl, zl : integer;
     begin
         xl := to_integer(unsigned(x_buf));
         yl := to_integer(unsigned(y_buf));
+        zl := to_integer(unsigned(z_lcd));
         gmem_a_lcd <= std_logic_vector(to_unsigned(
-            xl*LCD_COLS+yl*word_length + bit_sel, 13
-        ));
+            ((xl+zl) mod 64)*LCD_COLS + yl*word_length + bit_sel,
+            13)
+        );
     end process;
 
-    vga_addr : process(x_vga, y_vga)
-        variable xv, yv : integer;
+    vga_addr : process(x_vga, y_vga, z_lcd)
+        variable xv, yv, zl : integer;
     begin
         xv := to_integer(unsigned(x_vga));
         yv := to_integer(unsigned(y_vga));
-        gmem_a_vga <= std_logic_vector(to_unsigned(yv*LCD_COLS+xv, 13));
+        zl := to_integer(unsigned(z_lcd));
+        gmem_a_vga <= std_logic_vector(to_unsigned(
+            ((yv+zl) mod 64)*LCD_COLS + xv,
+            13)
+        );
     end process;
 
     --> gmem
@@ -88,7 +95,7 @@ begin
                     state <= idle;
                 end if;
             when idle =>
-                do_lcd(bit_sel) <= gmem_do_lcd(0); -- ld bit output
+                do_lcd(page_bit) <= gmem_do_lcd(0); -- ld bit output
                 x_buf <= x_lcd;
                 y_buf <= y_lcd;
                 if rd = '1' then
