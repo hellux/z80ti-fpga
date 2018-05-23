@@ -18,8 +18,7 @@ architecture arch of alu is
     signal arithl, arithr, c_in : signed(8 downto 0); -- arith ops, carry in
 
     -- calculation
-    signal daa_v : signed(8 downto 0);
-    signal arith_res : signed(8 downto 0);
+    signal daa_res, arith_res : signed(8 downto 0);
     signal result_buf : std_logic_vector(7 downto 0);
     
     -- flags
@@ -52,14 +51,13 @@ begin
             v := v + ('0' & x"60");
             daa_c <= '1';
         end if;
-        if flags_in(N_f) = '1' then
-            v := -v;
+        if flags_in(N_f) = '0'
+        then daa_res <= arithr + v;
+        else daa_res <= arithr - v;
         end if;
-        daa_v <= v;
     end process;
 
     with op select arithl <=
-        daa_v               when daa_i,
         signed('0' & op2)   when inc_i|dec_i,
         to_signed(0, 9)     when neg_i,
         signed('0' & op1)   when others;
@@ -69,12 +67,13 @@ begin
 
     c_in <= x"00" & flags_in(C_f);
     with op select arith_res <=
-        arithl + arithr         when add_i|add16_i1|inc_i|daa_i,
+        arithl + arithr         when add_i|add16_i1|inc_i,
         arithl + arithr + c_in  when adc_i|add16_i2|adc16_i1|adc16_i2,
         arithl - arithr         when sub_i|cp_i|dec_i|neg_i|
                                      cpi_i|cpir_i|cpd_i|cpdr_i,
         arithl - arithr - c_in  when sbc_i|sbc16_i1|sbc16_i2,
-        (others => '0')         when others;
+        daa_res                 when daa_i,
+        (others => '-')         when others;
 
     with op select edge <=
         '0'             when sla_i|srl_i,
@@ -193,7 +192,7 @@ begin
                              add_i|adc_i|sub_i|sbc_i|
                              cp_i|inc_i|dec_i|
                              daa_i|neg_i|
-                             add16_i2|adc16_i2| -- TODO check 16b
+                             add16_i2|adc16_i2|
                              sbc16_i2,
         flags_in(C_f)   when ccf_i,
         '-'             when others;
