@@ -203,10 +203,10 @@ begin
         if dbg.ti.lcd.wl = '1' then val_lcd_mode(6) := '8'; end if;
         if dbg.ti.lcd.active = '1' then val_lcd_mode(8) := 'E'; end if;
 
-        val_lcd_mode := "XX:YY:ZZ";
-        val_lcd_mode(1 to 2) := hex_str(dbg.ti.lcd.x);
-        val_lcd_mode(4 to 5) := hex_str(dbg.ti.lcd.y);
-        val_lcd_mode(7 to 8) := hex_str(dbg.ti.lcd.z);
+        val_lcd_ptr := "XX:YY:ZZ";
+        val_lcd_ptr(1 to 2) := hex_str(dbg.ti.lcd.x);
+        val_lcd_ptr(4 to 5) := hex_str(dbg.ti.lcd.y);
+        val_lcd_ptr(7 to 8) := hex_str(dbg.ti.lcd.z);
 
         val_trc_ptr := ' ' &
             hex_str(std_logic_vector(unsigned(dbg.trc_ptr) - x"088000")) & 'D';
