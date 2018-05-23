@@ -19,6 +19,20 @@ entity pict_mem is port (
     do_lcd: out std_logic_vector(7 downto 0));
 end pict_mem;
 
+
+-- 8 bit mode
+--
+--   bit_sel 01234567
+--           ________
+--          |__X,Y___|
+--       ________ ________ ________ ________
+--      |__0,0___|__0,1___|  ...   |__0,12__|
+--      |__1,0___|__1,1___|            :    |
+--      |__2,0___|  ...      ...       :    |
+--      |___:____                   ___:____|
+--      |_64,0___|__...___|__...___|_64,12__|
+--  
+
 architecture arch of pict_mem is
     component bram generic(dwidth : integer;
                            size : integer;
@@ -73,9 +87,10 @@ begin
         );
     end process;
 
-    --> gmem
-    word_length <= 8 when wl = '1' else 6;
     page_bit <= word_length-1-bit_sel when word_length-1-bit_sel >= 0 else 0;
+    word_length <= 8 when wl = '1' else 6;
+
+    --> gmem
     gmem_we_lcd <= '1' when state = load else '0';
     gmem_di_lcd(0) <= page_in(page_bit);
 
@@ -95,7 +110,7 @@ begin
                     state <= idle;
                 end if;
             when idle =>
-                do_lcd(page_bit) <= gmem_do_lcd(0); -- ld bit output
+                do_lcd((page_bit+1) mod 8) <= gmem_do_lcd(0);
                 x_buf <= x_lcd;
                 y_buf <= y_lcd;
                 if rd = '1' then
