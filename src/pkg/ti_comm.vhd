@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 package ti_comm is
     constant SYS_FREQ : integer := 100*10**6;
-    constant DIV_TI : integer := SYS_FREQ/(50*10**6);
+    constant DIV_TI : integer := 7;
     constant LCD_COLS : integer := 120;
     constant LCD_ROWS : integer := 64;
 
