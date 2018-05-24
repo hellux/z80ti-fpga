@@ -35,13 +35,11 @@ package z80_comm is
         im_next : integer range 0 to 2;  -- im for next cp
     end record;
 
-    -- current state/context of cpu
+    -- current state/context of cpu besides registers
     type state_t is record
         mode : id_mode_t;
         prefix : id_prefix_t;
         im : natural range 0 to 2;
-        iff : std_logic;
-        cc : cond_t;
         m : natural range 1 to 5;
         t : natural range 1 to 6;
     end record;
@@ -155,6 +153,7 @@ package z80_comm is
         state : state_t;
         id : dbg_id_t;
         alu_op : instr_t;
+        iff : std_logic;
         cycle_start, instr_start, int_start : std_logic;
         pc, abus, tmpa : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);

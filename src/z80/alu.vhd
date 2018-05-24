@@ -27,25 +27,22 @@ architecture arch of alu is
     signal half_carry, overflow, parity : std_logic;
 begin
     -- preprocess
-    mask_gen : process(bit_select) is
-        variable m : std_logic_vector(7 downto 0);
-    begin
-        m := x"00";
-        m(bit_select) := '1';
-        mask <= m;
+    mask_gen : process(bit_select) is begin
+        mask <= x"00";
+        mask(bit_select) <= '1';
     end process;
 
     daa_logic : process(arithr, flags_in) is
-	    variable res, v : signed(8 downto 0);
+	    variable tmp_res, v : signed(8 downto 0);
     begin
         daa_c <= '0';
         v := (others => '0');
         if (unsigned(arithr(3 downto 0)) > "1001" or flags_in(H_f) = '1') then
             v := v + ('0' & x"06");
         end if;
-        res := arithr + v;
-        if (unsigned(res(7 downto 4)) > "1001"
-            or res(8) = '1'
+        tmp_res := arithr + v;
+        if (unsigned(tmp_res(7 downto 4)) > "1001"
+            or tmp_res(8) = '1'
             or flags_in(C_f) = '1')
         then
             v := v + ('0' & x"60");
@@ -119,9 +116,9 @@ begin
         parity <= not p;
     end process;
     with op select overflow <=
-        (arithl(7) xnor arithr(7)) and (arithl(7) xor arith_res(7))
+        (arithl(7) xnor arithr(7)) and (arithl(7) xor result_buf(7))
             when add_i|adc_i|inc_i|dec_i|add16_i2|adc16_i2,
-        (arithl(7) xor arithr(7)) and (arithl(7) xor arith_res(7))
+        (arithl(7) xor arithr(7)) and (arithl(7) xor result_buf(7))
             when sub_i|sbc_i|cp_i|sbc16_i2,
         '-' when others;
     with op select undef_res <=

@@ -364,6 +364,7 @@ otdr_setup:
     ld a, l
     cp 0x02d
     jp nz, fail
+# TODO send to port that does not change mem mapping for pc addr
 
 success:
     ld a, 0xcc

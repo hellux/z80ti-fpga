@@ -35,7 +35,6 @@ begin
         variable val_mode : string(1 to 3);
         variable val_cycle : string(1 to 4);
         variable val_flags : string(1 to 8);
-        variable val_cond : string(1 to 8);
         variable val_cb : string(1 to 8);
         variable val_asic : string(1 to 8);
         variable val_int : string(1 to 8);
@@ -82,12 +81,6 @@ begin
         if dbg.z80.regs.af(1) = '1' then val_flags(7) := 'N'; end if;
         if dbg.z80.regs.af(0) = '1' then val_flags(8) := 'C'; end if;
 
-        val_cond := " Z CPE M";
-        if dbg.z80.state.cc(0) then val_cond(1) := 'N'; end if;
-        if dbg.z80.state.cc(2) then val_cond(3) := 'N'; end if;
-        if dbg.z80.state.cc(4) then val_cond(6) := 'O'; end if;
-        if dbg.z80.state.cc(6) then val_cond(8) := 'P'; end if;
-
         val_asic := "R       ";
         if dbg.ti.asic.rd_wr = '1' then val_asic(1) := 'W'; end if;
         if dbg.ti.asic.ce = '1' then val_asic(2) := 'E'; end if;
@@ -112,7 +105,7 @@ begin
         when 1 => val_int(4) := '1';
         when 2 => val_int(4) := '2';
         end case;
-        if dbg.z80.state.iff = '1' then val_int(6 to 7) := "EI"; end if;
+        if dbg.z80.iff = '1' then val_int(6 to 7) := "EI"; end if;
         
         case dbg.z80.alu_op is
         when add_i    => val_alu_op := " ADD    ";
@@ -219,10 +212,9 @@ begin
         pages(1) := val_mode & ' ' & val_cycle;
         pages(2) := val_prefix & "  " & hex_str(dbg.z80.ir);
         pages(3) := val_flags;
-        pages(4) := val_cond;
-        pages(5) := val_int;
-        pages(6) := val_cb;
-        pages(7) := val_asic;
+        pages(4) := val_int;
+        pages(5) := val_cb;
+        pages(6) := val_asic;
 
     -- regfile
         pages(8)  := " AF:" & hex_str(dbg.z80.regs.af);
@@ -267,7 +259,7 @@ begin
         if dbg.ti.memctrl.fou_ram_rom = '1' then pages(37)(4) := 'A'; end if;
         pages(37)(6 to 7) := hex_str(dbg.ti.memctrl.fou_page);
 
-    -- ports out
+    -- asic
         pages(40) := val_kbd_group;
         pages(41) := val_hwt1;
         pages(42) := val_hwt1f;

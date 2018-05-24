@@ -7,9 +7,8 @@ use work.cmp_comm.all;
 entity state_machine is port(
     clk, ce : in std_logic;
     cbi : in ctrlbus_in;
-    flags : in std_logic_vector(7 downto 0);
-    iff : in std_logic;
     ctrl : in id_ctrl_t;
+    iff : in std_logic;
     ir_rd : in std_logic;
     instr : in std_logic_vector(7 downto 0);
     state_out : out state_t);
@@ -43,7 +42,7 @@ begin
 
                 -- set mode
                 if ctrl.instr_end = '1' and
-                   state.iff = '1' and
+                   iff = '1' and
                    cbi.int = '1'
                 then
                     state.mode <= interrupt;
@@ -91,17 +90,6 @@ begin
             end if;
         end if;
     end process;
-
-    state.cc(NZ_c) <= flags(Z_F) = '0';
-    state.cc(Z_c)  <= flags(Z_f) = '1';
-    state.cc(NC_c) <= flags(C_f) = '0';
-    state.cc(C_c)  <= flags(C_f) = '1';
-    state.cc(PO_c) <= flags(PV_f) = '0';
-    state.cc(PE_c) <= flags(PV_f) = '1';
-    state.cc(P_c)  <= flags(S_f) = '0';
-    state.cc(M_c)  <= flags(S_f) = '1';
-
-    state.iff <= iff;
 
     state_out <= state;
 end arch;
