@@ -54,8 +54,10 @@ architecture arch of z80 is
     end component;
 
     component op_decoder port(
-        state : in state_t;
+        cpu_state : in state_t;
+        iff : in std_logic;
         instr : in std_logic_vector(7 downto 0);
+        flags : in std_logic_vector(7 downto 0);
         ctrl : out id_ctrl_t;
         cbo : out ctrlbus_out;
         cw : out ctrlword;
@@ -65,9 +67,8 @@ architecture arch of z80 is
     component state_machine port(
         clk, ce : in std_logic;
         cbi : in ctrlbus_in;
-        flags : in std_logic_vector(7 downto 0);
-        iff : in std_logic;
         ctrl : in id_ctrl_t;
+        iff : in std_logic;
         ir_rd : in std_logic;
         instr : in std_logic_vector(7 downto 0);
         state_out : out state_t);
@@ -81,13 +82,12 @@ architecture arch of z80 is
     signal addr_in : std_logic_vector(15 downto 0);
     signal pc_in : std_logic_vector(15 downto 0);
     signal pc_rd : std_logic;
-    signal addr_zero : std_logic;
+    signal addr_not_zero : std_logic;
     signal rf_dis : std_logic_vector(15 downto 0);
     signal iff : std_logic;
 
     signal act_rd : std_logic;
     signal acc, act_in, act_out : std_logic_vector(7 downto 0);
-
     -- flags
     signal rf_f_out, alu_f_out : std_logic_vector(7 downto 0);
     signal flags : std_logic_vector(7 downto 0);
@@ -107,19 +107,22 @@ begin
     -- -- CONTROL SECTION -- --
     ir : reg generic map(x"ff", 8)
              port map(clk, cbi.reset, ce, cw.ir_rd, dbus, ir_out);
-    id : op_decoder port map(state, ir_out, ctrl, cbo, cw, dbg.id);
-    sm : state_machine port map(clk, ce, cbi, rf_f_out, iff,
-                                ctrl, cw.ir_rd, ir_out, state); 
+    id : op_decoder port map(state, iff, ir_out, rf_f_out,
+                             ctrl, cbo, cw,
+                             dbg.id);
+    sm : state_machine port map(clk, ce, cbi, ctrl,
+                                iff, cw.ir_rd, ir_out, state); 
+    iff_r : ff port map(clk, cbi.reset, ce, '1', cw.iff_next, iff);
+    i : reg generic map(x"ff", 8)
+            port map(clk, cbi.reset, ce, cw.i_rd, dbus, i_out);
+    r : reg generic map(x"ff", 8)
+            port map(clk, cbi.reset, ce, cw.r_rd, dbus, r_out);
 
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset, ce,
         cw.rf_addr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_swp,
         dbus, addr_in, flags, rf_do, rf_ao, rf_dis, acc, rf_f_out,
         dbg.regs);
-    i : reg generic map(x"ff", 8)
-            port map(clk, cbi.reset, ce, cw.i_rd, dbus, i_out);
-    r : reg generic map(x"ff", 8)
-            port map(clk, cbi.reset, ce, cw.r_rd, dbus, r_out);
     pc : reg generic map(x"8000", 16)
              port map(clk, cbi.reset, ce, pc_rd, pc_in, pc_out);
     pc_rd <= cw.pc_rd or cw.pc_rdh or cw.pc_rdl;
@@ -134,7 +137,7 @@ begin
         std_logic_vector(unsigned(abus) + 1) when inc,
         abus                                 when none,
         std_logic_vector(unsigned(abus) - 1) when dec;
-    addr_zero <= bool_sl(unsigned(addr_in) = 0);
+    addr_not_zero <= bool_sl(unsigned(addr_in) /= 0);
     int_addr <= i_out & dbus(7 downto 1) & '0';
     rst_addr <= x"00" & "00" & cw.rst_addr & "000";
 
@@ -149,14 +152,13 @@ begin
     tmp : reg generic map(x"ff", 8)
               port map(clk, cbi.reset, ce, cw.tmp_rd, dbus, tmp_out);
 
-    iff_r : ff port map(clk, cbi.reset, ce, '1', cw.iff_next, iff);
     flags(7 downto PV_f+1) <= alu_f_out(7 downto PV_f+1);
     flags(PV_f) <= f_pv;
     flags(PV_f-1 downto 0) <= alu_f_out(PV_f-1 downto 0);
     with cw.pv_src select
         f_pv <= alu_f_out(PV_f) when alu_f,
                 iff             when iff_f,
-                not addr_zero   when anz_f;
+                addr_not_zero   when anz_f;
 
     -- -- BUSES -- --
     -- mux bus input
@@ -189,7 +191,7 @@ begin
     abuf : reg generic map(x"ffff", 16)
                port map(clk, cbi.reset, ce, cw.addr_rd, abus, addr);
 
-    -- debug
+    -- bind signals for debugging
     delay_end_start : process(clk) begin
         if rising_edge(clk) then
             if ce = '1' then
@@ -208,6 +210,7 @@ begin
     dbg.tmp <= tmp_out;
     dbg.act <= act_out;
     dbg.alu_op <= cw.alu_op;
+    dbg.iff <= iff;
     dbg.dbus <= dbus;
     dbg.tmpa <= tmpa_out;
     dbg.dbufo <= dbufo_out;

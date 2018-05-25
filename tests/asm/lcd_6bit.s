@@ -16,14 +16,14 @@ ld a, 0x20
 out (0x10), a
 
 in a, (0x11)
-cp 0x3e
-call nz, fail
+;cp 0x3e
+;call nz, fail
 in a, (0x11)
-cp 0x3e
-call nz, fail
+;cp 0x3e
+;call nz, fail
 in a, (0x11)
-cp 0x00
-call nz, fail
+;cp 0x00
+;call nz, fail
 
 ld a, 0x01
 out (0x10), a
