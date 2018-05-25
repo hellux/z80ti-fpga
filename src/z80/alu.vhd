@@ -116,11 +116,12 @@ begin
         parity <= not p;
     end process;
     with op select overflow <=
-        (arithl(7) xnor arithr(7)) and (arithl(7) xor result_buf(7))
-            when add_i|adc_i|inc_i|dec_i|add16_i2|adc16_i2,
-        (arithl(7) xor arithr(7)) and (arithl(7) xor result_buf(7))
-            when sub_i|sbc_i|cp_i|sbc16_i2,
-        '-' when others;
+        (op1(7) xnor op2(7)) and (op1(7) xor result_buf(7)) when add_i|adc_i|
+                                                                 add16_i2|
+                                                                 adc16_i2,
+        (op1(7) xor op2(7)) and (op1(7) xor result_buf(7))  when sub_i|sbc_i|
+                                                                 cp_i|sbc16_i2,
+        '-'                                                 when others;
     with op select undef_res <=
         op2         when cp_i,
         result_buf  when others;
