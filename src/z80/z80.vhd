@@ -83,6 +83,8 @@ architecture arch of z80 is
     signal addr_in : std_logic_vector(15 downto 0);
     signal pc_in : std_logic_vector(15 downto 0);
     signal pc_rd : std_logic;
+    signal r_rd : std_logic;
+    signal r_in : std_logic_vector(7 downto 0);
     signal addr_not_zero : std_logic;
     signal rf_dis : std_logic_vector(15 downto 0);
     signal iff : std_logic;
@@ -99,7 +101,7 @@ architecture arch of z80 is
     -- dbus/abus src
     signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_res_out, i_out, r_out
         : std_logic_vector(7 downto 0);
-    signal rf_ao, pc_out, dis_out, int_addr, rst_addr
+    signal rf_ao, pc_out, dis_out, rst_addr
         : std_logic_vector(15 downto 0);
 
     signal dbus : std_logic_vector(7 downto 0);
@@ -116,8 +118,10 @@ begin
     iff_r : ff port map(clk, cbi.reset, ce, '1', cw.iff_next, iff);
     i : reg generic map(x"ff", 8)
             port map(clk, cbi.reset, ce, cw.i_rd, dbus, i_out);
+    r_in <= dbus when cw.r_rdd = '1' else r_out(7) & addr_in(6 downto 0);
+    r_rd <= cw.r_rdd or cw.r_rda;
     r : reg generic map(x"ff", 8)
-            port map(clk, cbi.reset, ce, cw.r_rd, dbus, r_out);
+            port map(clk, cbi.reset, ce, r_rd, r_in, r_out);
 
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset, ce,
@@ -137,7 +141,6 @@ begin
         abus                                 when none,
         std_logic_vector(unsigned(abus) - 1) when dec;
     addr_not_zero <= bool_sl(unsigned(addr_in) /= 0);
-    int_addr <= i_out & dbus(7 downto 1) & '0';
     rst_addr <= x"00" & "00" & cw.rst_addr & "000";
 
     -- -- ALU section -- --
@@ -177,7 +180,7 @@ begin
                 pc_out          when pc_o,
                 rf_ao           when rf_o,
                 dis_out         when dis_o,
-                int_addr        when int_o,
+                i_out & r_out   when ir_o,
                 rst_addr        when rst_o;
     -- buffer dbus both ways
     dbufi : reg generic map(x"ff", 8)

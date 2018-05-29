@@ -48,7 +48,7 @@ package z80_comm is
                         pch_o, pcl_o,
                         ext_o, rf_o, tmp_o, alu_o,
                         i_o, r_o);
-    type abus_src_t is (none, pc_o, rf_o, dis_o, int_o, rst_o);
+    type abus_src_t is (none, pc_o, rf_o, dis_o, ir_o, rst_o);
     type pv_src_t is (alu_f, iff_f, anz_f);
 
     type ctrlword is record 
@@ -61,7 +61,7 @@ package z80_comm is
         rf_swp : rf_swap_t;              -- swap regs in regfile
         f_rd : std_logic;                -- alu -> F
         pv_src : pv_src_t;               -- signal to use for pv flag
-        i_rd, r_rd : std_logic;          -- dbus -> I, dbus -> R
+        i_rd, r_rdd, r_rda : std_logic;  -- dbus -> I, dbus -> R, abus -> R
         ir_rd : std_logic;               -- dbus -> IR
         pc_rd : std_logic;               -- addr_in -> pc
         pc_rdh : std_logic;              -- dbus -> pch
