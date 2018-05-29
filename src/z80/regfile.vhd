@@ -15,14 +15,15 @@ use work.z80_comm.all;
 -- 12 01100  |___A___|___F___|  01101 13
 -- 14 01110  |___A___|___F___|  01111 15
 -- 16 10000  |___W___|___Z___|  10001 17
--- 18 10010  |______SP_______|  10011 19
--- 20 10100  |______IX_______|  10011 21
--- 22 10110  |______IY_______|  10111 23
+-- 18 10010  |__SPh__|__SPh__|  10011 19
+-- 20 10100  |__IXh__|__IXl__|  10011 21
+-- 22 10110  |__IYh__|__IYl__|  10111 23
 
 entity regfile is port(
     -- ctrl
     clk, rst, ce : in std_logic;
-    reg_addr : in integer range 0 to 15;
+    reg_addr : in std_logic_vector(3 downto 0);
+    rp_addr : in std_logic_vector(2 downto 0);
     rdd, rda, rdf : in std_logic;
     swp : in rf_swap_t;
     -- buses
@@ -44,20 +45,19 @@ architecture arch of regfile is
         fz : std_logic;
     end record;
 
-    function baddr(reg_addr : integer;
+    function baddr(r : std_logic_vector(3 downto 0);
                    s : rf_swap_state_t)
     return integer is
         variable reg_i : integer range 0 to 1;
-        variable r, w_vec : std_logic_vector(3 downto 0);
+        variable w_vec : std_logic_vector(3 downto 0);
         variable hl : std_logic;
     begin
         if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
-        r := std_logic_vector(to_unsigned(reg_addr, 4));
 
         -- select word
-        if s.fz = '1' and reg_addr = regF then -- f -> z
+        if s.fz = '1' and r = regF then -- f -> z
             w_vec := "1000";
-        elsif s.fz = '1' and reg_addr = regZ then -- z -> f
+        elsif s.fz = '1' and r = regZ then -- z -> f
             w_vec := "011" & s.reg;
         elsif r(3) = '0' and r(2 downto 1) /= "11" and s.dehl(reg_i) = '1' then
             w_vec := '0' & r(1) & r(2) & s.reg;
@@ -79,21 +79,22 @@ architecture arch of regfile is
         return to_integer(unsigned(w_vec & hl));
     end baddr;
 
-    function get_word(reg : integer range 0 to 15;
+    function get_word(reg : std_logic_vector(2 downto 0);
                       signal ram : rf_ram_t;
                       signal s : rf_swap_state_t)
     return std_logic_vector is
-        variable b, bh, bl : integer;
+        variable bh, bl : std_logic_vector(3 downto 0);
     begin
-        bh := reg - (reg mod 2);
-        bl := bh + 1;
-        if bh = regAF then bh := regA; bl := regF; end if;
+        bh := reg & '0';
+        bl := reg & '1';
+        if bh = regF then bh := regA; bl := regF; end if;
         return ram(baddr(bh, s)) & ram(baddr(bl, s));
     end get_word;
 
     function next_ram(signal ram : in rf_ram_t;
                       signal s : in rf_swap_state_t;
-                      signal reg_addr : in integer range 0 to 15;
+                      signal reg_addr : std_logic_vector(3 downto 0);
+                      signal rp_addr : std_logic_vector(2 downto 0);
                       signal rdd, rda, rdf : in std_logic;
                       signal data, f : in std_logic_vector(7 downto 0);
                       signal addr : in std_logic_vector(15 downto 0))
@@ -104,8 +105,8 @@ architecture arch of regfile is
         if rdd = '1' then
             new_ram(baddr(reg_addr, s)) := data;
         elsif rda = '1' then
-            new_ram(baddr(reg_addr, s)) := addr(15 downto 8);
-            new_ram(baddr(reg_addr+1, s)) := addr(7 downto 0);
+            new_ram(baddr(rp_addr & '0', s)) := addr(15 downto 8);
+            new_ram(baddr(rp_addr & '1', s)) := addr(7 downto 0);
         end if;
         if rdf = '1' then
             new_ram(baddr(regF, s)) := f;
@@ -148,13 +149,13 @@ begin
     end process;
 
     ram_next <= next_ram(ram, s,
-                         reg_addr, rdd, rda, rdf,
+                         reg_addr, rp_addr, rdd, rda, rdf,
                          data_in, f_in, addr_in);
 
     a_out    <= ram(baddr(regA, s));
     f_out    <= ram(baddr(regF, s));
-    addr_out_dis <= get_word(reg_addr, ram, s);
-    addr_out <= get_word(reg_addr, ram, s);
+    addr_out_dis <= get_word(rp_addr, ram, s);
+    addr_out <= get_word(rp_addr, ram, s);
     data_out <= ram(baddr(reg_addr, s));
 
     -- output registers for debug
