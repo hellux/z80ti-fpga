@@ -48,7 +48,7 @@ package z80_comm is
                         pch_o, pcl_o,
                         ext_o, rf_o, tmp_o, alu_o,
                         i_o, r_o);
-    type abus_src_t is (none, pc_o, rf_o, tmpa_o, dis_o, int_o, rst_o);
+    type abus_src_t is (none, pc_o, rf_o, dis_o, int_o, rst_o);
     type pv_src_t is (alu_f, iff_f, anz_f);
 
     type ctrlword is record 
@@ -63,7 +63,6 @@ package z80_comm is
         pv_src : pv_src_t;               -- signal to use for pv flag
         i_rd, r_rd : std_logic;          -- dbus -> I, dbus -> R
         ir_rd : std_logic;               -- dbus -> IR
-        tmpa_rd : std_logic;             -- addr_in -> tmpa
         pc_rd : std_logic;               -- addr_in -> pc
         pc_rdh : std_logic;              -- dbus -> pch
         pc_rdl : std_logic;              -- dbus -> pcl
@@ -156,7 +155,7 @@ package z80_comm is
         alu_op : instr_t;
         iff : std_logic;
         cycle_start, instr_start, int_start : std_logic;
-        pc, abus, tmpa : std_logic_vector(15 downto 0);
+        pc, abus : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
         dbufo, dbufi : std_logic_vector(7 downto 0);
     end record;

@@ -99,7 +99,7 @@ architecture arch of z80 is
     -- dbus/abus src
     signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_res_out, i_out, r_out
         : std_logic_vector(7 downto 0);
-    signal rf_ao, tmpa_out, pc_out, dis_out, int_addr, rst_addr
+    signal rf_ao, pc_out, dis_out, int_addr, rst_addr
         : std_logic_vector(15 downto 0);
 
     signal dbus : std_logic_vector(7 downto 0);
@@ -130,8 +130,6 @@ begin
     pc_in <= dbus & pc_out(7 downto 0) when cw.pc_rdh = '1' else
              pc_out(15 downto 8) & dbus when cw.pc_rdl = '1' else
              addr_in;
-    tmpa : reg generic map(x"ffff", 16)
-               port map(clk, cbi.reset, ce, cw.tmpa_rd, addr_in, tmpa_out);
     dis_out <= std_logic_vector(signed(rf_dis) + resize(signed(dbus), 16));
 
     with cw.addr_op select addr_in <=
@@ -178,7 +176,6 @@ begin
         abus <= (others => '-') when none,
                 pc_out          when pc_o,
                 rf_ao           when rf_o,
-                tmpa_out        when tmpa_o,
                 dis_out         when dis_o,
                 int_addr        when int_o,
                 rst_addr        when rst_o;
@@ -213,7 +210,6 @@ begin
     dbg.alu_op <= cw.alu_op;
     dbg.iff <= iff;
     dbg.dbus <= dbus;
-    dbg.tmpa <= tmpa_out;
     dbg.dbufo <= dbufo_out;
     dbg.dbufi <= dbufi_out;
 end arch;
