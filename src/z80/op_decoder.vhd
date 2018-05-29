@@ -667,41 +667,38 @@ architecture arch of op_decoder is
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
-        when m1 => -- tmp + reg -> tmpa
+        when m1 =>
             case state.t is
             when t4 =>
-                f.cw.rf_daddr := regZ;
-                f.cw.dbus_src := rf_o;
-                f.cw.tmp_rd := '1';
             when t5 =>
-                f.cw.rf_aaddr := rp;
-                f.cw.dbus_src := tmp_o;
-                f.cw.abus_src := dis_o;
-                f.cw.addr_op := none;
-                f.cw.tmpa_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m2 => -- (tmpa) -> tmp
+        when m2 => -- (rp+z) -> tmp
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
-                f.cw.abus_src := tmpa_o;
+                f.cw.rf_daddr := regZ; -- z holds d from fetch
+                f.cw.dbus_src := rf_o;
+                f.cw.rf_aaddr := rp;
+                f.cw.abus_src := dis_o;
             when t3 =>
                 f.cw.tmp_rd := '1';
             when t4 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m3 => -- alu -> (tmpa)
+        when m3 => -- alu -> (rp+z)
             f := mem_wr(state, f);
             case state.t is
             when t1 =>
-                f.cw.abus_src := tmpa_o;
+                f.cw.rf_daddr := regZ;
+                f.cw.dbus_src := rf_o;
+                f.cw.rf_aaddr := rp;
+                f.cw.abus_src := dis_o;
+            when t2 =>
                 f.cw.alu_op := op;
                 f.cw.alu_bs := bs;
-                f.cw.dbus_src := alu_o;
-                f.cw.rf_daddr := regW;
-                f.cw.rf_rdd := '1';
                 f.cw.f_rd := '1';
+                f.cw.dbus_src := alu_o;
                 f.cw.data_rdo := '1';
             when t3 =>
                 f.ct.cycle_end := '1';
