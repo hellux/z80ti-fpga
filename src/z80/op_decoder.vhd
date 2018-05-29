@@ -2383,7 +2383,7 @@ architecture arch of op_decoder is
             when t3 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m4 => -- i & tmp + 1 -> tmpa, (i & tmp) -> pcl
+        when m4 => -- i & tmp + 1 -> wz, (i & tmp) -> pcl
             -- NOTE lower byte is seemingly random on ti calculators,
             --      the current value in tmp is used here
             f := mem_rd(state, f);
@@ -2392,17 +2392,19 @@ architecture arch of op_decoder is
                 f.cw.dbus_src := tmp_o;
                 f.cw.abus_src := int_o;
                 f.cw.addr_op := inc;
-                f.cw.tmpa_rd := '1';
+                f.cw.rf_aaddr := regWZ;
+                f.cw.rf_rda := '1';
                 f.db.jump_beg := '1';
             when t3 =>
                 f.cw.pc_rdl := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m5 => -- (tmpa) -> pch
+        when m5 => -- (wz) -> pch
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
-                f.cw.abus_src := tmpa_o;
+                f.cw.rf_aaddr := regWZ;
+                f.cw.abus_src := rf_o;
             when t3 =>
                 f.cw.pc_rdh := '1';
                 f.ct.mode_next := exec;
