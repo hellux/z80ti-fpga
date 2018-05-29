@@ -1668,35 +1668,39 @@ architecture arch of op_decoder is
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m3 => -- dbufo -> (SP), SP+1 -> tmpa, rp high -> dbufo
+        when m3 => -- dbufo -> (sp++), rp high -> dbufo
             f := mem_wr(state, f);
             case state.t is
             when t1 =>
                 f.cw.rf_aaddr := regSP;
                 f.cw.abus_src := rf_o;
                 f.cw.addr_op := inc;
-                f.cw.tmpa_rd := '1';
+                f.cw.rf_rda := '1';
             when t4 =>
                 f.cw.rf_daddr := rp & '0';
                 f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m4 => -- (tmpa) -> rp high
+        when m4 => -- (sp) -> rp high
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
-                f.cw.abus_src := tmpa_o;
+                f.cw.rf_aaddr := regSP;
+                f.cw.abus_src := rf_o;
             when t3 =>
                 f.cw.rf_daddr := rp & '0';
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m5 => -- tmp -> (tmpa)
+        when m5 => -- tmp -> (sp--)
             f := mem_wr(state, f);
             case state.t is
             when t1 =>
-                f.cw.abus_src := tmpa_o;
+                f.cw.rf_aaddr := regSP;
+                f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
             when t5 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
