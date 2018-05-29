@@ -155,7 +155,8 @@ architecture arch of op_decoder is
         when m2 =>
             case state.t is
             when t3 =>
-                f.cw.tmp_rd := '1';
+                f.cw.rf_addr := regZ;
+                f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 =>
@@ -669,12 +670,15 @@ architecture arch of op_decoder is
         when m1 => -- tmp + reg -> tmpa
             case state.t is
             when t4 =>
+                f.cw.rf_addr := regZ;
+                f.cw.dbus_src := rf_o;
+                f.cw.tmp_rd := '1';
+            when t5 =>
                 f.cw.rf_addr := reg;
-                f.cw.dbus_src := tmp_o; -- tmp holds d
+                f.cw.dbus_src := tmp_o;
                 f.cw.abus_src := dis_o;
                 f.cw.addr_op := none;
                 f.cw.tmpa_rd := '1';
-            when t5 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 => -- (tmpa) -> tmp
