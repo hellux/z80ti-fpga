@@ -1214,19 +1214,24 @@ architecture arch of op_decoder is
         case state.m is
         when m1 =>
             case state.t is
-            when t4 =>
+            when t4 => -- reg high -> tmp
+                f.cw.rf_addr := reg+1;
+                f.cw.dbus_src := rf_o;
+                f.cw.tmp_rd := '1';
+            when t5 => -- tmp -> sph
+                f.cw.dbus_src := tmp_o;
+                f.cw.rf_addr := regSPl;
+                f.cw.rf_rdd := '1';
+            when t6 => -- reg low -> tmp
                 f.cw.rf_addr := reg;
-                f.cw.abus_src := rf_o;
-                f.cw.addr_op := none;
-                f.cw.tmpa_rd := '1';
-            when t5 =>
-                f.cw.abus_src := tmpa_o;
-                f.cw.rf_addr := regSP;
-                f.cw.addr_op := none;
-                f.cw.rf_rda := '1';
-            when t6 =>
+                f.cw.dbus_src := rf_o;
+                f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
+            when t1 => -- tmp -> spl
+                f.cw.dbus_src := tmp_o;
+                f.cw.rf_addr := regSPh;
+                f.cw.rf_rdd := '1';
             when others => null; end case;
         when others => null; end case;
         return f;
@@ -2459,20 +2464,6 @@ begin
         -- cpu state/iff/flags frame
         variable state : id_state_t;
     begin
-        -- helper variables
-        --     | p | |q|
-        -- |1 0|0 0| |0|1 1 1|
-        -- | x |   y   |  z  |
-        x := to_integer(unsigned(instr(7 downto 6)));
-        y := to_integer(unsigned(instr(5 downto 3)));
-        z := to_integer(unsigned(instr(2 downto 0)));
-        p := to_integer(unsigned(instr(5 downto 4)));
-        if instr(3) = '1' then q := 1; else q := 0; end if;
-        if state.prefix = fd or
-           state.prefix = fdcb
-        then xy := 1;
-        else xy := 0;
-        end if;
         -- bind state frame
         state.mode := cpu_state.mode;
         state.prefix := cpu_state.prefix;
@@ -2488,6 +2479,21 @@ begin
         state.cc(PE_c) := flags(PV_f) = '1';
         state.cc(P_c)  := flags(S_f)  = '0';
         state.cc(M_c)  := flags(S_f)  = '1';
+
+        -- helper variables
+        --     | p | |q|
+        -- |1 0|0 0| |0|1 1 1|
+        -- | x |   y   |  z  |
+        x := to_integer(unsigned(instr(7 downto 6)));
+        y := to_integer(unsigned(instr(5 downto 3)));
+        z := to_integer(unsigned(instr(2 downto 0)));
+        p := to_integer(unsigned(instr(5 downto 4)));
+        if instr(3) = '1' then q := 1; else q := 0; end if;
+        if state.prefix = fd or
+           state.prefix = fdcb
+        then xy := 1;
+        else xy := 0;
+        end if;
 
         -- set all signals to defaults (overwrite sequentially below)
         f.ct := (mode_next => state.mode,
@@ -2809,7 +2815,8 @@ begin
                     case y is
                     when 4 => f := pop_rp(state, f, ixy(xy));
                     when 5 => f := jp_rp(state, f, ixy(xy));
-                    when 7 => f := ld_sp_rp(state, f, ixy(xy));
+                    when 7 =>
+                        f := ld_sp_rp(state, f, ixy(xy));
                     when others => f := noni(state, f, instr);
                     end case;
                 when 3 =>
