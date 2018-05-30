@@ -199,6 +199,7 @@ architecture arch of op_decoder is
 
     function jp_nn(state : id_state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
+        -- pcrf: need wz mode or rp->pc
         f := f_in;
         case state.m is
         when m1 => 
@@ -264,8 +265,9 @@ architecture arch of op_decoder is
     end jp_cc_nn;
 
     function jp_rp(state : id_state_t; f_in : id_frame_t;
-                   rp : std_logic_vector(2 downto 0))
+                   rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
+        -- pcrf need to implement rp->pc in rf
         f := f_in;
         case state.m is
         when m1 =>
@@ -286,6 +288,7 @@ architecture arch of op_decoder is
 
     function jr_d(state : id_state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
+        -- pcrf need wz mode or rp->pc
         f := f_in;
         case state.m is
         when m1 =>
@@ -369,7 +372,7 @@ architecture arch of op_decoder is
     end ex;
 
     function alu_a_r(state : id_state_t; f_in : id_frame_t;
-                     op : instr_t; reg : std_logic_vector(3 downto 0))
+                     op : instr_t; reg : std_logic_vector(4 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -423,7 +426,7 @@ architecture arch of op_decoder is
     end alu_a_n;
 
     function alu_r(state : id_state_t; f_in : id_frame_t;
-                   op : instr_t; reg : std_logic_vector(3 downto 0))
+                   op : instr_t; reg : std_logic_vector(4 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -447,7 +450,7 @@ architecture arch of op_decoder is
     end alu_r;
 
     function alu_a_rpx(state : id_state_t; f_in : id_frame_t;
-                       op : instr_t; rp : std_logic_vector(2 downto 0))
+                       op : instr_t; rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -479,7 +482,7 @@ architecture arch of op_decoder is
     end alu_a_rpx;
 
     function alu_rpx(state : id_state_t; f_in : id_frame_t;
-                     op : instr_t; rp : std_logic_vector(2 downto 0))
+                     op : instr_t; rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -544,8 +547,8 @@ architecture arch of op_decoder is
     function alu_rp_rp(state : id_state_t; f_in : id_frame_t;
                        op1 : instr_t;
                        op2 : instr_t;
-                       rp1 : std_logic_vector(2 downto 0);
-                       rp2 : std_logic_vector(2 downto 0))
+                       rp1 : std_logic_vector(3 downto 0);
+                       rp2 : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -597,7 +600,7 @@ architecture arch of op_decoder is
 
     function bit_r(state : id_state_t; f_in : id_frame_t;
                    op : instr_t; bs : integer range 0 to 7;
-                   reg : std_logic_vector(3 downto 0))
+                   reg : std_logic_vector(4 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is 
@@ -663,7 +666,7 @@ architecture arch of op_decoder is
 
     function bit_xy_d(state : id_state_t; f_in : id_frame_t;
                       op : instr_t; bs : integer range 0 to 7;
-                      rp : std_logic_vector(2 downto 0))
+                      rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -753,7 +756,7 @@ architecture arch of op_decoder is
     end rld_rrd;
 
     function inc_dec_rp(state : id_state_t; f_in : id_frame_t;
-                        op : addr_op_t; rp : std_logic_vector(2 downto 0))
+                        op : addr_op_t; rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is 
@@ -1000,7 +1003,7 @@ architecture arch of op_decoder is
             when t1 =>
                 f.cw.alu_op := ld_i;
                 f.cw.f_rd := '1';
-                f.cw.pv_src := iff_f; -- use iff2 as pv
+                f.cw.pv_src := iff_f; -- use iff as pv
             when t5 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
@@ -1010,7 +1013,7 @@ architecture arch of op_decoder is
     end ld_a_i_r;
 
     function ld_r_r(state : id_state_t; f_in : id_frame_t;
-                    dst, src : std_logic_vector(3 downto 0))
+                    dst, src : std_logic_vector(4 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1032,7 +1035,7 @@ architecture arch of op_decoder is
     end ld_r_r;
 
     function ld_r_n(state : id_state_t; f_in : id_frame_t;
-                   reg : std_logic_vector(3 downto 0))
+                   reg : std_logic_vector(4 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1055,8 +1058,8 @@ architecture arch of op_decoder is
     end ld_r_n;
 
     function ld_r_rpx(state : id_state_t; f_in : id_frame_t;
-                      reg : std_logic_vector(3 downto 0);
-                      rp : std_logic_vector(2 downto 0))
+                      reg : std_logic_vector(4 downto 0);
+                      rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1082,7 +1085,7 @@ architecture arch of op_decoder is
     end ld_r_rpx;
 
     function ld_rp_nn(state : id_state_t; f_in : id_frame_t;
-                      rp : std_logic_vector(2 downto 0))
+                      rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1113,7 +1116,7 @@ architecture arch of op_decoder is
     end ld_rp_nn;
 
     function ld_r_nnx(state : id_state_t; f_in : id_frame_t;
-                      reg : std_logic_vector(3 downto 0))
+                      reg : std_logic_vector(4 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1155,7 +1158,7 @@ architecture arch of op_decoder is
     end ld_r_nnx;
 
     function ld_rp_nnx(state : id_state_t; f_in : id_frame_t;
-                       rp : std_logic_vector(2 downto 0))
+                       rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1210,7 +1213,7 @@ architecture arch of op_decoder is
     end ld_rp_nnx;
 
     function ld_sp_rp(state : id_state_t; f_in : id_frame_t;
-                      rp : std_logic_vector(2 downto 0))
+                      rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1240,8 +1243,8 @@ architecture arch of op_decoder is
     end ld_sp_rp;
 
     function ld_rpx_r(state : id_state_t; f_in : id_frame_t;
-                      rp : std_logic_vector(2 downto 0);
-                      reg : std_logic_vector(3 downto 0))
+                      rp : std_logic_vector(3 downto 0);
+                      reg : std_logic_vector(4 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1268,7 +1271,7 @@ architecture arch of op_decoder is
     end ld_rpx_r;
 
     function ld_rpx_n(state : id_state_t; f_in : id_frame_t;
-                      rp : std_logic_vector(2 downto 0))
+                      rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1342,7 +1345,7 @@ architecture arch of op_decoder is
     end ld_nnx_a;
 
     function ld_nnx_rp(state : id_state_t; f_in : id_frame_t;
-                       rp : std_logic_vector(2 downto 0))
+                       rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1404,8 +1407,8 @@ architecture arch of op_decoder is
     
     -- ld r, (ix/iy+d)
     function ld_r_xy_d(state : id_state_t; f_in : id_frame_t; 
-                        reg : std_logic_vector(3 downto 0);
-                        rp : std_logic_vector(2 downto 0))
+                        reg : std_logic_vector(4 downto 0);
+                        rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1445,8 +1448,8 @@ architecture arch of op_decoder is
     end ld_r_xy_d;
     
     function ld_xy_d_r(state : id_state_t; f_in : id_frame_t; 
-                        rp : std_logic_vector(2 downto 0);
-                        reg : std_logic_vector(3 downto 0))
+                        rp : std_logic_vector(3 downto 0);
+                        reg : std_logic_vector(4 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1487,7 +1490,7 @@ architecture arch of op_decoder is
     end ld_xy_d_r;
     
     function ld_xy_d_n(state : id_state_t; f_in : id_frame_t; 
-                        rp : std_logic_vector(2 downto 0))
+                        rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1533,7 +1536,7 @@ architecture arch of op_decoder is
     
     function alu_xy_d(state : id_state_t; f_in : id_frame_t;
                       op : instr_t;
-                      rp : std_logic_vector(2 downto 0))
+                      rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1599,7 +1602,7 @@ architecture arch of op_decoder is
     
     function alu_a_xy_d(state : id_state_t; f_in : id_frame_t; 
                         op : instr_t;
-                        rp : std_logic_vector(2 downto 0))
+                        rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1645,7 +1648,7 @@ architecture arch of op_decoder is
     end alu_a_xy_d;
 
     function ex_spx_rp(state : id_state_t; f_in : id_frame_t;
-                       rp : std_logic_vector(2 downto 0))
+                       rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1737,7 +1740,7 @@ architecture arch of op_decoder is
     end in_c;
 
     function in_r_c(state : id_state_t; f_in : id_frame_t;
-                    reg : std_logic_vector(3 downto 0))
+                    reg : std_logic_vector(4 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         f := in_c(state, f);
@@ -1823,7 +1826,7 @@ architecture arch of op_decoder is
     end out_n_a;
 
     function out_c_r(state : id_state_t; f_in : id_frame_t;
-                     reg : std_logic_vector(3 downto 0))
+                     reg : std_logic_vector(4 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1875,7 +1878,7 @@ architecture arch of op_decoder is
     end out_c_0;
 
     function push_rp(state : id_state_t; f_in : id_frame_t;
-                     rp : std_logic_vector(2 downto 0))
+                     rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1931,7 +1934,7 @@ architecture arch of op_decoder is
     end push_rp;
 
     function pop_rp(state : id_state_t; f_in : id_frame_t;
-                    rp : std_logic_vector(2 downto 0))
+                    rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
@@ -1981,6 +1984,7 @@ architecture arch of op_decoder is
 
     function call_nn(state : id_state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
+        -- pcrf need rp->wz or wz mode
         f := f_in;
         case state.m is
         when m1 => 
@@ -2420,12 +2424,12 @@ architecture arch of op_decoder is
 
     type instr_tbl_t is array(integer range <>) of instr_t;
     type instr_mtx_t is array(integer range <>, integer range <>) of instr_t;
-    type reg_tbl_t is array(integer range <>) of std_logic_vector(3 downto 0);
+    type reg_tbl_t is array(integer range <>) of std_logic_vector(4 downto 0);
     type reg_mtx_t is array(integer range <>,
-                            integer range <>) of std_logic_vector(3 downto 0);
-    type rp_tbl_t is array(integer range <>) of std_logic_vector(2 downto 0);
+                            integer range <>) of std_logic_vector(4 downto 0);
+    type rp_tbl_t is array(integer range <>) of std_logic_vector(3 downto 0);
     type rp_mtx_t is array(integer range <>,
-                           integer range <>) of std_logic_vector(2 downto 0);
+                           integer range <>) of std_logic_vector(3 downto 0);
     type im_tbl_t is array(0 to 7) of integer range 0 to 2;
 
     constant bli : instr_mtx_t(4 to 7, 0 to 3) :=
@@ -2510,9 +2514,9 @@ begin
         f.cb := (others => '0');
         f.cw := (dbus_src => none,
                  abus_src => none,
-                 rst_addr => "000",
-                 rf_daddr => "0000",
-                 rf_aaddr => "000",
+                 rst_addr => (others => '-'),
+                 rf_daddr => (others => '-'),
+                 rf_aaddr => (others => '-'),
                  rf_swp => none,
                  alu_op => unknown,
                  alu_bs => 0,

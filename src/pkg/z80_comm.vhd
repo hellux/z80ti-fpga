@@ -55,8 +55,8 @@ package z80_comm is
         -- buses / registers
         dbus_src : dbus_src_t;           -- mux addr to dbus
         abus_src : abus_src_t;           -- mux addr to abus
-        rf_daddr : std_logic_vector(3 downto 0); -- addr to reg rf <-> dbus
-        rf_aaddr : std_logic_vector(2 downto 0); -- addr to reg rf <-> abus
+        rf_daddr : std_logic_vector(4 downto 0); -- addr to reg rf <-> dbus
+        rf_aaddr : std_logic_vector(3 downto 0); -- addr to reg rf <-> abus
         rf_rdd, rf_rda : std_logic;      -- rd to regfile from dbus/abus
         rf_swp : rf_swap_t;              -- swap regs in regfile
         f_rd : std_logic;                -- alu -> F
@@ -116,31 +116,37 @@ package z80_comm is
     constant t6 : integer := 6;
 
     -- reg16 (rp)
-    constant regBC : std_logic_vector(2 downto 0) := "000";
-    constant regDE : std_logic_vector(2 downto 0) := "001";
-    constant regHL : std_logic_vector(2 downto 0) := "010";
-    constant regAF : std_logic_vector(2 downto 0) := "011";
-    constant regWZ : std_logic_vector(2 downto 0) := "100";
-    constant regSP : std_logic_vector(2 downto 0) := "101";
-    constant regIX : std_logic_vector(2 downto 0) := "110";
-    constant regIY : std_logic_vector(2 downto 0) := "111";
+    constant regBC  : std_logic_vector(3 downto 0) := "0000";
+    constant regDE  : std_logic_vector(3 downto 0) := "0001";
+    constant regHL  : std_logic_vector(3 downto 0) := "0010";
+    constant regAF  : std_logic_vector(3 downto 0) := "0011";
+    constant regWZ  : std_logic_vector(3 downto 0) := "0100";
+    constant regSP  : std_logic_vector(3 downto 0) := "0101";
+    constant regIX  : std_logic_vector(3 downto 0) := "0110";
+    constant regIY  : std_logic_vector(3 downto 0) := "0111";
+    constant regIR  : std_logic_vector(3 downto 0) := "1001";
+    constant regPC  : std_logic_vector(3 downto 0) := "1010";
     -- reg8 (reg)
-    constant regB   : std_logic_vector(3 downto 0) := "0000";
-    constant regC   : std_logic_vector(3 downto 0) := "0001";
-    constant regD   : std_logic_vector(3 downto 0) := "0010";
-    constant regE   : std_logic_vector(3 downto 0) := "0011";
-    constant regH   : std_logic_vector(3 downto 0) := "0100";
-    constant regL   : std_logic_vector(3 downto 0) := "0101";
-    constant regF   : std_logic_vector(3 downto 0) := "0110";
-    constant regA   : std_logic_vector(3 downto 0) := "0111";
-    constant regW   : std_logic_vector(3 downto 0) := "1000";
-    constant regZ   : std_logic_vector(3 downto 0) := "1001";
-    constant regSPh : std_logic_vector(3 downto 0) := "1010";
-    constant regSPl : std_logic_vector(3 downto 0) := "1011";
-    constant regIXh : std_logic_vector(3 downto 0) := "1100";
-    constant regIXl : std_logic_vector(3 downto 0) := "1101";
-    constant regIYh : std_logic_vector(3 downto 0) := "1110";
-    constant regIYl : std_logic_vector(3 downto 0) := "1111";
+    constant regB   : std_logic_vector(4 downto 0) := "00000";
+    constant regC   : std_logic_vector(4 downto 0) := "00001";
+    constant regD   : std_logic_vector(4 downto 0) := "00010";
+    constant regE   : std_logic_vector(4 downto 0) := "00011";
+    constant regH   : std_logic_vector(4 downto 0) := "00100";
+    constant regL   : std_logic_vector(4 downto 0) := "00101";
+    constant regF   : std_logic_vector(4 downto 0) := "00110";
+    constant regA   : std_logic_vector(4 downto 0) := "00111";
+    constant regW   : std_logic_vector(4 downto 0) := "01000";
+    constant regZ   : std_logic_vector(4 downto 0) := "01001";
+    constant regSPh : std_logic_vector(4 downto 0) := "01010";
+    constant regSPl : std_logic_vector(4 downto 0) := "01011";
+    constant regIXh : std_logic_vector(4 downto 0) := "01100";
+    constant regIXl : std_logic_vector(4 downto 0) := "01101";
+    constant regIYh : std_logic_vector(4 downto 0) := "01110";
+    constant regIYl : std_logic_vector(4 downto 0) := "01111";
+    constant regI   : std_logic_vector(4 downto 0) := "10000";
+    constant regR   : std_logic_vector(4 downto 0) := "10001";
+    constant regPCh : std_logic_vector(4 downto 0) := "10010";
+    constant regPCl : std_logic_vector(4 downto 0) := "10011";
 
     type dbg_id_t is record
         jump_beg, jump_end : std_logic;

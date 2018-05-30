@@ -18,12 +18,15 @@ use work.z80_comm.all;
 -- 18 10010  |__SPh__|__SPh__|  10011 19
 -- 20 10100  |__IXh__|__IXl__|  10011 21
 -- 22 10110  |__IYh__|__IYl__|  10111 23
+-- TODO below
+-- 24 11000  |___I___|___R___|  11001 25
+-- 26 11010  |__PCh__|__PCl__|  11011 27
 
 entity regfile is port(
     -- ctrl
     clk, rst, ce : in std_logic;
-    reg_addr : in std_logic_vector(3 downto 0);
-    rp_addr : in std_logic_vector(2 downto 0);
+    reg_addr : in std_logic_vector(4 downto 0);
+    rp_addr : in std_logic_vector(3 downto 0);
     rdd, rda, rdf : in std_logic;
     swp : in rf_swap_t;
     -- buses
@@ -38,6 +41,36 @@ entity regfile is port(
 end regfile;
 
 architecture arch of regfile is
+    -- addr of internal registers
+    constant B0  : integer := 0;
+    constant C0  : integer := 1;
+    constant B1  : integer := 2;
+    constant C1  : integer := 3;
+    constant D0  : integer := 4;
+    constant E0  : integer := 5;
+    constant D1  : integer := 6;
+    constant E1  : integer := 7;
+    constant H0  : integer := 8;
+    constant L0  : integer := 9;
+    constant H1  : integer := 10;
+    constant L1  : integer := 11;
+    constant A0  : integer := 12;
+    constant F0  : integer := 13;
+    constant A1  : integer := 14;
+    constant F1  : integer := 15;
+    constant W   : integer := 16;
+    constant Z   : integer := 17;
+    constant SPh : integer := 18;
+    constant SPl : integer := 19;
+    constant IXh : integer := 20;
+    constant IXl : integer := 21;
+    constant IYh : integer := 22;
+    constant IYl : integer := 23;
+    constant I   : integer := 24;
+    constant R   : integer := 25;
+    constant PCh : integer := 26;
+    constant PCl : integer := 27;
+
     type rf_ram_t is array(0 to 23) of std_logic_vector(7 downto 0);
     type rf_swap_state_t is record
         reg, af : std_logic;
@@ -45,30 +78,30 @@ architecture arch of regfile is
         fz : std_logic;
     end record;
 
-    function baddr(r : std_logic_vector(3 downto 0);
+    function baddr(r : std_logic_vector(4 downto 0);
                    s : rf_swap_state_t)
     return integer is
         variable reg_i : integer range 0 to 1;
-        variable w_vec : std_logic_vector(3 downto 0);
+        variable rp : std_logic_vector(3 downto 0);
         variable hl : std_logic;
     begin
         if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
 
         -- select word
         if s.fz = '1' and r = regF then -- f -> z
-            w_vec := "1000";
+            rp := "1000";
         elsif s.fz = '1' and r = regZ then -- z -> f
-            w_vec := "011" & s.reg;
+            rp := "011" & s.reg;
         elsif r(3) = '0' and r(2 downto 1) /= "11" and s.dehl(reg_i) = '1' then
-            w_vec := '0' & r(1) & r(2) & s.reg;
+            rp := '0' & r(1) & r(2) & s.reg;
         elsif r(3) = '0' and r(2 downto 1) /= "11" then
-            w_vec := r(3 downto 1) & s.reg;
+            rp := r(3 downto 1) & s.reg;
         elsif r(3) = '0' then
-            w_vec := "011" & s.af;
+            rp := "011" & s.af;
         elsif r(3) = '1' then
-            w_vec := "10" & r(2 downto 1);
+            rp := "10" & r(2 downto 1);
         else
-            w_vec := "----";
+            rp := "----";
         end if;
         -- select byte
         if r(3 downto 1) = "011" then -- flip FA to AF
@@ -76,14 +109,14 @@ architecture arch of regfile is
         else
             hl := r(0);
         end if;
-        return to_integer(unsigned(w_vec & hl));
+        return to_integer(unsigned(rp & hl));
     end baddr;
 
-    function get_word(reg : std_logic_vector(2 downto 0);
+    function get_word(reg : std_logic_vector(3 downto 0);
                       signal ram : rf_ram_t;
                       signal s : rf_swap_state_t)
     return std_logic_vector is
-        variable bh, bl : std_logic_vector(3 downto 0);
+        variable bh, bl : std_logic_vector(4 downto 0);
     begin
         bh := reg & '0';
         bl := reg & '1';
@@ -93,8 +126,8 @@ architecture arch of regfile is
 
     function next_ram(signal ram : in rf_ram_t;
                       signal s : in rf_swap_state_t;
-                      signal reg_addr : std_logic_vector(3 downto 0);
-                      signal rp_addr : std_logic_vector(2 downto 0);
+                      signal reg_addr : std_logic_vector(4 downto 0);
+                      signal rp_addr : std_logic_vector(3 downto 0);
                       signal rdd, rda, rdf : in std_logic;
                       signal data, f : in std_logic_vector(7 downto 0);
                       signal addr : in std_logic_vector(15 downto 0))
