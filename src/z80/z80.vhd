@@ -85,8 +85,7 @@ architecture arch of z80 is
     signal rf_dis : std_logic_vector(15 downto 0);
     signal iff : std_logic;
 
-    signal act_rd : std_logic;
-    signal acc, act_in, act_out : std_logic_vector(7 downto 0);
+    signal rf_a_out, act_out : std_logic_vector(7 downto 0);
     -- flags
     signal rf_f_out, alu_f_out : std_logic_vector(7 downto 0);
     signal flags : std_logic_vector(7 downto 0);
@@ -116,7 +115,7 @@ begin
     rf : regfile port map(clk, cbi.reset, ce,
         cw.rf_daddr, cw.rf_aaddr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.ldpc,
         cw.rf_swp,
-        dbus, addr_in, flags, rf_do, rf_ao, rf_dis, acc, rf_f_out,
+        dbus, addr_in, flags, rf_do, rf_ao, rf_dis, rf_a_out, rf_f_out,
         dbg.regs);
     dis_out <= std_logic_vector(signed(rf_dis) + resize(signed(dbus), 16));
 
@@ -132,9 +131,7 @@ begin
                             cw.alu_op, cw.alu_bs,
                             alu_res_out, alu_f_out);
     act : reg generic map(x"ff", 8)
-              port map(clk, cbi.reset, ce, act_rd, act_in, act_out);
-    act_rd <= cw.act_rd or cw.act_rd_dbus;
-    act_in <= dbus when cw.act_rd_dbus = '1' else acc;
+              port map(clk, cbi.reset, ce, cw.act_rd, rf_a_out, act_out);
     tmp : reg generic map(x"ff", 8)
               port map(clk, cbi.reset, ce, cw.tmp_rd, dbus, tmp_out);
 
