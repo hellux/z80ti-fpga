@@ -19,7 +19,7 @@ package z80_comm is
                      ldd_i, cpd_i, ind_i, outd_i,
                      ldir_i, cpir_i, inir_i, otir_i,
                      lddr_i, cpdr_i, indr_i, otdr_i);
-    type rf_swap_t is (none, af, reg, dehl, fz);
+    type rf_swap_t is (none, af, reg, dehl, afwz);
     type addr_op_t is (inc, none, dec);
     type cond_t is array(0 to 7) of boolean;
 

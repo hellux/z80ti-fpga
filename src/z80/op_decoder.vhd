@@ -2202,7 +2202,7 @@ architecture arch of op_decoder is
                 f.cw.rf_daddr := regB;
                 f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';
-                f.cw.rf_swp := fz; -- save old flags to z
+                f.cw.rf_swp := afwz; -- save old flags to z
                 f.db.jump_beg := '1';
             when t5 =>
                 f.cw.alu_op := dec_i;
@@ -2221,7 +2221,7 @@ architecture arch of op_decoder is
                 if state.cc(Z_c) then
                     f.ct.instr_end := '1';
                 end if;
-                f.cw.rf_swp := fz; -- restore old flags after internal use
+                f.cw.rf_swp := afwz; -- restore old flags after internal use
             when others => null; end case;
         when m3 => -- load pc+d to pc
             case state.t is

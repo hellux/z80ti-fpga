@@ -75,7 +75,7 @@ architecture arch of regfile is
     type rf_swap_state_t is record
         reg, af : std_logic;
         dehl : std_logic_vector(1 downto 0);
-        fz : std_logic;
+        afwz : std_logic;
     end record;
 
     function baddr(r : std_logic_vector(4 downto 0);
@@ -87,9 +87,9 @@ architecture arch of regfile is
         if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
 
         -- select word
-        if s.fz = '1' and r = regF then -- f -> z
+        if s.afwz = '1' and (r = regA or r = regF) then -- af -> wz
             rp := "1000";
-        elsif s.fz = '1' and r = regZ then -- z -> f
+        elsif s.afwz = '1' and (r = regW or r = regZ) then -- z -> f
             rp := "011" & s.reg;
         elsif r(3) = '0' and r(2 downto 1) /= "11" and s.dehl(reg_i) = '1' then
             rp := '0' & r(1) & r(2) & s.reg;
@@ -156,7 +156,7 @@ begin
                 when reg  => s.reg         <= not s.reg;
                 when af   => s.af          <= not s.af;
                 when dehl => s.dehl(reg_i) <= not s.dehl(reg_i);
-                when fz   => s.fz          <= not s.fz;
+                when afwz => s.afwz        <= not s.afwz;
                 when others => null;
                 end case;
             end if;
