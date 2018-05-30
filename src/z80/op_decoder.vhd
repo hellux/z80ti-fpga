@@ -107,11 +107,13 @@ architecture arch of op_decoder is
         f := mem_rd(state, f);
         case state.t is
         when t1 =>
-            f.cw.abus_src := pc_o;
-        when t2 =>
-            f.cw.abus_src := pc_o;
+            f.cw.rf_aaddr := regPC;
+            f.cw.abus_src := rf_o;
+        when t2 => -- increment pc
+            f.cw.rf_aaddr := regPC;
+            f.cw.abus_src := rf_o;
             f.cw.addr_op := inc;
-            f.cw.pc_rd := '1';
+            f.cw.rf_rda := '1';
         when others => null; end case;
         return f;
     end mem_rd_pc;
@@ -199,7 +201,6 @@ architecture arch of op_decoder is
 
     function jp_nn(state : id_state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
-        -- pcrf: need wz mode or rp->pc
         f := f_in;
         case state.m is
         when m1 => 
@@ -216,15 +217,18 @@ architecture arch of op_decoder is
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m3 => -- z -> pcl, second byte -> pch
-            f := mem_rd_pc(state, f);
+        when m3 => -- wz -> pc, second byte -> pch
+            f := mem_rd(state, f);
             case state.t is
+            when t1 =>
+                f.cw.rf_aaddr := regPC;
+                f.cw.abus_src := rf_o;
             when t2 =>
-                f.cw.rf_daddr := regZ;
-                f.cw.dbus_src := rf_o;
-                f.cw.pc_rdl := '1'; -- priority above pc_rd
+                f.cw.rf_aaddr := regWZ;
+                f.cw.ldpc := '1';
             when t3 =>
-                f.cw.pc_rdh := '1';
+                f.cw.rf_daddr := regPCh;
+                f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
                 f.db.jump_end := '1';
@@ -267,16 +271,13 @@ architecture arch of op_decoder is
     function jp_rp(state : id_state_t; f_in : id_frame_t;
                    rp : std_logic_vector(3 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
-        -- pcrf need to implement rp->pc in rf
         f := f_in;
         case state.m is
         when m1 =>
             case state.t is
             when t4 =>
-                f.cw.rf_aaddr := rp; -- place rp on abus
-                f.cw.abus_src := rf_o;
-                f.cw.addr_op := none; -- no inc to addr
-                f.cw.pc_rd := '1'; -- store addr in pc
+                f.cw.rf_aaddr := rp;
+                f.cw.ldpc := '1'; -- ld pc with rp
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
                 f.db.jump_beg := '1';
@@ -288,7 +289,6 @@ architecture arch of op_decoder is
 
     function jr_d(state : id_state_t; f_in : id_frame_t)
     return id_frame_t is variable f : id_frame_t; begin
-        -- pcrf need wz mode or rp->pc
         f := f_in;
         case state.m is
         when m1 =>
@@ -297,31 +297,26 @@ architecture arch of op_decoder is
                 f.ct.cycle_end := '1';
                 f.db.jump_beg := '1';
             when others => null; end case;
-        when m2 => -- load displacement to tmp, pc->wz
+        when m2 => -- fetch d, pc+d+1->pc
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
-                f.cw.abus_src := pc_o;
+                f.cw.rf_aaddr := regPC;
+                f.cw.abus_src := rf_o;
             when t3 =>
-                f.cw.tmp_rd := '1';
-                f.cw.abus_src := pc_o;
-                f.cw.rf_aaddr := regWZ;
-                f.cw.addr_op := none;
+                f.cw.rf_aaddr := regPC;
+                f.cw.abus_src := dis_o;
+                f.cw.addr_op := inc;
                 f.cw.rf_rda := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m3 => -- wz+d+1->pc
+        when m3 =>
             case state.t is
             when t1 =>
             when t2 =>
             when t3 =>
             when t4 =>
             when t5 =>
-                f.cw.dbus_src := tmp_o;
-                f.cw.rf_aaddr := regWZ;
-                f.cw.abus_src := dis_o;
-                f.cw.addr_op := inc;
-                f.cw.pc_rd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
                 f.db.jump_end := '1';
@@ -923,13 +918,15 @@ architecture arch of op_decoder is
         when m5 => -- pc-2 -> pc
             case state.t is
             when t1 =>
-                f.cw.abus_src := pc_o;
+                f.cw.rf_aaddr := regPC;
+                f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
-                f.cw.pc_rd := '1';
+                f.cw.rf_rda := '1';
             when t2 =>
-                f.cw.abus_src := pc_o;
+                f.cw.rf_aaddr := regPC;
+                f.cw.abus_src := rf_o;
                 f.cw.addr_op := dec;
-                f.cw.pc_rd := '1';
+                f.cw.rf_rda := '1';
             when t3 =>
             when t4 =>
             when t5 =>
@@ -2023,7 +2020,8 @@ architecture arch of op_decoder is
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
             when t2 =>
-                f.cw.dbus_src := pch_o;
+                f.cw.rf_daddr := regPCh;
+                f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t3 =>
                 f.ct.cycle_end := '1';
@@ -2035,13 +2033,12 @@ architecture arch of op_decoder is
                 f.cw.rf_aaddr := regSP;
                 f.cw.abus_src := rf_o;
             when t2 =>
-                f.cw.dbus_src := pcl_o;
+                f.cw.rf_daddr := regPCl;
+                f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t3 =>
                 f.cw.rf_aaddr := regWZ;
-                f.cw.abus_src := rf_o;
-                f.cw.addr_op := none;
-                f.cw.pc_rd := '1';
+                f.cw.ldpc := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
                 f.db.jump_end := '1';
@@ -2106,7 +2103,8 @@ architecture arch of op_decoder is
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
             when t2 =>
-                f.cw.dbus_src := pch_o;
+                f.cw.rf_daddr := regPCh;
+                f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t3 =>
                 f.ct.cycle_end := '1';
@@ -2118,13 +2116,15 @@ architecture arch of op_decoder is
                 f.cw.rf_aaddr := regSP;
                 f.cw.abus_src := rf_o;
             when t2 =>
-                f.cw.dbus_src := pcl_o;
+                f.cw.rf_daddr := regPCl;
+                f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t3 =>
-                f.cw.abus_src := rst_o;
                 f.cw.rst_addr := std_logic_vector(to_unsigned(addr, 3));
+                f.cw.abus_src := rst_o;
                 f.cw.addr_op := none;
-                f.cw.pc_rd := '1';
+                f.cw.rf_aaddr := regPC;
+                f.cw.rf_rda := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
                 f.db.jump_end := '1';
@@ -2152,7 +2152,8 @@ architecture arch of op_decoder is
                 f.cw.addr_op := inc;
                 f.cw.rf_rda := '1';
             when t3 =>
-                f.cw.pc_rdl := '1';
+                f.cw.rf_daddr := regPCl;
+                f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m3 => -- read to high pc, inc sp
@@ -2164,7 +2165,8 @@ architecture arch of op_decoder is
                 f.cw.addr_op := inc;
                 f.cw.rf_rda := '1';
             when t3 =>
-                f.cw.pc_rdh := '1';
+                f.cw.rf_daddr := regPCh;
+                f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
                 f.db.jump_end := '1';
@@ -2223,20 +2225,16 @@ architecture arch of op_decoder is
                 end if;
                 f.cw.rf_swp := afwz; -- restore old flags after internal use
             when others => null; end case;
-        when m3 => -- load pc+d to pc
+        when m3 => -- pc+d->pc
             case state.t is
-            when t1 => -- pc -> wz
-                f.cw.abus_src := pc_o;
-                f.cw.rf_aaddr := regWZ;
-                f.cw.addr_op := none;
-                f.cw.rf_rda := '1';
-            when t2 =>
-            when t3 => -- wz + d -> pc
-                f.cw.rf_aaddr := regWZ;
+            when t1 =>
+                f.cw.rf_aaddr := regPC;
                 f.cw.dbus_src := tmp_o;
                 f.cw.abus_src := dis_o;
                 f.cw.addr_op := none;
-                f.cw.pc_rd := '1';
+                f.cw.rf_rda := '1';
+            when t2 =>
+            when t3 =>
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
                 f.db.jump_end := '1';
@@ -2323,7 +2321,8 @@ architecture arch of op_decoder is
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
             when t2 =>
-                f.cw.dbus_src := pch_o;
+                f.cw.rf_daddr := regPCh;
+                f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t3 =>
                 f.ct.cycle_end := '1';
@@ -2335,13 +2334,15 @@ architecture arch of op_decoder is
                 f.cw.rf_aaddr := regSP;
                 f.cw.abus_src := rf_o;
             when t2 =>
-                f.cw.dbus_src := pcl_o;
+                f.cw.rf_daddr := regPCl;
+                f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t3 =>
-                f.cw.abus_src := rst_o;
                 f.cw.rst_addr := "111"; -- "111" << 3 = 0x38
+                f.cw.abus_src := rst_o;
                 f.cw.addr_op := none;
-                f.cw.pc_rd := '1';
+                f.cw.rf_aaddr := regPC;
+                f.cw.rf_rda := '1';
                 f.ct.mode_next := exec;
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
@@ -2374,7 +2375,8 @@ architecture arch of op_decoder is
                 f.cw.addr_op := dec;
                 f.cw.rf_rda := '1';
             when t2 =>
-                f.cw.dbus_src := pch_o;
+                f.cw.rf_daddr := regPCh;
+                f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t3 =>
                 f.ct.cycle_end := '1';
@@ -2386,7 +2388,8 @@ architecture arch of op_decoder is
                 f.cw.rf_aaddr := regSP;
                 f.cw.abus_src := rf_o;
             when t2 =>
-                f.cw.dbus_src := pcl_o;
+                f.cw.rf_daddr := regPCl;
+                f.cw.dbus_src := rf_o;
                 f.cw.data_rdo := '1';
             when t3 =>
                 f.ct.cycle_end := '1';
@@ -2401,7 +2404,8 @@ architecture arch of op_decoder is
                 f.cw.rf_rda := '1';
                 f.db.jump_beg := '1';
             when t3 =>
-                f.cw.pc_rdl := '1';
+                f.cw.rf_daddr := regPCl;
+                f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m5 => -- (wz) -> pch
@@ -2411,7 +2415,8 @@ architecture arch of op_decoder is
                 f.cw.rf_aaddr := regWZ;
                 f.cw.abus_src := rf_o;
             when t3 =>
-                f.cw.pc_rdh := '1';
+                f.cw.rf_daddr := regPCh;
+                f.cw.rf_rdd := '1';
                 f.ct.mode_next := exec;
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';

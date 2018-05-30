@@ -125,8 +125,8 @@ package z80_comm is
     constant regSP  : std_logic_vector(3 downto 0) := "0101";
     constant regIX  : std_logic_vector(3 downto 0) := "0110";
     constant regIY  : std_logic_vector(3 downto 0) := "0111";
-    constant regIR  : std_logic_vector(3 downto 0) := "1001";
-    constant regPC  : std_logic_vector(3 downto 0) := "1010";
+    constant regIR  : std_logic_vector(3 downto 0) := "1000";
+    constant regPC  : std_logic_vector(3 downto 0) := "1001";
     -- reg8 (reg)
     constant regB   : std_logic_vector(4 downto 0) := "00000";
     constant regC   : std_logic_vector(4 downto 0) := "00001";
@@ -153,7 +153,7 @@ package z80_comm is
         jump_beg, jump_end : std_logic;
     end record;
     type dbg_regs_t is record
-        BC, DE, HL, AF, WZ, SP, IX, IY : std_logic_vector(15 downto 0);
+        BC, DE, HL, AF, WZ, SP, IX, IY, IR, PC : std_logic_vector(15 downto 0);
     end record;
     type dbg_z80_t is record
         regs : dbg_regs_t;
@@ -162,7 +162,7 @@ package z80_comm is
         alu_op : instr_t;
         iff : std_logic;
         cycle_start, instr_start, int_start : std_logic;
-        pc, abus : std_logic_vector(15 downto 0);
+        abus : std_logic_vector(15 downto 0);
         ir, tmp, act, dbus : std_logic_vector(7 downto 0);
         dbufo, dbufi : std_logic_vector(7 downto 0);
     end record;

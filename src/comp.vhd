@@ -329,7 +329,7 @@ begin
     trc : trace port map(clk, rst, clk_z80_ce,
                          trc_en, trc_di,
                          dbg.z80.id.jump_beg, dbg.z80.id.jump_end,
-                         dbg.z80.pc, 
+                         dbg.z80.regs.pc, 
                          cpu_block, trc_wr, trc_addr, trc_data,
                          dbg.trace);
 end arch;

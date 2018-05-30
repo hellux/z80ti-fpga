@@ -208,13 +208,14 @@ begin
         pages := (others => (others => ' '));
 
     -- states / int
-        pages(0) := "PC: " & hex_str(dbg.z80.pc);
+        pages(0) := "PC: " & hex_str(dbg.z80.regs.pc);
         pages(1) := val_mode & ' ' & val_cycle;
         pages(2) := val_prefix & "  " & hex_str(dbg.z80.ir);
         pages(3) := val_flags;
         pages(4) := val_int;
         pages(5) := val_cb;
         pages(6) := val_asic;
+        pages(7) := "I,R:" & hex_str(dbg.z80.regs.IR);
 
     -- regfile
         pages(8)  := " AF:" & hex_str(dbg.z80.regs.af);

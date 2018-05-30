@@ -206,7 +206,6 @@ begin
                               state.m = m1 and
                               state.mode = interrupt else '0';
     dbg.state <= state;
-    dbg.pc <= pc_out;
     dbg.abus <= abus;
     dbg.ir <= ir_out;
     dbg.tmp <= tmp_out;

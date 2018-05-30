@@ -96,7 +96,7 @@ begin
                                                       rlca_i|rla_i,
         edge & op2(7 downto 1)                   when rrc_i|rr_i|sra_i|srl_i|
                                                       rrca_i|rra_i,
-        op2                                      when ccf_i|scf_i,
+        op2                                      when ccf_i|scf_i|ld_i,
         std_logic_vector(arith_res(7 downto 0))  when others;
 
     with op select result <=

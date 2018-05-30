@@ -97,7 +97,7 @@ architecture arch of regfile is
         when regIYh|regIYl => rp := rpIY;
         when regI|regR => rp := rpIR;
         when regPCh|regPCl => rp := rpPC;
-        when others => null;
+        when others => rp := (others => '-');
         end case;
 
         return to_integer(unsigned(rp & reg(0)));
@@ -127,7 +127,8 @@ architecture arch of regfile is
         new_ram := ram;
         if rdd = '1' then
             new_ram(baddr(reg_addr, s)) := data_in;
-        elsif rda = '1' then
+        end if;
+        if rda = '1' then
             new_ram(baddr(rp_addr & '0', s)) := addr_in(15 downto 8);
             new_ram(baddr(rp_addr & '1', s)) := addr_in(7 downto 0);
         end if;
@@ -141,8 +142,10 @@ architecture arch of regfile is
         return new_ram;
     end next_ram;
 
+    constant RF_RAM_INIT : rf_ram_t := (26 => x"80", 27 => x"00",
+                                        others => x"ff");
     constant RF_SWAP_INIT : rf_swap_state_t := ('0', '0', "00", '0');
-    signal ram, ram_next : rf_ram_t := (others => x"ff");
+    signal ram, ram_next : rf_ram_t := RF_RAM_INIT;
     signal s : rf_swap_state_t := RF_SWAP_INIT;
 begin
     swap_proc : process(clk)
@@ -168,7 +171,7 @@ begin
     ram_proc : process(clk) begin
         if rising_edge(clk) then
             if rst = '1' then
-                ram <= (others => x"ff");
+                ram <= RF_RAM_INIT;
             elsif ce = '1' then
                 ram <= ram_next;
             end if;
@@ -194,4 +197,6 @@ begin
     dbg_regs.SP <= get_word(regSP, ram, s);
     dbg_regs.IX <= get_word(regIX, ram, s);
     dbg_regs.IY <= get_word(regIY, ram, s);
+    dbg_regs.IR <= get_word(regIR, ram, s);
+    dbg_regs.PC <= get_word(regPC, ram, s);
 end arch;
