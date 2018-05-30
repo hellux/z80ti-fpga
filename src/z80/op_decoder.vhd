@@ -225,7 +225,7 @@ architecture arch of op_decoder is
                 f.cw.abus_src := rf_o;
             when t2 =>
                 f.cw.rf_aaddr := regWZ;
-                f.cw.ldpc := '1';
+                f.cw.rf_ldpc := '1';
             when t3 =>
                 f.cw.rf_daddr := regPCh;
                 f.cw.rf_rdd := '1';
@@ -277,7 +277,7 @@ architecture arch of op_decoder is
             case state.t is
             when t4 =>
                 f.cw.rf_aaddr := rp;
-                f.cw.ldpc := '1'; -- ld pc with rp
+                f.cw.rf_ldpc := '1'; -- ld pc with rp
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
                 f.db.jump_beg := '1';
@@ -2010,7 +2010,7 @@ architecture arch of op_decoder is
                 f.cw.data_rdo := '1';
             when t3 =>
                 f.cw.rf_aaddr := regWZ;
-                f.cw.ldpc := '1';
+                f.cw.rf_ldpc := '1';
                 f.ct.cycle_end := '1';
                 f.ct.instr_end := '1';
                 f.db.jump_end := '1';

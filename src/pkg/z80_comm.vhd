@@ -56,7 +56,7 @@ package z80_comm is
         rf_aaddr : std_logic_vector(3 downto 0); -- addr to reg rf <-> abus
         rf_rdd, rf_rda : std_logic;      -- rd to regfile from dbus/abus
         rf_swp : rf_swap_t;              -- swap regs in regfile
-        ldpc : std_logic;                -- aaddr rp -> pc
+        rf_ldpc : std_logic;             -- aaddr rp -> pc
         f_rd : std_logic;                -- alu -> F
         pv_src : pv_src_t;               -- signal to use for pv flag
         ir_rd : std_logic;               -- dbus -> IR
@@ -67,7 +67,6 @@ package z80_comm is
         alu_op : instr_t;                -- op for alu
         alu_bs : integer range 0 to 7;   -- bit select for alu
         act_rd : std_logic;              -- a -> act
-        act_rd_dbus : std_logic;         -- dbus -> act
         tmp_rd : std_logic;              -- dbus -> tmp
         -- buffers
         data_rdi, data_rdo : std_logic;  -- data->dbufi, dbus->dbufo

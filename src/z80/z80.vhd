@@ -113,7 +113,7 @@ begin
 
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset, ce,
-        cw.rf_daddr, cw.rf_aaddr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.ldpc,
+        cw.rf_daddr, cw.rf_aaddr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_ldpc,
         cw.rf_swp,
         dbus, addr_in, flags, rf_do, rf_ao, rf_dis, rf_a_out, rf_f_out,
         dbg.regs);
