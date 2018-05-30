@@ -83,7 +83,6 @@ architecture arch of regfile is
     return integer is
         variable reg_i : integer range 0 to 1;
         variable rp : std_logic_vector(3 downto 0);
-        variable hl : std_logic;
     begin
         if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
 
@@ -103,13 +102,7 @@ architecture arch of regfile is
         else
             rp := "----";
         end if;
-        -- select byte
-        if r(3 downto 1) = "011" then -- flip FA to AF
-            hl := not r(0);
-        else
-            hl := r(0);
-        end if;
-        return to_integer(unsigned(rp & hl));
+        return to_integer(unsigned(rp & r(0)));
     end baddr;
 
     function get_word(reg : std_logic_vector(3 downto 0);
@@ -120,7 +113,6 @@ architecture arch of regfile is
     begin
         bh := reg & '0';
         bl := reg & '1';
-        if bh = regF then bh := regA; bl := regF; end if;
         return ram(baddr(bh, s)) & ram(baddr(bl, s));
     end get_word;
 

@@ -133,8 +133,8 @@ package z80_comm is
     constant regE   : std_logic_vector(4 downto 0) := "00011";
     constant regH   : std_logic_vector(4 downto 0) := "00100";
     constant regL   : std_logic_vector(4 downto 0) := "00101";
-    constant regF   : std_logic_vector(4 downto 0) := "00110";
-    constant regA   : std_logic_vector(4 downto 0) := "00111";
+    constant regA   : std_logic_vector(4 downto 0) := "00110";
+    constant regF   : std_logic_vector(4 downto 0) := "00111";
     constant regW   : std_logic_vector(4 downto 0) := "01000";
     constant regZ   : std_logic_vector(4 downto 0) := "01001";
     constant regSPh : std_logic_vector(4 downto 0) := "01010";
