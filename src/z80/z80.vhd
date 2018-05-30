@@ -81,8 +81,6 @@ architecture arch of z80 is
     signal cw : ctrlword;
 
     signal addr_in : std_logic_vector(15 downto 0);
-    signal pc_in : std_logic_vector(15 downto 0);
-    signal pc_rd : std_logic;
     signal r_rd : std_logic;
     signal r_in : std_logic_vector(7 downto 0);
     signal addr_not_zero : std_logic;
@@ -101,7 +99,7 @@ architecture arch of z80 is
     -- dbus/abus src
     signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_res_out, i_out, r_out
         : std_logic_vector(7 downto 0);
-    signal rf_ao, pc_out, dis_out, rst_addr
+    signal rf_ao, dis_out, rst_addr
         : std_logic_vector(15 downto 0);
 
     signal dbus : std_logic_vector(7 downto 0);
@@ -129,12 +127,6 @@ begin
         cw.rf_swp,
         dbus, addr_in, flags, rf_do, rf_ao, rf_dis, acc, rf_f_out,
         dbg.regs);
-    pc : reg generic map(x"8000", 16)
-             port map(clk, cbi.reset, ce, pc_rd, pc_in, pc_out);
-    pc_rd <= cw.pc_rd or cw.pc_rdh or cw.pc_rdl;
-    pc_in <= dbus & pc_out(7 downto 0) when cw.pc_rdh = '1' else
-             pc_out(15 downto 8) & dbus when cw.pc_rdl = '1' else
-             addr_in;
     dis_out <= std_logic_vector(signed(rf_dis) + resize(signed(dbus), 16));
 
     with cw.addr_op select addr_in <=
@@ -172,13 +164,10 @@ begin
                 rf_do               when rf_o,
                 tmp_out             when tmp_o,
                 alu_res_out         when alu_o,
-                pc_out(15 downto 8) when pch_o,
-                pc_out(7 downto 0)  when pcl_o,
                 i_out               when i_o,
                 r_out               when r_o;
     with cw.abus_src select
         abus <= (others => '-') when none,
-                pc_out          when pc_o,
                 rf_ao           when rf_o,
                 dis_out         when dis_o,
                 i_out & r_out   when ir_o,

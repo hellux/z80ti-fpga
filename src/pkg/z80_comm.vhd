@@ -45,10 +45,9 @@ package z80_comm is
     end record;
 
     type dbus_src_t is (none, zero_o,
-                        pch_o, pcl_o,
                         ext_o, rf_o, tmp_o, alu_o,
                         i_o, r_o);
-    type abus_src_t is (none, pc_o, rf_o, dis_o, ir_o, rst_o);
+    type abus_src_t is (none, rf_o, dis_o, ir_o, rst_o);
     type pv_src_t is (alu_f, iff_f, anz_f);
 
     type ctrlword is record 

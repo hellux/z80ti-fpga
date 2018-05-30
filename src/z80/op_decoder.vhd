@@ -125,7 +125,7 @@ architecture arch of op_decoder is
         f.cb.m1 := '1'; -- notify external of pc rd
         case state.t is
         when t3 =>
-            f.cw.ir_rd := '1';      -- read instr from dbus to ir
+            f.cw.ir_rd := '1'; -- read instr from dbus to ir
         when others => null; end case;
         return f;
     end mem_rd_instr;
