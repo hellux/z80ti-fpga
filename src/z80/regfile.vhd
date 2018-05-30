@@ -41,44 +41,26 @@ entity regfile is port(
 end regfile;
 
 architecture arch of regfile is
-    -- addr of internal registers
-    constant B0  : integer := 0;
-    constant C0  : integer := 1;
-    constant B1  : integer := 2;
-    constant C1  : integer := 3;
-    constant D0  : integer := 4;
-    constant E0  : integer := 5;
-    constant D1  : integer := 6;
-    constant E1  : integer := 7;
-    constant H0  : integer := 8;
-    constant L0  : integer := 9;
-    constant H1  : integer := 10;
-    constant L1  : integer := 11;
-    constant A0  : integer := 12;
-    constant F0  : integer := 13;
-    constant A1  : integer := 14;
-    constant F1  : integer := 15;
-    constant W   : integer := 16;
-    constant Z   : integer := 17;
-    constant SPh : integer := 18;
-    constant SPl : integer := 19;
-    constant IXh : integer := 20;
-    constant IXl : integer := 21;
-    constant IYh : integer := 22;
-    constant IYl : integer := 23;
-    constant I   : integer := 24;
-    constant R   : integer := 25;
-    constant PCh : integer := 26;
-    constant PCl : integer := 27;
+    -- addr of internal 16 byte regs
+    constant rpBC : std_logic_vector(3 downto 0) := "0000";
+    constant rpDE : std_logic_vector(3 downto 0) := "0010";
+    constant rpHL : std_logic_vector(3 downto 0) := "0100";
+    constant rpAF : std_logic_vector(3 downto 0) := "0110";
+    constant rpWZ : std_logic_vector(3 downto 0) := "1000";
+    constant rpSP : std_logic_vector(3 downto 0) := "1001";
+    constant rpIX : std_logic_vector(3 downto 0) := "1010";
+    constant rpIY : std_logic_vector(3 downto 0) := "1011";
+    constant rpIR : std_logic_vector(3 downto 0) := "1100";
+    constant rpPC : std_logic_vector(3 downto 0) := "1101";
 
-    type rf_ram_t is array(0 to 23) of std_logic_vector(7 downto 0);
+    type rf_ram_t is array(0 to 27) of std_logic_vector(7 downto 0);
     type rf_swap_state_t is record
         reg, af : std_logic;
         dehl : std_logic_vector(1 downto 0);
         afwz : std_logic;
     end record;
 
-    function baddr(r : std_logic_vector(4 downto 0);
+    function baddr(reg : std_logic_vector(4 downto 0);
                    s : rf_swap_state_t)
     return integer is
         variable reg_i : integer range 0 to 1;
@@ -86,23 +68,37 @@ architecture arch of regfile is
     begin
         if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
 
-        -- select word
-        if s.afwz = '1' and (r = regA or r = regF) then -- af -> wz
-            rp := "1000";
-        elsif s.afwz = '1' and (r = regW or r = regZ) then -- z -> f
-            rp := "011" & s.reg;
-        elsif r(3) = '0' and r(2 downto 1) /= "11" and s.dehl(reg_i) = '1' then
-            rp := '0' & r(1) & r(2) & s.reg;
-        elsif r(3) = '0' and r(2 downto 1) /= "11" then
-            rp := r(3 downto 1) & s.reg;
-        elsif r(3) = '0' then
-            rp := "011" & s.af;
-        elsif r(3) = '1' then
-            rp := "10" & r(2 downto 1);
-        else
-            rp := "----";
-        end if;
-        return to_integer(unsigned(rp & r(0)));
+        case reg is
+        when regB|regC => rp := rpBC(3 downto 2) & s.reg & rpBC(0);
+        when regD|regE =>
+            if s.dehl(reg_i) = '1'
+            then rp := rpHL(3 downto 1) & s.reg;
+            else rp := rpDE(3 downto 1) & s.reg;
+            end if;
+        when regH|regL =>
+            if s.dehl(reg_i) = '1'
+            then rp := rpDE(3 downto 1) & s.reg;
+            else rp := rpHL(3 downto 1) & s.reg;
+            end if;
+        when regA|regF =>
+            if s.afwz = '1'
+            then rp := rpWZ;
+            else rp := rpAF(3 downto 1) & s.af;
+            end if;
+        when regW|regZ =>
+            if s.afwz = '1'
+            then rp := rpAF(3 downto 1) & s.af;
+            else rp := rpWZ;
+            end if;
+        when regSPh|regSPl => rp := rpSP;
+        when regIXh|regIXl => rp := rpIX;
+        when regIYh|regIYl => rp := rpIY;
+        when regI|regR => rp := rpIR;
+        when regPCh|regPCl => rp := rpPC;
+        when others => null;
+        end case;
+
+        return to_integer(unsigned(rp & reg(0)));
     end baddr;
 
     function get_word(reg : std_logic_vector(3 downto 0);
