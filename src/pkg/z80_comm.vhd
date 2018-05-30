@@ -44,10 +44,8 @@ package z80_comm is
         t : natural range 1 to 6;
     end record;
 
-    type dbus_src_t is (none, zero_o,
-                        ext_o, rf_o, tmp_o, alu_o,
-                        i_o, r_o);
-    type abus_src_t is (none, rf_o, dis_o, ir_o, rst_o);
+    type dbus_src_t is (none, zero_o, ext_o, rf_o, tmp_o, alu_o);
+    type abus_src_t is (none, rf_o, dis_o, rst_o);
     type pv_src_t is (alu_f, iff_f, anz_f);
 
     type ctrlword is record 
@@ -61,11 +59,7 @@ package z80_comm is
         ldpc : std_logic;                -- aaddr rp -> pc
         f_rd : std_logic;                -- alu -> F
         pv_src : pv_src_t;               -- signal to use for pv flag
-        i_rd, r_rdd, r_rda : std_logic;  -- dbus -> I, dbus -> R, abus -> R
         ir_rd : std_logic;               -- dbus -> IR
-        pc_rd : std_logic;               -- addr_in -> pc
-        pc_rdh : std_logic;              -- dbus -> pch
-        pc_rdl : std_logic;              -- dbus -> pcl
         addr_op : addr_op_t;             -- op for addr_in
         rst_addr : std_logic_vector(2 downto 0); -- addr >> 3 for RST
         iff_next : std_logic;            -- next value for iff

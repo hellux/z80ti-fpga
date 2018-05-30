@@ -937,67 +937,26 @@ architecture arch of op_decoder is
         return f;
     end bli_op;
 
-    function ld_i_a(state : id_state_t; f_in : id_frame_t)
-    return id_frame_t is variable f : id_frame_t; begin
-        f := f_in;
-        case state.m is
-        when m1 =>
-            case state.t is
-            when t4 =>
-                f.cw.rf_daddr := regA;
-                f.cw.dbus_src := rf_o;
-                f.cw.i_rd := '1';
-                f.ct.cycle_end := '1';
-            when others => null; end case;
-        when m2 =>
-            case state.t is
-            when t5 =>
-                f.ct.cycle_end := '1';
-                f.ct.instr_end := '1';
-            when others => null; end case;
-        when others => null; end case;
-        return f;
-    end ld_i_a;
-
-    function ld_r_a(state : id_state_t; f_in : id_frame_t)
-    return id_frame_t is variable f : id_frame_t; begin
-        f := f_in;
-        case state.m is
-        when m1 =>
-            case state.t is
-            when t4 =>
-                f.cw.rf_daddr := regA;
-                f.cw.dbus_src := rf_o;
-                f.cw.r_rdd := '1';
-                f.ct.cycle_end := '1';
-            when others => null; end case;
-        when m2 =>
-            case state.t is
-            when t5 =>
-                f.ct.cycle_end := '1';
-                f.ct.instr_end := '1';
-            when others => null; end case;
-        when others => null; end case;
-        return f;
-    end ld_r_a;
-
     function ld_a_i_r(state : id_state_t; f_in : id_frame_t;
-                      src : dbus_src_t)
+                      reg : std_logic_vector(4 downto 0))
     return id_frame_t is variable f : id_frame_t; begin
         f := f_in;
         case state.m is
         when m1 =>
             case state.t is
-            when t4 =>
-                f.cw.dbus_src := src;
-                f.cw.rf_daddr := regA;
-                f.cw.rf_rdd := '1';
+            when t4 => -- i/r -> tmp
+                f.cw.rf_daddr := reg;
+                f.cw.dbus_src := rf_o;
                 f.cw.tmp_rd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
         when m2 =>
             case state.t is
-            when t1 =>
+            when t1 => -- tmp -> a
+                f.cw.rf_daddr := regA;
+                f.cw.dbus_src := tmp_o;
+                f.cw.rf_rdd := '1';
+            when t2 => -- set flags with alu/iff
                 f.cw.alu_op := ld_i;
                 f.cw.f_rd := '1';
                 f.cw.pv_src := iff_f; -- use iff as pv
@@ -2394,13 +2353,13 @@ architecture arch of op_decoder is
             when t3 =>
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m4 => -- i & r + 1 -> wz, (i & r) -> pcl
+        when m4 => -- (ir++) -> pcl
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
-                f.cw.abus_src := ir_o;
+                f.cw.abus_src := rf_o;
                 f.cw.addr_op := inc;
-                f.cw.rf_aaddr := regWZ;
+                f.cw.rf_aaddr := regIR;
                 f.cw.rf_rda := '1';
                 f.db.jump_beg := '1';
             when t3 =>
@@ -2408,12 +2367,14 @@ architecture arch of op_decoder is
                 f.cw.rf_rdd := '1';
                 f.ct.cycle_end := '1';
             when others => null; end case;
-        when m5 => -- (wz) -> pch
+        when m5 => -- (ir--) -> pch
             f := mem_rd(state, f);
             case state.t is
             when t1 =>
-                f.cw.rf_aaddr := regWZ;
+                f.cw.rf_aaddr := regIR;
                 f.cw.abus_src := rf_o;
+                f.cw.addr_op := dec;
+                f.cw.rf_rda := '1';
             when t3 =>
                 f.cw.rf_daddr := regPCh;
                 f.cw.rf_rdd := '1';
@@ -2536,9 +2497,10 @@ begin
             f.cb.m1 := '1';
             case state.t is
             when t3 => -- inc refresh register
-                f.cw.abus_src := ir_o;
+                f.cw.rf_aaddr := regIR;
+                f.cw.abus_src := rf_o;
                 f.cw.addr_op := inc;
-                f.cw.r_rda := '1';
+                f.cw.rf_rda := '1';
             when others => null; end case;
             case state.mode is
             when exec => -- fetch
@@ -2700,10 +2662,10 @@ begin
                 when 6 => f := set_im(state, f, im(y));
                 when 7 =>
                     case y is
-                    when 0 => f := ld_i_a(state, f);
-                    when 1 => f := ld_r_a(state, f);
-                    when 2 => f := ld_a_i_r(state, f, i_o);
-                    when 3 => f := ld_a_i_r(state, f, r_o);
+                    when 0 => f := ld_r_r(state, f, regI, regA);
+                    when 1 => f := ld_r_r(state, f, regR, regA);
+                    when 2 => f := ld_a_i_r(state, f, regI);
+                    when 3 => f := ld_a_i_r(state, f, regR);
                     when 4 => f := rld_rrd(state, f, rrd_i1, rrd_i2);
                     when 5 => f := rld_rrd(state, f, rld_i1, rld_i2);
                     when 6|7 => f := noni(state, f, instr);

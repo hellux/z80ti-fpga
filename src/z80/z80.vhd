@@ -75,14 +75,12 @@ architecture arch of z80 is
         state_out : out state_t);
     end component;
 
-    signal ir_out : std_logic_vector(7 downto 0);
     signal state : state_t;
     signal ctrl : id_ctrl_t;
     signal cw : ctrlword;
+    signal ir_out : std_logic_vector(7 downto 0);
 
     signal addr_in : std_logic_vector(15 downto 0);
-    signal r_rd : std_logic;
-    signal r_in : std_logic_vector(7 downto 0);
     signal addr_not_zero : std_logic;
     signal rf_dis : std_logic_vector(15 downto 0);
     signal iff : std_logic;
@@ -94,10 +92,9 @@ architecture arch of z80 is
     signal flags : std_logic_vector(7 downto 0);
     -- pv source
     signal f_pv : std_logic;
-    signal pv_src : pv_src_t;
 
     -- dbus/abus src
-    signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_res_out, i_out, r_out
+    signal rf_do, tmp_out, dbufi_out, dbufo_out, alu_res_out
         : std_logic_vector(7 downto 0);
     signal rf_ao, dis_out, rst_addr
         : std_logic_vector(15 downto 0);
@@ -114,12 +111,6 @@ begin
     sm : state_machine port map(clk, ce, cbi, ctrl,
                                 iff, cw.ir_rd, ir_out, state); 
     iff_r : ff port map(clk, cbi.reset, ce, '1', cw.iff_next, iff);
-    i : reg generic map(x"ff", 8)
-            port map(clk, cbi.reset, ce, cw.i_rd, dbus, i_out);
-    r_in <= dbus when cw.r_rdd = '1' else r_out(7) & addr_in(6 downto 0);
-    r_rd <= cw.r_rdd or cw.r_rda;
-    r : reg generic map(x"ff", 8)
-            port map(clk, cbi.reset, ce, r_rd, r_in, r_out);
 
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset, ce,
@@ -147,13 +138,13 @@ begin
     tmp : reg generic map(x"ff", 8)
               port map(clk, cbi.reset, ce, cw.tmp_rd, dbus, tmp_out);
 
-    flags(7 downto PV_f+1) <= alu_f_out(7 downto PV_f+1);
-    flags(PV_f) <= f_pv;
-    flags(PV_f-1 downto 0) <= alu_f_out(PV_f-1 downto 0);
     with cw.pv_src select
         f_pv <= alu_f_out(PV_f) when alu_f,
                 iff             when iff_f,
                 addr_not_zero   when anz_f;
+    flags(7 downto PV_f+1) <= alu_f_out(7 downto PV_f+1);
+    flags(PV_f) <= f_pv;
+    flags(PV_f-1 downto 0) <= alu_f_out(PV_f-1 downto 0);
 
     -- -- BUSES -- --
     -- mux bus input
@@ -163,14 +154,11 @@ begin
                 dbufi_out           when ext_o,
                 rf_do               when rf_o,
                 tmp_out             when tmp_o,
-                alu_res_out         when alu_o,
-                i_out               when i_o,
-                r_out               when r_o;
+                alu_res_out         when alu_o;
     with cw.abus_src select
         abus <= (others => '-') when none,
                 rf_ao           when rf_o,
                 dis_out         when dis_o,
-                i_out & r_out   when ir_o,
                 rst_addr        when rst_o;
     -- buffer dbus both ways
     dbufi : reg generic map(x"ff", 8)

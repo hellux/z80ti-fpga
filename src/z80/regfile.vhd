@@ -129,8 +129,13 @@ architecture arch of regfile is
             new_ram(baddr(reg_addr, s)) := data_in;
         end if;
         if rda = '1' then
-            new_ram(baddr(rp_addr & '0', s)) := addr_in(15 downto 8);
-            new_ram(baddr(rp_addr & '1', s)) := addr_in(7 downto 0);
+            if rp_addr = regIR then -- inc only 6 lower bits for refresh
+                new_ram(baddr(regR, s))
+                    := ram(baddr(regR, s))(7) & addr_in(6 downto 0);
+            else
+                new_ram(baddr(rp_addr & '0', s)) := addr_in(15 downto 8);
+                new_ram(baddr(rp_addr & '1', s)) := addr_in(7 downto 0);
+            end if;
         end if;
         if rdf = '1' then
             new_ram(baddr(regF, s)) := f_in;
