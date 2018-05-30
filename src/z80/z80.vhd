@@ -43,7 +43,7 @@ architecture arch of z80 is
         clk, rst, ce : in std_logic;
         reg_addr : in std_logic_vector(4 downto 0);
         rp_addr : in std_logic_vector(3 downto 0);
-        rdd, rda, rdf : in std_logic;
+        rdd, rda, rdf, ldpc : in std_logic;
         swp : in rf_swap_t;
         data_in: in std_logic_vector(7 downto 0);
         addr_in : in std_logic_vector(15 downto 0);
@@ -125,7 +125,8 @@ begin
 
     -- -- REGISTER SECTION -- --
     rf : regfile port map(clk, cbi.reset, ce,
-        cw.rf_daddr, cw.rf_aaddr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.rf_swp,
+        cw.rf_daddr, cw.rf_aaddr, cw.rf_rdd, cw.rf_rda, cw.f_rd, cw.ldpc,
+        cw.rf_swp,
         dbus, addr_in, flags, rf_do, rf_ao, rf_dis, acc, rf_f_out,
         dbg.regs);
     pc : reg generic map(x"8000", 16)

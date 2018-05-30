@@ -18,7 +18,6 @@ use work.z80_comm.all;
 -- 18 10010  |__SPh__|__SPh__|  10011 19
 -- 20 10100  |__IXh__|__IXl__|  10011 21
 -- 22 10110  |__IYh__|__IYl__|  10111 23
--- TODO below
 -- 24 11000  |___I___|___R___|  11001 25
 -- 26 11010  |__PCh__|__PCl__|  11011 27
 
@@ -27,7 +26,10 @@ entity regfile is port(
     clk, rst, ce : in std_logic;
     reg_addr : in std_logic_vector(4 downto 0);
     rp_addr : in std_logic_vector(3 downto 0);
-    rdd, rda, rdf : in std_logic;
+    rdd : in std_logic; -- read from data_in to selected reg
+    rda : in std_logic; -- read from addr_in to selected rp
+    rdf : in std_logic; -- read from f_in bus to F
+    ldpc : in std_logic; -- load pc with selected rp
     swp : in rf_swap_t;
     -- buses
     data_in: in std_logic_vector(7 downto 0);
@@ -116,21 +118,25 @@ architecture arch of regfile is
                       signal s : in rf_swap_state_t;
                       signal reg_addr : std_logic_vector(4 downto 0);
                       signal rp_addr : std_logic_vector(3 downto 0);
-                      signal rdd, rda, rdf : in std_logic;
-                      signal data, f : in std_logic_vector(7 downto 0);
-                      signal addr : in std_logic_vector(15 downto 0))
+                      signal rdd, rda, rdf, ldpc : in std_logic;
+                      signal data_in, f_in : in std_logic_vector(7 downto 0);
+                      signal addr_in : in std_logic_vector(15 downto 0))
     return rf_ram_t is
         variable new_ram : rf_ram_t;
     begin
         new_ram := ram;
         if rdd = '1' then
-            new_ram(baddr(reg_addr, s)) := data;
+            new_ram(baddr(reg_addr, s)) := data_in;
         elsif rda = '1' then
-            new_ram(baddr(rp_addr & '0', s)) := addr(15 downto 8);
-            new_ram(baddr(rp_addr & '1', s)) := addr(7 downto 0);
+            new_ram(baddr(rp_addr & '0', s)) := addr_in(15 downto 8);
+            new_ram(baddr(rp_addr & '1', s)) := addr_in(7 downto 0);
         end if;
         if rdf = '1' then
-            new_ram(baddr(regF, s)) := f;
+            new_ram(baddr(regF, s)) := f_in;
+        end if;
+        if ldpc = '1' then
+            new_ram(baddr(regPCh, s)) := ram(baddr(rp_addr & '0', s));
+            new_ram(baddr(regPCl, s)) := ram(baddr(rp_addr & '1', s));
         end if;
         return new_ram;
     end next_ram;
@@ -170,7 +176,7 @@ begin
     end process;
 
     ram_next <= next_ram(ram, s,
-                         reg_addr, rp_addr, rdd, rda, rdf,
+                         reg_addr, rp_addr, rdd, rda, rdf, ldpc,
                          data_in, f_in, addr_in);
 
     a_out    <= ram(baddr(regA, s));

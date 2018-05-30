@@ -59,6 +59,7 @@ package z80_comm is
         rf_aaddr : std_logic_vector(3 downto 0); -- addr to reg rf <-> abus
         rf_rdd, rf_rda : std_logic;      -- rd to regfile from dbus/abus
         rf_swp : rf_swap_t;              -- swap regs in regfile
+        ldpc : std_logic;                -- aaddr rp -> pc
         f_rd : std_logic;                -- alu -> F
         pv_src : pv_src_t;               -- signal to use for pv flag
         i_rd, r_rdd, r_rda : std_logic;  -- dbus -> I, dbus -> R, abus -> R
