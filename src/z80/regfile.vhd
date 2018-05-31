@@ -71,7 +71,7 @@ architecture arch of regfile is
         if s.reg = '1' then reg_i := 1; else reg_i := 0; end if;
 
         case reg is
-        when regB|regC => rp := rpBC(3 downto 2) & s.reg & rpBC(0);
+        when regB|regC => rp := rpBC(3 downto 1) & s.reg;
         when regD|regE =>
             if s.dehl(reg_i) = '1'
             then rp := rpHL(3 downto 1) & s.reg;
