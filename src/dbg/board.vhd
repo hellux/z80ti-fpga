@@ -9,11 +9,9 @@ entity board is port(
     clk : in std_logic;
 -- input
     btns : in std_logic_vector(4 downto 0);
-    num_disp : in std_logic_vector(15 downto 0);
 -- ctrl
     rst, step, trc_en, trc_di : out std_logic;
     num_sel : out std_logic_vector(15 downto 0);
-    num_new : out std_logic;
 -- segment
     seg : out std_logic_vector(7 downto 0);
     an : out std_logic_vector(3 downto 0));
@@ -80,14 +78,12 @@ begin
 
             case state is
             when ctrl =>
-                num_new <= '0';
                 if btns(CTRL_EDIT) = '1' then
                     state <= edit;
                 end if;
             when edit =>
                 if btns(EDIT_DONE) = '1' then
                     state <= ctrl;
-                    num_new <= '1';
                 end if;
                 if btns_op(EDIT_INC) = '1' then
                     seg_num(ds) <= seg_num(ds) + 1;
@@ -124,6 +120,6 @@ begin
                 "0100" when dig_sel = "01" else
                 "0010" when dig_sel = "10" else
                 "0001" when dig_sel = "11" else "----";
-    seg_value <= seg_num_merge when state = edit else num_disp;
+    seg_value <= seg_num_merge when state = edit else seg_num_merge;
     smt : segment port map(clk, seg_value, seg_dots, seg, an);
 end arch;
