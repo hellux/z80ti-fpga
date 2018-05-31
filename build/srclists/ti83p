@@ -13,7 +13,6 @@ src/z80/state_machine.vhd
 src/z80/z80.vhd
 src/ti/kbd_ctrl.vhd
 src/ti/t6a04.vhd
-src/ti/pict_mem.vhd
 src/ti/hw_timers.vhd
 src/ti/interrupts.vhd
 src/ti/mem_ctrl.vhd
