@@ -77,7 +77,6 @@ begin
     end process;
 
     process begin
-        sw(1 downto 0) <= "10";
         btns <= (others => '0');
 
         press(btns(1)); -- reset
