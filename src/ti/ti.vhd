@@ -96,7 +96,6 @@ architecture arch of ti is
 
     -- interrupt sources
     signal hwt_fin : std_logic_vector(1 to 2);
-    signal int_on_key : std_logic;
 begin
     -- interpret control bus
     in_op   <= cbo.iorq and not cbo.m1 and cbo.rd;
