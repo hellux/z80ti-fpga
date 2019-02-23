@@ -5,15 +5,14 @@ use work.ti_comm.all;
 
 entity hw_timers is port(
     clk, rst, ce : in std_logic;
-    p03_intmask : port_out_t;
-    p04_mmap_int : port_out_t;
+    p04_mmap_int : in port_out_t;
     fin : out std_logic_vector(1 to 2);
     dbg : out dbg_hwt_t);
 end hw_timers;
 
 architecture arch of hw_timers is
-    component dcntr generic(init : std_logic_vector;
-                            bitwidth : integer); port(
+    component dcntr generic(init : std_logic_vector; bitwidth : integer);
+                    port(
         clk, rst, ce : in std_logic;
         cnten : in std_logic;
         ld : in std_logic;
