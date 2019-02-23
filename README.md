@@ -1,5 +1,5 @@
 # z80ti
-[](https://github.com/hellux/z80ti-fpga/blob/master/.demo.jpg "Running TIOS.")
+![Running TIOS](.demo.jpg)
 
 Replica of a TI83p calculator written in VHDL.
 
