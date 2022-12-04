@@ -1,7 +1,8 @@
 # z80ti
 <img src="https://github.com/hellux/z80ti-fpga/raw/master/.demo.jpg" width="480">
 
-Replica of a TI83p calculator written in VHDL.
+Replica of a TI83p calculator written in VHDL as part of a computer architecture
+course project.
 
 ## Status
 All documented instructions and almost all undocumented instructions of the Z80
@@ -37,3 +38,12 @@ displaying the LCD, as well as live register values for debugging.
     * [ticalc.org](https://www.ticalc.org/pub/83plus/)
   * Functionality of the LCD controller
     * _T604A datasheet_ by TOSHIBA
+
+# Authors
+
+The implementation was written by a group of four computer engineering students:
+
+- Jakob Arvidsson
+- Dennis Derecichei
+- Yousef Hashem
+- Noah Hellman
